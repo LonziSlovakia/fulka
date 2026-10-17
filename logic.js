@@ -213,15 +213,14 @@
   function byTime(x, y) { return sortKey(x).localeCompare(sortKey(y)) || x.id.localeCompare(y.id); }
 
   /* ---------- Najbližšie zápasy (banner) ----------
-     Neodohrané zápasy so známymi tímami: s presným termínom od (teraz − 3 h), bez termínu
-     ak ich týždeň ešte neskončil. Zoradené podľa času, prvých `count`. */
+     Neodohrané zápasy so známymi tímami: s presným termínom vždy (zápas ostane na banneri,
+     kým ho admin neoznačí ako odohraný), bez termínu iba ak ich týždeň ešte neskončil.
+     Zoradené podľa času, prvých `count`. */
   function nextMatches(resolved, count, now) {
-    const t = now === undefined ? Date.now() : new Date(now).getTime();
-    const today = localParts(t).date;
-    const GRACE = 3 * 3600 * 1000;
+    const today = localParts(now === undefined ? Date.now() : now).date;
     return resolved
       .filter((m) => m.status !== "done" && m.home_id && m.away_id)
-      .filter((m) => (m.starts_at ? new Date(m.starts_at).getTime() >= t - GRACE : !!m.window_to && m.window_to >= today))
+      .filter((m) => !!m.starts_at || (!!m.window_to && m.window_to >= today))
       .sort(byTime)
       .slice(0, Math.max(1, Math.min(4, Number(count) || DEFAULTS.bannerCount)));
   }

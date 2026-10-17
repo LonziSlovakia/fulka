@@ -198,6 +198,19 @@ test("playoff auto: po základnej časti tímy, B3 = porazení, F = víťazi, š
   assert.equal(resolved.find((m) => m.id === "m1").home_id, "gia", "základná časť ostáva");
 });
 
+test("kanadské bodovanie: rátajú sa góly zo základnej časti aj z playoff", () => {
+  const { ms, gs } = fullSeason();
+  const all = [...ms, ...po()];
+  all.find((m) => m.stage === "SF1").status = "done";
+  const pg = [...gs, { match_id: "m1", seq: 9, side: "h", scorer_id: "a1" }, { match_id: "z26-sf1", seq: 1, side: "a", scorer_id: "s1", assist_id: "a1" }];
+  const gm = L.goalsByMatch(pg);
+  const t = L.standings(TEAMS, all, gm, {});
+  const s = L.scorers(L.resolveMatches({ seed_mode: "auto" }, all, gm, t), gm, PLAYERS, t);
+  const by = Object.fromEntries(s.map((x) => [x.player_id, x]));
+  assert.deepEqual([by.a1.g, by.a1.a, by.a1.b], [1, 1, 2], "gól v základnej časti + asistencia v SF");
+  assert.equal(by.s1.team_id, "sai", "tím z doplneného playoff zápasu (SF1 = gia vs sai)");
+});
+
 test("playoff manual: tímy SF z uložených home_id/away_id", () => {
   const { ms, gs } = fullSeason();
   const all = [...ms, ...po()];
@@ -263,7 +276,7 @@ test("najbližšie zápasy: presné termíny, odohrané preč, počet 1–4", ()
   assert.deepEqual(L.nextMatches(ms, 2, now).map((m) => m.id), ["b", "a"]);
   assert.deepEqual(L.nextMatches(ms, 9, now).map((m) => m.id), ["b", "a", "d"]);
   assert.deepEqual(L.nextMatches(ms, 0, now).map((m) => m.id), ["b", "a"], "neplatný počet → predvolené 2");
-  assert.deepEqual(L.nextMatches(ms, 1, "2026-10-20T20:00:00Z").map((m) => m.id), ["b"], "práve sa hrá (do 3 h)");
+  assert.deepEqual(L.nextMatches(ms, 1, "2026-10-22T20:00:00Z").map((m) => m.id), ["b"], "ostáva, kým nie je odohraný");
 });
 
 test("najbližšie zápasy: bez presného termínu podľa týždňa, ktorý ešte neskončil", () => {
