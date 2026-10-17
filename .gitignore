@@ -1,0 +1,9 @@
+# lokálne veci
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+.env
+.env.*
+# fotky hráčov patria do Supabase, nie sem
+photos/

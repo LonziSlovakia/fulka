@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>FULka — web s fotkami hráčov</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700&amp;family=Saira+Extra+Condensed:wght@600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#050505}
+</style>
+</helmet>
+<div id="top" style="container-type: inline-size; background: #050505; color: #FFFFFF; font-family: 'Saira', system-ui, sans-serif; font-size: 16px; line-height: 1.4; min-height: 100%">
+
+  <header style="background: #050505; border-bottom: 1px solid #1E1E1E">
+    <div style="max-width: 1280px; margin: 0 auto; padding: 10px clamp(16px, 2cqi, 24px); display: flex; align-items: center; gap: 10px 20px; flex-wrap: wrap">
+      <a href="#top" onClick="{{goHome}}" aria-label="FULka — domov" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: #FFFFFF">
+        <img src="../assets/logos/ful-mark-white.png" alt="" style="width: 52px; height: 52px; display: block">
+        <span style="display: flex; flex-direction: column; line-height: 1">
+          <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 38px; line-height: 0.9; transform: skewX(-8deg); transform-origin: left bottom">FULka</span>
+          <span style="margin-top: 5px; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #BDBDBD">Florbalová Upece Liga</span>
+        </span>
+      </a>
+      <button type="button" onClick="{{toggleMenu}}" aria-expanded="{{menuExpanded}}" aria-label="Vybrať sezónu, teraz {{season.name}}" style="display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; background: {{seasonBtnBg}}; color: {{seasonBtnFg}}; border: 1px solid #FFFFFF; transform: skewX(-10deg); font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; cursor: pointer">
+        <span aria-hidden="true" style="width: 9px; height: 9px; flex: none; background: {{season.dot}}; border: 1px {{season.chipLine}} {{season.dotBd}}"></span>
+        {{season.name}}
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate({{menuRot}}deg)"><path d="M6 9l6 6 6-6"></path></svg>
+      </button>
+      <nav aria-label="Hlavná navigácia" style="margin-left: auto; display: flex; align-items: center; max-width: 100%; overflow-x: auto">
+        <sc-for list="{{navItems}}" as="n" hint-placeholder-count="6">
+          <a href="{{n.href}}" style="padding: 12px 9px; color: {{n.fg}}; text-decoration: none; white-space: nowrap; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase">{{n.label}}</a>
+        </sc-for>
+        <button type="button" onClick="{{toggleMenu}}" aria-expanded="{{menuExpanded}}" style="margin-left: 6px; min-height: 40px; padding: 0 14px; background: {{navSeasonBg}}; color: {{navSeasonFg}}; border: 1px solid #FFFFFF; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; cursor: pointer; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%)">Sezóny</button>
+      </nav>
+    </div>
+  </header>
+
+  <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+    <section aria-label="Výber sezóny" style="position: relative; background: #0A0A0A; border-bottom: 1px solid #1E1E1E">
+      <div style="max-width: 1280px; margin: 0 auto; padding: 24px clamp(16px, 2cqi, 24px) 28px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 40px; line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg)">Sezóny</h2>
+          <svg aria-hidden="true" width="88" height="14" viewBox="0 0 88 14"><polyline points="0,12 8,2 16,12 24,2 32,12 40,2 48,12 56,2 64,12 72,2 80,12 88,2" fill="none" stroke="#FFFFFF" stroke-width="2.5"></polyline></svg>
+          <span style="margin-left: auto; font-size: 13px; color: #9A9A9A">Vyber sezónu — skončené ostávajú v archíve</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px">
+          <sc-for list="{{seasons}}" as="s" hint-placeholder-count="3">
+            <button type="button" onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" style="position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-height: 132px; padding: 16px 18px; background: #0E0E0E; color: #FFFFFF; border: 2px solid {{s.bd}}; font: inherit; text-align: left; cursor: pointer">
+              <span aria-hidden="true" style="position: absolute; top: 0; right: 0; bottom: 0; width: 34%; background: {{s.shard}}; clip-path: polygon(40% 0, 100% 0, 100% 100%, 0 100%, 22% 52%, 10% 48%)"></span>
+              <sc-if value="{{s.hasLogo}}" hint-placeholder-val="{{ false }}">
+                <img src="{{s.logo}}" alt="" style="position: absolute; right: 12px; top: 50%; width: 64px; height: 64px; margin-top: -32px">
+              </sc-if>
+              <span style="position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; background: {{s.chipBg}}; color: {{s.chipFg}}; border: 1px {{s.chipLine}} {{s.chipBd}}; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase">
+                <span aria-hidden="true" style="width: 7px; height: 7px; background: {{s.dot}}"></span>{{s.status}}
+              </span>
+              <span style="position: relative; max-width: 66%; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 30px; line-height: 0.95; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom">{{s.name}}</span>
+              <span style="position: relative; max-width: 66%; font-size: 13px; color: #BDBDBD">{{s.blurb}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{isCurrent}}" hint-placeholder-val="{{ true }}">
+    <section aria-label="Najbližšie zápasy" style="position: relative; overflow: hidden; background: #050505">
+      <sc-if value="{{heroSingle}}" hint-placeholder-val="{{ false }}">
+        <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(150deg, {{next.H.c}} 0%, {{next.H.d}} 70%)"></div>
+        <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(150deg, {{next.A.c}} 0%, {{next.A.d}} 80%); clip-path: polygon(58% 0, 100% 0, 100% 100%, 42% 100%, 51% 63%, 45.5% 59%, 55% 28%, 49.5% 24%)"></div>
+        <div aria-hidden="true" style="position: absolute; inset: 0; background: repeating-linear-gradient(-62deg, rgba(0,0,0,0.10) 0 2px, rgba(0,0,0,0) 2px 16px)"></div>
+        <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,5,5,0) 50%, rgba(5,5,5,0.85) 100%)"></div>
+        <div style="position: relative; max-width: 1280px; margin: 0 auto; padding: 40px clamp(16px, 2cqi, 24px) 64px; display: flex; flex-direction: column; align-items: center; gap: 18px">
+          <span style="background: #050505; color: #FFFFFF; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 18px; transform: skewX(-10deg)">Najbližší zápas · Kolo {{next.k}}</span>
+          <div style="width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: clamp(8px, 2cqi, 32px)">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0">
+              <img src="{{next.H.svg}}" alt="{{next.H.name}}" style="width: clamp(110px, 22cqi, 260px); height: clamp(110px, 22cqi, 260px); display: block; filter: drop-shadow(0 14px 22px rgba(0,0,0,0.45))">
+              <span style="background: #050505; padding: 4px 14px; transform: skewX(-10deg); font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(24px, 4.4cqi, 56px); line-height: 1; text-transform: uppercase">{{next.H.name}}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; text-shadow: 0 3px 18px rgba(0,0,0,0.5)">
+              <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: clamp(16px, 2cqi, 24px); letter-spacing: 0.2em; text-transform: uppercase">{{next.dayName}}</span>
+              <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 9cqi, 120px); line-height: 0.82; transform: skewX(-8deg)">{{next.dShort}}</span>
+              <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(28px, 4.4cqi, 56px); line-height: 1">{{next.time}}</span>
+              <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #EDEDED">po sv. omši</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0">
+              <img src="{{next.A.svg}}" alt="{{next.A.name}}" style="width: clamp(110px, 22cqi, 260px); height: clamp(110px, 22cqi, 260px); display: block; filter: drop-shadow(0 14px 22px rgba(0,0,0,0.45))">
+              <span style="background: #050505; padding: 4px 14px; transform: skewX(-10deg); font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(24px, 4.4cqi, 56px); line-height: 1; text-transform: uppercase">{{next.A.name}}</span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{heroMulti}}" hint-placeholder-val="{{ true }}">
+        <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(160deg, #161616 0%, #050505 60%)"></div>
+        <div aria-hidden="true" style="position: absolute; inset: 0; background: repeating-linear-gradient(-62deg, rgba(255,255,255,0.035) 0 2px, rgba(0,0,0,0) 2px 16px)"></div>
+        <div style="position: relative; max-width: 1280px; margin: 0 auto; padding: 32px clamp(16px, 2cqi, 24px) 60px; display: flex; flex-direction: column; align-items: center; gap: 18px">
+          <span style="background: #FFFFFF; color: #050505; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 18px; transform: skewX(-10deg)">{{banner.kicker}}</span>
+          <sc-if value="{{banner.sameDay}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px 18px; text-align: center">
+              <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: clamp(18px, 2cqi, 26px); letter-spacing: 0.2em; text-transform: uppercase">{{banner.dayName}}</span>
+              <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(48px, 7cqi, 96px); line-height: 0.85; transform: skewX(-8deg)">{{banner.dShort}}</span>
+              <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #BDBDBD">po sv. omši</span>
+            </div>
+          </sc-if>
+          <div style="width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, {{banner.minCol}}), 1fr)); gap: 16px">
+            <sc-for list="{{banner.cards}}" as="c" hint-placeholder-count="2">
+              <article style="position: relative; overflow: hidden; min-height: clamp(210px, 20cqi, 280px); background: #0E0E0E; border: 1px solid {{c.bd}}">
+                <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(150deg, {{c.H.c}} 0%, {{c.H.d}} 78%)"></div>
+                <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(150deg, {{c.A.c}} 0%, {{c.A.d}} 85%); clip-path: polygon(60% 0, 100% 0, 100% 100%, 40% 100%, 51% 63%, 45.5% 59%, 55% 28%, 49.5% 24%)"></div>
+                <div aria-hidden="true" style="position: absolute; inset: 0; background: repeating-linear-gradient(-62deg, rgba(0,0,0,0.10) 0 2px, rgba(0,0,0,0) 2px 16px)"></div>
+                <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,5,5,0) 55%, rgba(5,5,5,0.8) 100%)"></div>
+                <div style="position: relative; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 14px 20px">
+                  <span style="background: #050505; color: #FFFFFF; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 12px; transform: skewX(-10deg)">{{c.kicker}}</span>
+                  <div style="width: 100%; margin-top: auto; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0">
+                      <img src="{{c.H.svg}}" alt="{{c.H.name}}" style="width: {{banner.logo}}; height: {{banner.logo}}; display: block; filter: drop-shadow(0 10px 18px rgba(0,0,0,0.45))">
+                      <span style="max-width: 100%; background: #050505; padding: 3px 12px; transform: skewX(-10deg); font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: {{banner.nameSize}}; line-height: 1; text-transform: uppercase; overflow-wrap: anywhere">{{c.H.name}}</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; text-shadow: 0 3px 16px rgba(0,0,0,0.55)">
+                      <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: {{banner.timeSize}}; line-height: 0.9; transform: skewX(-8deg)">{{c.time}}</span>
+                      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #EDEDED">{{c.sub}}</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0">
+                      <img src="{{c.A.svg}}" alt="{{c.A.name}}" style="width: {{banner.logo}}; height: {{banner.logo}}; display: block; filter: drop-shadow(0 10px 18px rgba(0,0,0,0.45))">
+                      <span style="max-width: 100%; background: #050505; padding: 3px 12px; transform: skewX(-10deg); font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: {{banner.nameSize}}; line-height: 1; text-transform: uppercase; overflow-wrap: anywhere">{{c.A.name}}</span>
+                    </div>
+                  </div>
+                  <sc-if value="{{c.note}}" hint-placeholder-val="{{ false }}">
+                    <span style="padding: 2px 10px; background: #050505; font-size: 12px; color: #FFB020">{{c.note}}</span>
+                  </sc-if>
+                </div>
+              </article>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: linear-gradient(135deg, #050505 50%, rgba(5,5,5,0) 50%) 0 0 / 28px 14px repeat-x, linear-gradient(225deg, #050505 50%, rgba(5,5,5,0) 50%) 0 0 / 28px 14px repeat-x; transform: rotate(180deg)"></div>
+    </section>
+
+    <main style="max-width: 1280px; margin: 0 auto; padding: 0 clamp(16px, 2cqi, 24px) 72px">
+
+      <section id="vysledky" style="padding-top: 56px">
+        <div style="display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg)">Výsledky</h2>
+          <svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>
+          <span style="margin-left: auto; font-size: 13px; color: #9A9A9A">Klikni na zápas a uvidíš, kto dal góly</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; align-items: start">
+          <sc-for list="{{results}}" as="m" hint-placeholder-count="4">
+            <article style="background: #0E0E0E; border: 1px solid {{m.border}}; display: flex; flex-direction: column">
+              <button type="button" onClick="{{m.toggle}}" aria-expanded="{{m.expanded}}" style="position: relative; overflow: hidden; display: flex; flex-direction: column; width: 100%; padding: 0; background: transparent; border: 0; color: inherit; font: inherit; text-align: inherit; cursor: pointer">
+                <span aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(160deg, {{m.W.c}}, {{m.W.d}}); clip-path: {{m.shard}}"></span>
+                <span style="position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px; padding: 20px 14px 16px">
+                  <span style="display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0">
+                    <img src="{{m.hLogo}}" alt="{{m.H.name}}" style="width: 76px; height: 76px; display: block; opacity: {{m.hOp}}">
+                    <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; color: {{m.hInk}}">{{m.H.name}}</span>
+                  </span>
+                  <span style="display: flex; align-items: center; gap: 6px; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 54px; line-height: 1; text-shadow: 0 2px 12px rgba(0,0,0,0.55)">
+                    <span style="color: {{m.hScore}}">{{m.hs}}</span><span style="color: #8A8A8A; font-size: 36px">:</span><span style="color: {{m.aScore}}">{{m.as}}</span>
+                  </span>
+                  <span style="display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0">
+                    <img src="{{m.aLogo}}" alt="{{m.A.name}}" style="width: 76px; height: 76px; display: block; opacity: {{m.aOp}}">
+                    <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; color: {{m.aInk}}">{{m.A.name}}</span>
+                  </span>
+                </span>
+                <span style="position: relative; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px; background: #0A0A0A; font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #BDBDBD">
+                  <span>Kolo {{m.k}} · {{m.dLabel}}</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px; color: {{m.toggleColor}}">{{m.toggleLabel}}<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate({{m.rot}}deg)"><path d="M6 9l6 6 6-6"></path></svg></span>
+                </span>
+              </button>
+              <sc-if value="{{m.isOpen}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 7px; padding: 12px 14px 16px; border-top: 1px solid #1E1E1E">
+                  <sc-for list="{{m.goals}}" as="g" hint-placeholder-count="5">
+                    <div style="display: flex; align-items: center; gap: 10px; font-size: 14px">
+                      <span style="flex: none; min-width: 42px; padding: 1px 0; text-align: center; background: {{g.chipBg}}; color: {{g.chipFg}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 18px; line-height: 1.25">{{g.score}}</span>
+                      <img src="{{g.logo}}" alt="{{g.team}}" style="width: 24px; height: 24px; flex: none">
+                      <span style="min-width: 0; line-height: 1.25"><span style="font-weight: 600">{{g.s}}</span> <span style="color: #9A9A9A">{{g.as}}</span></span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </article>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="rozpis" style="padding-top: 72px">
+        <div style="display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 28px">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg)">Rozpis</h2>
+          <svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>
+          <span style="margin-left: auto; display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: #BDBDBD">
+            <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; background: #FFB020"></span>presunutý</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border: 1px dashed #FFFFFF"></span>bez termínu</span>
+          </span>
+        </div>
+        <div style="display: flex; flex-direction: column">
+          <sc-for list="{{rounds}}" as="r" hint-placeholder-count="3">
+            <div style="display: grid; grid-template-columns: clamp(50px, 10cqi, 132px) minmax(0, 1fr); column-gap: clamp(8px, 2.4cqi, 32px)">
+              <div style="display: flex; flex-direction: column; align-items: center; text-align: center">
+                <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(20px, 4.4cqi, 54px); line-height: 0.9; transform: skewX(-8deg); color: {{r.dateColor}}">{{r.dShort}}</span>
+                <span style="font-size: clamp(9px, 0.9cqi, 12px); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #9A9A9A; margin-top: 4px">{{r.day}}</span>
+                <svg aria-hidden="true" viewBox="0 0 20 120" preserveAspectRatio="none" style="flex: 1; width: 20px; min-height: 40px; margin: 10px 0 6px"><polyline points="10,0 3,10 17,20 3,30 17,40 3,50 17,60 3,70 17,80 3,90 17,100 3,110 10,120" fill="none" stroke="{{r.rail}}" stroke-width="2" vector-effect="non-scaling-stroke"></polyline></svg>
+              </div>
+              <div style="padding-bottom: 28px; display: flex; flex-direction: column; gap: 10px; min-width: 0">
+                <div style="display: flex; align-items: center; gap: 10px">
+                  <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: 0.06em; text-transform: uppercase">Kolo {{r.k}}</span>
+                  <sc-if value="{{r.isNext}}" hint-placeholder-val="{{ false }}">
+                    <span style="background: #FFFFFF; color: #050505; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 10px; transform: skewX(-10deg)">Najbližšie</span>
+                  </sc-if>
+                </div>
+                <sc-for list="{{r.matches}}" as="m" hint-placeholder-count="2">
+                  <div style="display: flex; background: #0E0E0E; border: 1px solid #1E1E1E">
+                    <span aria-hidden="true" style="width: 6px; flex: none; background: linear-gradient(180deg, {{m.H.c}} 50%, {{m.A.c}} 50%)"></span>
+                    <div style="flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 12px clamp(8px, 1.4cqi, 16px)">
+                      <div style="flex: 1 1 360px; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px">
+                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; opacity: {{m.hOp}}">
+                          <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: clamp(14px, 1.7cqi, 24px); letter-spacing: 0.02em; text-transform: uppercase">{{m.H.name}}</span>
+                          <img src="{{m.hLogo}}" alt="" style="width: clamp(26px, 3.2cqi, 44px); height: clamp(26px, 3.2cqi, 44px); display: block; flex: none">
+                        </div>
+                        <span style="min-width: clamp(40px, 5cqi, 70px); text-align: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(24px, 2.4cqi, 32px); line-height: 1; color: {{m.centerColor}}">{{m.center}}</span>
+                        <div style="display: flex; align-items: center; gap: 6px; min-width: 0; opacity: {{m.aOp}}">
+                          <img src="{{m.aLogo}}" alt="" style="width: clamp(26px, 3.2cqi, 44px); height: clamp(26px, 3.2cqi, 44px); display: block; flex: none">
+                          <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: clamp(14px, 1.7cqi, 24px); letter-spacing: 0.02em; text-transform: uppercase">{{m.A.name}}</span>
+                        </div>
+                      </div>
+                      <div style="flex: 0 1 230px; min-width: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-left: auto; text-align: right">
+                        <span style="font-weight: 600; font-size: 14px; color: {{m.whenColor}}">{{m.when}}</span>
+                        <sc-if value="{{m.moved}}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size: 12px; color: #9A9A9A">pôvodne <s>{{m.moved}}</s></span>
+                        </sc-if>
+                        <sc-if value="{{m.note}}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size: 12px; color: #BDBDBD">{{m.note}}</span>
+                        </sc-if>
+                        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; color: {{m.tagFg}}; background: {{m.tagBg}}; border: 1px {{m.tagLine}} {{m.tagBd}}">{{m.status}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="tabulka" style="padding-top: 56px">
+        <div style="display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg)">Tabuľka</h2>
+          <svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>
+        </div>
+        <div style="overflow-x: auto">
+          <div style="min-width: 680px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: grid; grid-template-columns: 72px minmax(0, 1fr) 48px 48px 48px 48px 80px 56px 72px; align-items: center; padding: 0 16px 0 0; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">
+              <span></span><span style="padding-left: 16px">Tím</span><span style="text-align: center">Z</span><span style="text-align: center">V</span><span style="text-align: center">R</span><span style="text-align: center">P</span><span style="text-align: center">Skóre</span><span style="text-align: center">+/-</span><span style="text-align: center; color: #FFFFFF">Body</span>
+            </div>
+            <sc-for list="{{table}}" as="s" hint-placeholder-count="4">
+              <div style="display: grid; grid-template-columns: 72px minmax(0, 1fr) 48px 48px 48px 48px 80px 56px 72px; align-items: center; padding: 0 16px 0 0; background: #0E0E0E; border: 1px solid #1E1E1E; font-size: 17px">
+                <span style="align-self: stretch; display: grid; place-items: center; background: {{s.T.c}}; color: {{s.T.ink}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 36px; line-height: 1; clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%); padding-right: 12px">{{s.pos}}</span>
+                <span style="display: flex; align-items: center; gap: 14px; padding: 10px 0 10px 16px; min-width: 0">
+                  <img src="{{s.T.svg}}" alt="" style="width: 46px; height: 46px; display: block; flex: none">
+                  <span style="display: flex; flex-direction: column; line-height: 1; min-width: 0">
+                    <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 28px; text-transform: uppercase">{{s.T.name}}</span>
+                    <span style="font-size: 12px; color: #9A9A9A; margin-top: 3px">{{s.T.pre}}</span>
+                  </span>
+                </span>
+                <span style="text-align: center">{{s.z}}</span>
+                <span style="text-align: center">{{s.v}}</span>
+                <span style="text-align: center">{{s.r}}</span>
+                <span style="text-align: center">{{s.p}}</span>
+                <span style="text-align: center; color: #CFCFCF">{{s.score}}</span>
+                <span style="text-align: center; color: #CFCFCF">{{s.diffTxt}}</span>
+                <span style="text-align: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 34px; line-height: 1">{{s.b}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <p style="margin: 12px 0 0; font-size: 13px; color: #9A9A9A">Výhra 3 b · remíza 1 b · do playoff idú všetky štyri tímy, poradie určí dvojice semifinále.</p>
+      </section>
+
+      <section id="hraci" style="padding-top: 72px">
+        <div style="display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg)">Kanadské bodovanie</h2>
+          <svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>
+          <span style="margin-left: auto; font-size: 13px; color: #9A9A9A">Gól = 1 bod · asistencia = 1 bod</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px">
+          <sc-for list="{{podium}}" as="p" hint-placeholder-count="3">
+            <article style="position: relative; overflow: hidden; background: #0E0E0E; border: 1px solid #1E1E1E; padding: 20px; display: flex; flex-direction: column; gap: 12px; min-height: 280px">
+              <div aria-hidden="true" style="position: absolute; top: 0; right: 0; width: 58%; height: 100%; background: linear-gradient(160deg, {{p.T.c}}, {{p.T.d}}); clip-path: polygon(38% 0, 100% 0, 100% 100%, 0 100%, 22% 52%, 10% 48%)"></div>
+              <div aria-hidden="true" style="position: absolute; top: 0; right: 0; width: 58%; height: 100%; background: repeating-linear-gradient(-62deg, rgba(0,0,0,0.10) 0 2px, rgba(0,0,0,0) 2px 16px); clip-path: polygon(38% 0, 100% 0, 100% 100%, 0 100%, 22% 52%, 10% 48%)"></div>
+              <sc-if value="{{p.ph.has}}" hint-placeholder-val="{{ false }}">
+                <img src="{{p.ph.head}}" alt="{{p.name}}" style="position: absolute; right: 0; bottom: 0; height: 100%; width: auto; max-width: 64%; object-fit: cover; object-position: center top; display: block; filter: drop-shadow(0 10px 18px rgba(0,0,0,0.5))">
+              </sc-if>
+              <sc-if value="{{p.ph.none}}" hint-placeholder-val="{{ true }}">
+                <svg aria-hidden="true" viewBox="0 0 100 120" fill="currentColor" style="position: absolute; right: 5%; bottom: 0; width: 48%; height: auto; color: rgba(255,255,255,0.2)"><circle cx="50" cy="34" r="21"></circle><path d="M8 120c0-28 19-46 42-46s42 18 42 46z"></path></svg>
+                <span style="position: absolute; right: 12px; top: 12px; padding: 2px 8px; background: #050505; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #BDBDBD">Fotka čoskoro</span>
+              </sc-if>
+              <span style="position: relative; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 64px; line-height: 0.8; color: rgba(255,255,255,0); -webkit-text-stroke: 2px #FFFFFF">{{p.pos}}</span>
+              <span style="position: relative; margin-top: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: 54%">
+                <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #BDBDBD"><img src="{{p.T.svg}}" alt="" style="width: 22px; height: 22px">{{p.T.name}}</span>
+                <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 28px; line-height: 1; text-transform: uppercase; text-shadow: 0 2px 10px rgba(0,0,0,0.8)">{{p.name}}</span>
+                <span style="font-size: 13px; color: #BDBDBD">{{p.g}} G · {{p.a}} A · {{p.z}} zápasy</span>
+                <span style="margin-top: 4px; padding: 0 10px; background: #FFFFFF; color: #050505; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 36px; line-height: 1.1; transform: skewX(-10deg)">{{p.b}}<span style="font-size: 16px; margin-left: 4px">B</span></span>
+              </span>
+            </article>
+          </sc-for>
+        </div>
+        <div style="margin-top: 16px; background: #0E0E0E; border: 1px solid #1E1E1E">
+          <div style="display: grid; grid-template-columns: 28px minmax(0, 1fr) 28px 28px 28px 38px; gap: 6px; align-items: center; padding: 10px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A; border-bottom: 1px solid #1E1E1E">
+            <span>#</span><span>Hráč</span><span style="text-align: center">Z</span><span style="text-align: center">G</span><span style="text-align: center">A</span><span style="text-align: center; color: #FFFFFF">B</span>
+          </div>
+          <sc-for list="{{rest}}" as="p" hint-placeholder-count="7">
+            <div style="display: grid; grid-template-columns: 28px minmax(0, 1fr) 28px 28px 28px 38px; gap: 6px; align-items: center; padding: 9px 16px; border-top: 1px solid #171717; font-size: 15px">
+              <span style="color: #9A9A9A; font-weight: 700">{{p.pos}}</span>
+              <span style="display: flex; align-items: center; gap: 10px; min-width: 0">
+                <span style="position: relative; flex: none; width: 32px; height: 32px; overflow: hidden; background: {{p.av.bg}}; clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%)"><sc-if value="{{p.av.has}}" hint-placeholder-val="{{ false }}"><img src="{{p.av.src}}" alt="" style="display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top"></sc-if><sc-if value="{{p.av.none}}" hint-placeholder-val="{{ true }}"><span style="position: absolute; inset: 0; display: grid; place-items: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 14px; color: {{p.av.ink}}">{{p.av.ini}}</span></sc-if></span>
+                <span style="font-weight: 600; min-width: 0">{{p.name}}</span>
+                <img src="{{p.T.svg}}" alt="{{p.T.name}}" style="width: 20px; height: 20px; flex: none; opacity: 0.85">
+              </span>
+              <span style="text-align: center; color: #CFCFCF">{{p.z}}</span>
+              <span style="text-align: center">{{p.g}}</span>
+              <span style="text-align: center">{{p.a}}</span>
+              <span style="text-align: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 24px; line-height: 1">{{p.b}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="playoff" style="padding-top: 72px">
+        <div style="display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg)">Playoff</h2>
+          <svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>
+          <span style="margin-left: auto; font-size: 13px; color: #9A9A9A">1. – 4. a 2. – 3. podľa tabuľky po 6. kole</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 24px 0">
+          <div style="flex: 1 1 340px; min-width: 0; position: relative; padding-right: 36px; display: flex; flex-direction: column; gap: 28px">
+            <div aria-hidden="true" style="position: absolute; right: 8px; top: 25%; bottom: 25%; width: 28px; border: 3px solid #FFFFFF; border-left: 0"></div>
+            <sc-for list="{{semis}}" as="sf" hint-placeholder-count="2">
+              <div style="background: #0E0E0E; border: 1px solid #1E1E1E">
+                <div style="display: flex; justify-content: space-between; gap: 8px; padding: 8px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #BDBDBD; border-bottom: 1px solid #1E1E1E"><span>{{sf.lbl}}</span><span>{{sf.d}}</span></div>
+                <sc-for list="{{sf.sides}}" as="x" hint-placeholder-count="2">
+                  <div style="display: flex; align-items: center; gap: 12px; padding: 0 14px 0 0; border-top: 1px solid #171717">
+                    <span style="align-self: stretch; width: 46px; display: grid; place-items: center; background: {{x.T.c}}; color: {{x.T.ink}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 24px; clip-path: polygon(0 0, 100% 0, 76% 100%, 0 100%); padding-right: 8px">{{x.seed}}</span>
+                    <img src="{{x.T.svg}}" alt="" style="width: 40px; height: 40px; margin: 8px 0">
+                    <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 26px; text-transform: uppercase">{{x.T.name}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex: 1 1 340px; min-width: 0; display: flex; align-items: center; gap: 0">
+            <span aria-hidden="true" style="width: 28px; height: 3px; background: #FFFFFF; flex: none"></span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+              <div style="position: relative; overflow: hidden; background: #FFFFFF; color: #050505; padding: 18px 20px">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px">
+                  <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 44px; line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg)">Finále</span>
+                  <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase">{{finalWhen}}</span>
+                </div>
+                <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px; font-weight: 600">
+                  <span style="display: flex; align-items: center; gap: 10px"><span style="width: 30px; height: 30px; border: 2px dashed #050505"></span>Víťaz semifinále 1</span>
+                  <span style="display: flex; align-items: center; gap: 10px"><span style="width: 30px; height: 30px; border: 2px dashed #050505"></span>Víťaz semifinále 2</span>
+                </div>
+              </div>
+              <div style="background: #0E0E0E; border: 1px solid #1E1E1E; padding: 14px 20px">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px">
+                  <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 26px; text-transform: uppercase">O 3. miesto</span>
+                  <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #BDBDBD">{{bronzeWhen}}</span>
+                </div>
+                <div style="margin-top: 6px; font-size: 15px; color: #BDBDBD">Porazení zo semifinále</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="timy" style="padding-top: 72px">
+        <div style="display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg)">Tímy</h2>
+          <svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>
+          <span style="margin-left: auto; font-size: 13px; color: #9A9A9A">Súpisky po drafte · C = kapitán · fotky pribúdajú postupne</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px">
+          <sc-for list="{{teams}}" as="t" hint-placeholder-count="4">
+            <article style="position: relative; overflow: hidden; background: #0E0E0E; border: 1px solid #1E1E1E; display: flex; flex-direction: column">
+              <div style="position: relative; overflow: hidden; height: 300px; background: #0A0A0A">
+                <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(160deg, {{t.c}}, {{t.d}}); clip-path: polygon(42% 0, 100% 0, 100% 100%, 24% 100%, 36% 54%, 28% 50%)"></div>
+                <div aria-hidden="true" style="position: absolute; inset: 0; background: repeating-linear-gradient(-62deg, rgba(0,0,0,0.10) 0 2px, rgba(0,0,0,0) 2px 16px)"></div>
+                <img src="{{t.svg}}" alt="" style="position: absolute; left: 16px; top: 16px; width: 64px; height: 64px; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.5))">
+                <sc-if value="{{t.capt.has}}" hint-placeholder-val="{{ true }}">
+                  <img src="{{t.capt.full}}" alt="{{t.capt.alt}}" style="position: absolute; right: -4px; bottom: 0; height: 286px; max-width: 76%; object-fit: contain; object-position: right bottom; filter: drop-shadow(0 12px 20px rgba(0,0,0,0.55))">
+                </sc-if>
+                <sc-if value="{{t.capt.none}}" hint-placeholder-val="{{ false }}">
+                  <svg aria-hidden="true" viewBox="0 0 100 120" fill="currentColor" style="position: absolute; right: 8%; bottom: 0; width: 52%; height: auto; color: rgba(255,255,255,0.2)"><circle cx="50" cy="34" r="21"></circle><path d="M8 120c0-28 19-46 42-46s42 18 42 46z"></path></svg>
+                </sc-if>
+                <div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 96px; background: linear-gradient(180deg, rgba(5,5,5,0), rgba(5,5,5,0.8))"></div>
+                <span style="position: absolute; left: 16px; bottom: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: calc(100% - 32px)">
+                  <span style="padding: 1px 8px; background: #050505; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #BDBDBD">{{t.pre}}</span>
+                  <span style="padding: 2px 12px; background: #050505; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 38px; line-height: 1; text-transform: uppercase; transform: skewX(-10deg)">{{t.name}}</span>
+                </span>
+              </div>
+              <div style="padding: 14px 18px 20px; display: flex; flex-direction: column; gap: 12px">
+                <span style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; font-size: 13px; color: #9A9A9A"><span>Kapitán: <strong style="color: #FFFFFF">{{t.capt.name}}</strong></span><span>{{t.count}} hráčov</span></span>
+                <ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; font-size: 14px; color: #E6E6E6">
+                  <sc-for list="{{t.rosterView}}" as="pl" hint-placeholder-count="10">
+                    <li style="display: flex; align-items: center; gap: 7px; min-width: 0">
+                      <span style="position: relative; flex: none; width: 26px; height: 26px; overflow: hidden; background: {{pl.av.bg}}; clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%)"><sc-if value="{{pl.av.has}}" hint-placeholder-val="{{ false }}"><img src="{{pl.av.src}}" alt="" style="display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top"></sc-if><sc-if value="{{pl.av.none}}" hint-placeholder-val="{{ true }}"><span style="position: absolute; inset: 0; display: grid; place-items: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 12px; color: {{pl.av.ink}}">{{pl.av.ini}}</span></sc-if></span>
+                      <span style="min-width: 0; line-height: 1.2">{{pl.name}}</span>
+                      <sc-if value="{{pl.cap}}" hint-placeholder-val="{{ false }}">
+                        <span aria-label="kapitán" style="flex: none; padding: 0 5px; background: #FFFFFF; color: #050505; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 13px; line-height: 1.3">C</span>
+                      </sc-if>
+                    </li>
+                  </sc-for>
+                </ul>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+      </section>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{isPast}}" hint-placeholder-val="{{ false }}">
+    <section id="sampion" aria-label="Šampión sezóny" style="position: relative; overflow: hidden; background: #050505">
+      <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(150deg, {{past.champ.c}} 0%, {{past.champ.d}} 78%); clip-path: polygon(0 0, 64% 0, 52% 46%, 57% 50%, 46% 100%, 0 100%)"></div>
+      <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(150deg, {{past.runner.c}} 0%, {{past.runner.d}} 90%); clip-path: polygon(64% 0, 100% 0, 100% 100%, 46% 100%, 57% 50%, 52% 46%); opacity: 0.35"></div>
+      <div aria-hidden="true" style="position: absolute; inset: 0; background: repeating-linear-gradient(-62deg, rgba(0,0,0,0.10) 0 2px, rgba(0,0,0,0) 2px 16px)"></div>
+      <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,5,5,0) 55%, rgba(5,5,5,0.85) 100%)"></div>
+      <div style="position: relative; max-width: 1280px; margin: 0 auto; padding: 44px clamp(16px, 2cqi, 24px) 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px clamp(16px, 3cqi, 40px)">
+        <img src="{{past.champ.gif}}" alt="{{past.champ.name}}" style="width: clamp(150px, 24cqi, 300px); height: clamp(150px, 24cqi, 300px); flex: none; filter: drop-shadow(0 16px 26px rgba(0,0,0,0.5))">
+        <div style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 12px">
+          <span style="background: #050505; color: #FFFFFF; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 16px; transform: skewX(-10deg)">Šampión · {{past.name}}</span>
+          <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(60px, 11cqi, 150px); line-height: 0.82; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom; color: {{past.champ.heroInk}}; overflow-wrap: anywhere">{{past.champ.name}}</span>
+          <span style="font-size: 15px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: {{past.champ.heroInk}}">{{past.champ.pre}} · víťaz finále</span>
+        </div>
+        <div style="flex: 0 1 340px; min-width: 0; background: #050505; border: 1px solid #2A2A2A">
+          <div style="display: flex; justify-content: space-between; gap: 10px; padding: 9px 14px; border-bottom: 1px solid #1E1E1E; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #BDBDBD"><span>Finále</span><span>{{past.final.d}}</span></div>
+          <sc-for list="{{past.final.sides}}" as="x" hint-placeholder-count="2">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-top: 1px solid #171717; opacity: {{x.op}}">
+              <img src="{{x.logo}}" alt="" style="width: 44px; height: 44px; flex: none">
+              <span style="flex: 1; min-width: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 26px; text-transform: uppercase">{{x.name}}</span>
+              <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 40px; line-height: 1">{{x.score}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: linear-gradient(135deg, #050505 50%, rgba(5,5,5,0) 50%) 0 0 / 28px 14px repeat-x, linear-gradient(225deg, #050505 50%, rgba(5,5,5,0) 50%) 0 0 / 28px 14px repeat-x; transform: rotate(180deg)"></div>
+    </section>
+
+    <main style="max-width: 1280px; margin: 0 auto; padding: 0 clamp(16px, 2cqi, 24px) 72px">
+      <div style="margin-top: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 16px; background: #0E0E0E; border: 1px solid #1E1E1E; font-size: 14px; color: #BDBDBD">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3zM8 7V4h8v3M3 12h18"></path></svg>
+        <span style="flex: 1 1 260px">Archív — toto je skončená sezóna. Výsledky sa už nemenia.</span>
+        <button type="button" onClick="{{goCurrent}}" style="min-height: 40px; padding: 0 18px; background: #FFFFFF; color: #050505; border: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); padding-right: 24px">Prebiehajúca sezóna</button>
+      </div>
+
+      <section id="poradie" style="padding-top: 48px">
+        <div style="display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg)">Konečné poradie</h2>
+          <svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px">
+          <sc-for list="{{past.places}}" as="p" hint-placeholder-count="4">
+            <article style="position: relative; overflow: hidden; background: #0E0E0E; border: {{p.bw}} solid {{p.bd}}; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; min-height: 190px">
+              <div aria-hidden="true" style="position: absolute; top: 0; right: 0; width: 50%; height: 100%; background: linear-gradient(160deg, {{p.T.c}}, {{p.T.d}}); clip-path: polygon(38% 0, 100% 0, 100% 100%, 0 100%, 22% 52%, 10% 48%); opacity: {{p.shardOp}}"></div>
+              <img src="{{p.logo}}" alt="" style="position: absolute; right: 14px; top: 16px; width: 96px; height: 96px">
+              <span style="position: relative; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 70px; line-height: 0.8; color: {{p.numFill}}; -webkit-text-stroke: 2px #FFFFFF">{{p.pos}}.</span>
+              <span style="position: relative; margin-top: auto; display: flex; flex-direction: column; gap: 2px">
+                <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 32px; line-height: 1; text-transform: uppercase">{{p.T.name}}</span>
+                <span style="font-size: 13px; color: #BDBDBD">{{p.note}}</span>
+              </span>
+            </article>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="tabulka" style="padding-top: 64px">
+        <div style="display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg)">Základná časť</h2>
+          <svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>
+          <span style="margin-left: auto; font-size: 13px; color: #9A9A9A">Tabuľka po 6. kole</span>
+        </div>
+        <div style="overflow-x: auto">
+          <div style="min-width: 680px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: grid; grid-template-columns: 72px minmax(0, 1fr) 48px 48px 48px 48px 80px 56px 72px; align-items: center; padding: 0 16px 0 0; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">
+              <span></span><span style="padding-left: 16px">Tím</span><span style="text-align: center">Z</span><span style="text-align: center">V</span><span style="text-align: center">R</span><span style="text-align: center">P</span><span style="text-align: center">Skóre</span><span style="text-align: center">+/-</span><span style="text-align: center; color: #FFFFFF">Body</span>
+            </div>
+            <sc-for list="{{past.table}}" as="s" hint-placeholder-count="4">
+              <div style="display: grid; grid-template-columns: 72px minmax(0, 1fr) 48px 48px 48px 48px 80px 56px 72px; align-items: center; padding: 0 16px 0 0; background: #0E0E0E; border: 1px solid #1E1E1E; font-size: 17px">
+                <span style="align-self: stretch; display: grid; place-items: center; background: {{s.T.c}}; color: {{s.T.ink}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 36px; line-height: 1; clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%); padding-right: 12px">{{s.pos}}</span>
+                <span style="display: flex; align-items: center; gap: 14px; padding: 10px 0 10px 16px; min-width: 0">
+                  <img src="{{s.T.svg}}" alt="" style="width: 46px; height: 46px; display: block; flex: none">
+                  <span style="display: flex; flex-direction: column; line-height: 1; min-width: 0">
+                    <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 28px; text-transform: uppercase">{{s.T.name}}</span>
+                    <span style="font-size: 12px; color: #9A9A9A; margin-top: 3px">{{s.T.pre}}</span>
+                  </span>
+                </span>
+                <span style="text-align: center">{{s.z}}</span>
+                <span style="text-align: center">{{s.v}}</span>
+                <span style="text-align: center">{{s.r}}</span>
+                <span style="text-align: center">{{s.p}}</span>
+                <span style="text-align: center; color: #CFCFCF">{{s.score}}</span>
+                <span style="text-align: center; color: #CFCFCF">{{s.diffTxt}}</span>
+                <span style="text-align: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 34px; line-height: 1">{{s.b}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section id="playoff" style="padding-top: 64px">
+        <div style="display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg)">Playoff</h2>
+          <svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start">
+          <sc-for list="{{past.playoff}}" as="po" hint-placeholder-count="4">
+            <div style="background: {{po.bg}}; color: {{po.fg}}; border: {{po.bw}} solid {{po.bd}}">
+              <button type="button" onClick="{{po.toggle}}" aria-expanded="{{po.expanded}}" style="display: flex; flex-direction: column; width: 100%; padding: 0; background: transparent; border: 0; color: inherit; font: inherit; text-align: inherit; cursor: pointer">
+                <span style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 14px; border-bottom: 1px solid {{po.line}}">
+                  <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 26px; line-height: 1; text-transform: uppercase; transform: skewX(-8deg)">{{po.lbl}}</span>
+                  <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75">{{po.d}}</span>
+                </span>
+                <sc-for list="{{po.sides}}" as="x" hint-placeholder-count="2">
+                  <span style="display: flex; align-items: center; gap: 12px; padding: 0 14px 0 0; border-top: 1px solid {{po.line}}; opacity: {{x.op}}">
+                    <span aria-hidden="true" style="align-self: stretch; width: 18px; background: {{x.c}}; clip-path: polygon(0 0, 100% 0, 50% 100%, 0 100%)"></span>
+                    <img src="{{x.logo}}" alt="" style="width: 40px; height: 40px; margin: 8px 0; flex: none">
+                    <span style="flex: 1; min-width: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 24px; text-transform: uppercase">{{x.name}}</span>
+                    <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 34px; line-height: 1">{{x.score}}</span>
+                  </span>
+                </sc-for>
+                <span style="display: flex; justify-content: flex-end; align-items: center; gap: 6px; padding: 8px 14px; border-top: 1px solid {{po.line}}; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{po.sub}}">{{po.toggleLabel}}<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate({{po.rot}}deg)"><path d="M6 9l6 6 6-6"></path></svg></span>
+              </button>
+              <sc-if value="{{po.isOpen}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 7px; padding: 12px 14px 16px; border-top: 1px solid {{po.line}}">
+                <sc-for list="{{po.goals}}" as="g" hint-placeholder-count="5">
+                  <div style="display: flex; align-items: center; gap: 10px; font-size: 14px">
+                    <span style="flex: none; min-width: 42px; padding: 1px 0; text-align: center; background: {{g.chipBg}}; color: {{g.chipFg}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 18px; line-height: 1.25">{{g.score}}</span>
+                    <img src="{{g.logo}}" alt="{{g.team}}" style="width: 24px; height: 24px; flex: none">
+                    <span style="min-width: 0; line-height: 1.25"><span style="font-weight: 600">{{g.s}}</span> <span style="color: {{po.sub}}">{{g.as}}</span></span>
+                  </div>
+                </sc-for>
+              </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="vysledky" style="padding-top: 64px">
+        <div style="display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 28px">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg)">Všetky výsledky</h2>
+          <svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>
+          <span style="margin-left: auto; font-size: 13px; color: #9A9A9A">Klikni na zápas a uvidíš, kto dal góly</span>
+        </div>
+        <div style="display: flex; flex-direction: column">
+          <sc-for list="{{past.rounds}}" as="r" hint-placeholder-count="3">
+            <div style="display: grid; grid-template-columns: clamp(50px, 10cqi, 132px) minmax(0, 1fr); column-gap: clamp(8px, 2.4cqi, 32px)">
+              <div style="display: flex; flex-direction: column; align-items: center; text-align: center">
+                <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(20px, 4.4cqi, 54px); line-height: 0.9; transform: skewX(-8deg); color: #9A9A9A">{{r.dShort}}</span>
+                <span style="font-size: clamp(9px, 0.9cqi, 12px); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6A6A6A; margin-top: 4px">{{r.day}}</span>
+                <svg aria-hidden="true" viewBox="0 0 20 120" preserveAspectRatio="none" style="flex: 1; width: 20px; min-height: 30px; margin: 10px 0 6px"><polyline points="10,0 3,10 17,20 3,30 17,40 3,50 17,60 3,70 17,80 3,90 17,100 3,110 10,120" fill="none" stroke="#3A3A3A" stroke-width="2" vector-effect="non-scaling-stroke"></polyline></svg>
+              </div>
+              <div style="padding-bottom: 24px; display: flex; flex-direction: column; gap: 10px; min-width: 0">
+                <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: 0.06em; text-transform: uppercase">{{r.title}}</span>
+                <sc-for list="{{r.matches}}" as="m" hint-placeholder-count="2">
+                  <div style="background: #0E0E0E; border: 1px solid {{m.border}}">
+                    <button type="button" onClick="{{m.toggle}}" aria-expanded="{{m.expanded}}" aria-label="{{m.aria}}" style="display: flex; width: 100%; padding: 0; background: transparent; border: 0; color: inherit; font: inherit; text-align: inherit; cursor: pointer">
+                      <span aria-hidden="true" style="width: 6px; flex: none; align-self: stretch; background: linear-gradient(180deg, {{m.H.c}} 50%, {{m.A.c}} 50%)"></span>
+                      <span style="flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 28px; align-items: center; gap: 8px; padding: 10px clamp(8px, 1.4cqi, 16px)">
+                        <span style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; opacity: {{m.hOp}}">
+                          <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: clamp(14px, 1.7cqi, 24px); text-transform: uppercase">{{m.H.name}}</span>
+                          <img src="{{m.H.svg}}" alt="" style="width: clamp(26px, 3.2cqi, 40px); height: clamp(26px, 3.2cqi, 40px); flex: none">
+                        </span>
+                        <span style="min-width: clamp(44px, 5cqi, 70px); text-align: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(24px, 2.4cqi, 32px); line-height: 1">{{m.center}}</span>
+                        <span style="display: flex; align-items: center; gap: 6px; min-width: 0; opacity: {{m.aOp}}">
+                          <img src="{{m.A.svg}}" alt="" style="width: clamp(26px, 3.2cqi, 40px); height: clamp(26px, 3.2cqi, 40px); flex: none">
+                          <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: clamp(14px, 1.7cqi, 24px); text-transform: uppercase">{{m.A.name}}</span>
+                        </span>
+                        <span style="width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid {{m.border}}; color: {{m.toggleColor}}"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate({{m.rot}}deg)"><path d="M6 9l6 6 6-6"></path></svg></span>
+                      </span>
+                    </button>
+                    <sc-if value="{{m.isOpen}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 7px; padding: 12px 14px 16px; border-top: 1px solid #1E1E1E">
+                <sc-for list="{{m.goals}}" as="g" hint-placeholder-count="5">
+                  <div style="display: flex; align-items: center; gap: 10px; font-size: 14px">
+                    <span style="flex: none; min-width: 42px; padding: 1px 0; text-align: center; background: {{g.chipBg}}; color: {{g.chipFg}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 18px; line-height: 1.25">{{g.score}}</span>
+                    <img src="{{g.logo}}" alt="{{g.team}}" style="width: 24px; height: 24px; flex: none">
+                    <span style="min-width: 0; line-height: 1.25"><span style="font-weight: 600">{{g.s}}</span> <span style="color: #9A9A9A">{{g.as}}</span></span>
+                  </div>
+                </sc-for>
+              </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="hraci" style="padding-top: 48px">
+        <div style="display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px">
+          <h2 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg)">Najlepší hráči</h2>
+          <svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>
+          <span style="margin-left: auto; font-size: 13px; color: #9A9A9A">Kanadské bodovanie celej sezóny vrátane playoff</span>
+        </div>
+        <div style="background: #0E0E0E; border: 1px solid #1E1E1E">
+          <div style="display: grid; grid-template-columns: 28px minmax(0, 1fr) 28px 28px 38px; gap: 6px; align-items: center; padding: 10px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A; border-bottom: 1px solid #1E1E1E">
+            <span>#</span><span>Hráč</span><span style="text-align: center">G</span><span style="text-align: center">A</span><span style="text-align: center; color: #FFFFFF">B</span>
+          </div>
+          <sc-for list="{{past.players}}" as="p" hint-placeholder-count="5">
+            <div style="display: grid; grid-template-columns: 28px minmax(0, 1fr) 28px 28px 38px; gap: 6px; align-items: center; padding: 9px 16px; border-top: 1px solid #171717; font-size: 15px">
+              <span style="color: #9A9A9A; font-weight: 700">{{p.pos}}</span>
+              <span style="display: flex; align-items: center; gap: 10px; min-width: 0">
+                <span style="position: relative; flex: none; width: 32px; height: 32px; overflow: hidden; background: {{p.av.bg}}; clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%)"><sc-if value="{{p.av.has}}" hint-placeholder-val="{{ false }}"><img src="{{p.av.src}}" alt="" style="display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top"></sc-if><sc-if value="{{p.av.none}}" hint-placeholder-val="{{ true }}"><span style="position: absolute; inset: 0; display: grid; place-items: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 14px; color: {{p.av.ink}}">{{p.av.ini}}</span></sc-if></span>
+                <span style="font-weight: 600; min-width: 0">{{p.name}}</span>
+                <img src="{{p.T.svg}}" alt="{{p.T.name}}" style="width: 20px; height: 20px; flex: none; opacity: 0.85">
+              </span>
+              <span style="text-align: center">{{p.g}}</span>
+              <span style="text-align: center">{{p.a}}</span>
+              <span style="text-align: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 24px; line-height: 1">{{p.b}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{isFuture}}" hint-placeholder-val="{{ false }}">
+    <section aria-label="Pripravovaná sezóna" style="position: relative; overflow: hidden; background: #050505">
+      <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(150deg, #2A2A2A 0%, #0E0E0E 70%); clip-path: polygon(0 0, 46% 0, 34% 48%, 40% 52%, 26% 100%, 0 100%)"></div>
+      <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(210deg, #2A2A2A 0%, #0E0E0E 70%); clip-path: polygon(70% 0, 100% 0, 100% 100%, 82% 100%, 90% 54%, 84% 50%)"></div>
+      <div aria-hidden="true" style="position: absolute; inset: 0; background: repeating-linear-gradient(-62deg, rgba(255,255,255,0.03) 0 2px, rgba(0,0,0,0) 2px 16px)"></div>
+      <div style="position: relative; max-width: 1080px; margin: 0 auto; padding: 56px clamp(16px, 2cqi, 24px) 88px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px">
+        <span style="display: block; padding: 6px; background: #FFFFFF; clip-path: polygon(9% 0, 100% 0, 91% 100%, 0 100%); filter: drop-shadow(0 16px 26px rgba(0,0,0,0.6))">
+          <img src="../assets/gif/ful.gif" alt="FULka" style="display: block; width: clamp(170px, 24cqi, 250px); height: clamp(170px, 24cqi, 250px); clip-path: polygon(9% 0, 100% 0, 91% 100%, 0 100%)">
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px; border: 1px dashed #FFFFFF; transform: skewX(-10deg); font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase">Pripravujeme</span>
+        <h1 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(52px, 10cqi, 130px); line-height: 0.84; text-transform: uppercase; transform: skewX(-8deg)">{{season.name}}</h1>
+        <p style="margin: 0; max-width: 560px; font-size: 17px; color: #BDBDBD">Sezóna ešte nezačala. Keď bude draft a rozpis, nájdeš tu výsledky, tabuľku aj playoff.</p>
+        <div style="width: 100%; margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+          <sc-for list="{{futureSteps}}" as="st" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: #0E0E0E; border: 1px solid #2A2A2A; text-align: left">
+              <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 52px; line-height: 0.8; color: rgba(255,255,255,0); -webkit-text-stroke: 2px #FFFFFF">{{st.n}}</span>
+              <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+                <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 24px; line-height: 1; text-transform: uppercase">{{st.label}}</span>
+                <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">čoskoro</span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+        <button type="button" onClick="{{goCurrent}}" style="margin-top: 14px; min-height: 56px; padding: 0 40px 0 26px; background: #FFFFFF; color: #050505; border: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 24px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%)">Pozrieť prebiehajúcu sezónu</button>
+      </div>
+      <div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: linear-gradient(135deg, #050505 50%, rgba(5,5,5,0) 50%) 0 0 / 28px 14px repeat-x, linear-gradient(225deg, #050505 50%, rgba(5,5,5,0) 50%) 0 0 / 28px 14px repeat-x; transform: rotate(180deg)"></div>
+    </section>
+  </sc-if>
+
+  <footer style="position: relative; background: #111111">
+    <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: -14px; height: 14px; background: linear-gradient(135deg, #111111 50%, rgba(17,17,17,0) 50%) 0 0 / 28px 14px repeat-x, linear-gradient(225deg, #111111 50%, rgba(17,17,17,0) 50%) 0 0 / 28px 14px repeat-x; transform: rotate(180deg)"></div>
+    <div style="max-width: 1280px; margin: 0 auto; padding: 28px clamp(16px, 2cqi, 24px); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; font-size: 13px; color: #BDBDBD">
+      <a href="#top" onClick="{{goHome}}" aria-label="Späť hore" style="display: block; line-height: 0"><img src="../assets/logos/ful-mark-white.png" alt="" style="width: 36px; height: 36px"></a>
+      <span style="font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase">FULka · Florbalová Upece Liga · {{season.name}}</span>
+      <a href="Admin.dc.html" style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: #FFFFFF; font-weight: 700; text-decoration: none">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="1"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+        Admin
+      </a>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"season":{"editor":"enum","options":["j26","z26","j27"],"default":"z26"},"menuOpen":{"editor":"boolean","default":false},"pastOpen":{"editor":null},"bannerCount":{"editor":"enum","options":["1","2","3","4"],"default":"2","section":"Banner"},"$preview":{"width":1440,"height":5700}}'>
+class Component extends DCLogic {
+  teams() {
+    return {
+      gia: { id: 'gia', abbr: 'GIA', pre: 'Veľká sála', name: 'Giants', c: '#D9A252', d: '#6E4518', ink: '#111111', svg: '../assets/logos/giants.svg', gif: '../assets/gif/giants.gif',
+        roster: ['Jakub Štefaňák', 'Jozef Urban', 'Marek Horváth', 'Gracjan Motýľ', 'František Müller', 'Šimon Kuba', 'Miroslava Kasáková', 'Šimon Sochuľák', 'Matúš Jaďuďa', 'Kristína Mikundová'] },
+      bre: { id: 'bre', abbr: 'BRE', pre: 'Libresso', name: 'Brewers', c: '#D2AA79', d: '#3F2010', ink: '#3F2010', svg: '../assets/logos/brewers.svg', gif: '../assets/gif/brewers.gif',
+        roster: ['Andrej Bartoš', 'Samuel Kohút', 'Tomáš Slavkov', 'Michal Slavkov', 'Tomáš Majerčík', 'Marek Škrinár', 'Matej Dráb', 'Dominika Filippová', 'Matúš Nazarej', 'Patrik Mucha'] },
+      ran: { id: 'ran', abbr: 'RAN', pre: 'Recepcia', name: 'Rangers', c: '#41CFDD', d: '#024F57', ink: '#111111', svg: '../assets/logos/rangers.svg', gif: '../assets/gif/rangers.gif',
+        roster: ['Pavol Kliment', 'Vojtech Babinský', 'Marek Štofko', 'Adam Kačmár', 'Veronika Mikulová', 'Damián Štyrák', 'Dávid Bunca', 'Ema Boleková', 'Miroslav Klein', 'Štefan Drobňák'] },
+      sai: { id: 'sai', abbr: 'SAI', pre: 'Kaplnka', name: 'Saints', c: '#E0262F', d: '#5E0710', ink: '#FFFFFF', svg: '../assets/logos/saints.svg', gif: '../assets/gif/saints.gif',
+        roster: ['Damián Štieber', 'Adam Hrabovský', 'Martin Hlúbik', 'Ján Okál', 'Oliver Paradeiser', 'Tomáš Adamko', 'Martin Kostolník', 'Karolína Kaduková', 'Milan Tunys'] }
+    };
+  }
+
+  goalData() {
+    return {
+      k1a: [['h', 'Jakub Štefaňák', 'Šimon Kuba'], ['a', 'Andrej Bartoš', 'Marek Škrinár'], ['h', 'Miroslava Kasáková', 'Jozef Urban'], ['h', 'Jozef Urban', 'Jakub Štefaňák'], ['a', 'Matej Dráb', 'Marek Škrinár'], ['h', 'Šimon Kuba', 'Miroslava Kasáková']],
+      k1b: [['h', 'Pavol Kliment', 'Vojtech Babinský'], ['a', 'Damián Štieber', 'Karolína Kaduková'], ['h', 'Ema Boleková', 'Damián Štyrák'], ['h', 'Damián Štyrák', 'Pavol Kliment'], ['a', 'Tomáš Adamko', 'Damián Štieber'], ['h', 'Dávid Bunca', 'Pavol Kliment'], ['h', 'Pavol Kliment', 'Ema Boleková'], ['a', 'Damián Štieber', 'Tomáš Adamko'], ['h', 'Ema Boleková', 'Vojtech Babinský']],
+      k2a: [['a', 'Pavol Kliment', 'Damián Štyrák'], ['h', 'Šimon Kuba', 'Jozef Urban'], ['a', 'Damián Štyrák', 'Vojtech Babinský'], ['h', 'Jakub Štefaňák', 'Šimon Kuba'], ['a', 'Vojtech Babinský', 'Pavol Kliment']],
+      k2b: [['h', 'Andrej Bartoš', 'Marek Škrinár'], ['a', 'Martin Hlúbik', 'Tomáš Adamko'], ['h', 'Marek Škrinár', 'Matej Dráb'], ['h', 'Andrej Bartoš', 'Dominika Filippová'], ['a', 'Damián Štieber', ''], ['h', 'Dominika Filippová', 'Marek Škrinár'], ['a', 'Karolína Kaduková', 'Damián Štieber'], ['h', 'Patrik Mucha', 'Matej Dráb'], ['a', 'Tomáš Adamko', 'Karolína Kaduková'], ['h', 'Marek Škrinár', 'Andrej Bartoš']]
+    };
+  }
+
+  matches() {
+    const G = this.goalData();
+    const m = (id, stage, k, h, a, date, time, extra) => Object.assign({ id, stage, k, h, a, date, time, tbd: false, status: 'plan', goals: [], moved: false, orig: null, note: '' }, extra || {});
+    const done = (id) => ({ status: 'done', goals: G[id].map((g) => ({ t: g[0], s: g[1], as: g[2] })) });
+    return [
+      m('k1a', 'R', 1, 'gia', 'bre', '2026-10-06', '20:15', done('k1a')),
+      m('k1b', 'R', 1, 'ran', 'sai', '2026-10-06', '21:00', done('k1b')),
+      m('k2a', 'R', 2, 'gia', 'ran', '2026-10-13', '20:15', done('k2a')),
+      m('k2b', 'R', 2, 'bre', 'sai', '2026-10-13', '21:00', done('k2b')),
+      m('k3a', 'R', 3, 'gia', 'sai', '2026-10-20', '20:15'),
+      m('k3b', 'R', 3, 'bre', 'ran', '2026-10-20', '21:00'),
+      m('k4a', 'R', 4, 'bre', 'gia', '2026-10-27', '20:15'),
+      m('k4b', 'R', 4, 'sai', 'ran', '2026-10-29', '19:00', { moved: true, orig: '2026-10-27|21:00', note: 'Hrá sa v malej telocvični' }),
+      m('k5a', 'R', 5, 'ran', 'gia', '2026-11-03', '20:15'),
+      m('k5b', 'R', 5, 'sai', 'bre', '2026-11-03', '21:00'),
+      m('k6a', 'R', 6, 'sai', 'gia', '2026-11-10', '20:15'),
+      m('k6b', 'R', 6, 'ran', 'bre', null, null, { tbd: true, orig: '2026-11-10|21:00' }),
+      m('sf1', 'SF1', null, null, null, '2026-11-24', '20:15'),
+      m('sf2', 'SF2', null, null, null, '2026-11-24', '21:00'),
+      m('b3', 'B3', null, null, null, '2026-12-01', '20:15'),
+      m('fin', 'F', null, null, null, '2026-12-01', '21:00')
+    ];
+  }
+
+  // ---------- dátumy ----------
+  parts(iso) { const p = iso.split('-').map(Number); return { y: p[0], m0: p[1] - 1, d: p[2] }; }
+  dow(iso) { const p = this.parts(iso); return new Date(p.y, p.m0, p.d).getDay(); }
+  shortDate(iso) { const p = this.parts(iso); return ['Ne', 'Po', 'Ut', 'St', 'Št', 'Pi', 'So'][this.dow(iso)] + ' ' + p.d + '. ' + (p.m0 + 1) + '.'; }
+  dayName(iso) { return ['Nedeľa', 'Pondelok', 'Utorok', 'Streda', 'Štvrtok', 'Piatok', 'Sobota'][this.dow(iso)]; }
+  dShort(iso) { const p = this.parts(iso); return p.d + '.' + (p.m0 + 1) + '.'; }
+  slot(date, time) { return date ? this.shortDate(date) + ' · ' + (time || '') : ''; }
+  origLabel(orig) { if (!orig) return ''; const s = orig.split('|'); return this.slot(s[0], s[1]); }
+
+  // ---------- liga ----------
+  score(m) { const g = m.goals || []; return { h: g.filter((x) => x.t === 'h').length, a: g.filter((x) => x.t === 'a').length }; }
+
+  statusTag(m, isNext) {
+    if (m.status === 'done') return { status: 'Koniec', tagFg: '#FFFFFF', tagBg: 'transparent', tagBd: '#3A3A3A', tagLine: 'solid' };
+    if (m.tbd) return { status: 'Bez termínu', tagFg: '#FFFFFF', tagBg: 'transparent', tagBd: '#FFFFFF', tagLine: 'dashed' };
+    if (m.moved) return { status: 'Presunutý', tagFg: '#050505', tagBg: '#FFB020', tagBd: '#FFB020', tagLine: 'solid' };
+    if (isNext) return { status: 'Najbližší', tagFg: '#050505', tagBg: '#FFFFFF', tagBd: '#FFFFFF', tagLine: 'solid' };
+    return { status: 'Naplánovaný', tagFg: '#BDBDBD', tagBg: 'transparent', tagBd: '#3A3A3A', tagLine: 'solid' };
+  }
+
+  goalTimeline(m, T) {
+    let h = 0, a = 0;
+    return m.goals.map((g) => {
+      if (g.t === 'h') h++; else a++;
+      const team = T[g.t === 'h' ? m.h : m.a];
+      return { score: h + ':' + a, logo: team.svg, team: team.name, chipBg: team.c, chipFg: team.ink, s: g.s || 'Neznámy hráč', as: g.as ? '(' + g.as + ')' : '' };
+    });
+  }
+
+  decorate(m, T, open, isNext) {
+    const done = m.status === 'done';
+    const sc = this.score(m);
+    const hw = done && sc.h > sc.a;
+    const aw = done && sc.a > sc.h;
+    const isOpen = done && open === m.id;
+    return Object.assign({}, m, this.statusTag(m, isNext), {
+      done, hs: sc.h, as: sc.a, H: T[m.h], A: T[m.a], W: hw ? T[m.h] : T[m.a], isOpen,
+      dLabel: m.date ? this.shortDate(m.date) : '',
+      expanded: isOpen ? 'true' : 'false', rot: isOpen ? '180' : '0',
+      border: isOpen ? '#FFFFFF' : '#1E1E1E',
+      toggleLabel: isOpen ? 'Skryť góly' : 'Góly', toggleColor: isOpen ? '#FFFFFF' : '#BDBDBD',
+      toggle: () => this.setState({ open: isOpen ? '' : m.id }),
+      goals: done ? this.goalTimeline(m, T) : [], rawGoals: m.goals,
+      hLogo: hw ? T[m.h].gif : T[m.h].svg,
+      aLogo: aw ? T[m.a].gif : T[m.a].svg,
+      hOp: done && !hw ? '0.4' : '1',
+      aOp: done && !aw ? '0.4' : '1',
+      hInk: done && !hw ? '#8A8A8A' : '#FFFFFF',
+      aInk: done && !aw ? '#8A8A8A' : '#FFFFFF',
+      hScore: hw ? '#FFFFFF' : '#7A7A7A',
+      aScore: aw ? '#FFFFFF' : '#7A7A7A',
+      shard: hw ? 'polygon(0 0, 50% 0, 30% 100%, 0 100%)' : 'polygon(70% 0, 100% 0, 100% 100%, 50% 100%)',
+      center: done ? sc.h + ':' + sc.a : (m.tbd ? '?' : 'vs'),
+      centerColor: done ? '#FFFFFF' : '#6A6A6A',
+      when: m.tbd ? 'Termín sa hľadá' : this.slot(m.date, m.time),
+      whenColor: m.moved || m.tbd ? '#FFB020' : '#FFFFFF',
+      moved: m.moved || m.tbd ? this.origLabel(m.orig) : ''
+    });
+  }
+
+  standings(M, T) {
+    const st = {};
+    Object.keys(T).forEach((id) => { st[id] = { id, z: 0, v: 0, r: 0, p: 0, gf: 0, ga: 0 }; });
+    M.filter((m) => m.done).forEach((m) => {
+      const h = st[m.h], a = st[m.a];
+      h.z++; a.z++; h.gf += m.hs; h.ga += m.as; a.gf += m.as; a.ga += m.hs;
+      if (m.hs > m.as) { h.v++; a.p++; } else if (m.hs < m.as) { a.v++; h.p++; } else { h.r++; a.r++; }
+    });
+    return Object.keys(st).map((id) => Object.assign({}, st[id], { b: st[id].v * 3 + st[id].r, diff: st[id].gf - st[id].ga }))
+      .sort((x, y) => y.b - x.b || y.diff - x.diff || y.gf - x.gf)
+      .map((s, i) => Object.assign({}, s, { pos: i + 1, T: T[s.id], score: s.gf + ':' + s.ga, diffTxt: (s.diff > 0 ? '+' : '') + s.diff }));
+  }
+
+  scorers(M, T, table) {
+    const teamOf = {};
+    Object.keys(T).forEach((id) => T[id].roster.forEach((n) => { teamOf[n] = id; }));
+    const played = {};
+    table.forEach((s) => { played[s.id] = s.z; });
+    const p = {};
+    const add = (name, key) => {
+      if (!name || !teamOf[name]) return;
+      if (!p[name]) p[name] = { name, T: T[teamOf[name]], z: played[teamOf[name]], g: 0, a: 0 };
+      p[name][key]++;
+    };
+    M.filter((m) => m.done).forEach((m) => m.rawGoals.forEach((g) => { add(g.s, 'g'); add(g.as, 'a'); }));
+    return Object.keys(p).map((n) => Object.assign({}, p[n], { b: p[n].g + p[n].a }))
+      .sort((x, y) => y.b - x.b || y.g - x.g || x.name.localeCompare(y.name))
+      .slice(0, 10).map((x, i) => Object.assign({}, x, { pos: i + 1 }));
+  }
+
+  rounds(M) {
+    const ks = Array.from(new Set(M.filter((m) => m.stage === 'R').map((m) => m.k))).sort((a, b) => a - b);
+    const nextK = (M.find((m) => m.isNextMatch) || {}).k;
+    return ks.map((k) => {
+      const ms = M.filter((m) => m.stage === 'R' && m.k === k);
+      const ref = ms.find((m) => m.date && !m.moved) || ms.find((m) => m.date) || ms[0];
+      const iso = ref.date || (ref.orig ? ref.orig.split('|')[0] : null);
+      const past = nextK != null && k < nextK;
+      return {
+        k, matches: ms, isNext: k === nextK,
+        dShort: iso ? this.dShort(iso) : '?', day: iso ? this.dayName(iso) : '',
+        dateColor: past ? '#6A6A6A' : '#FFFFFF', rail: past ? '#2E2E2E' : '#FFFFFF'
+      };
+    });
+  }
+
+  bannerVals(ups, T) {
+    const n = ups.length;
+    const sameDay = ups.every((m) => m.date === ups[0].date);
+    const ks = Array.from(new Set(ups.map((m) => m.k)));
+    const size = {
+      2: { minCol: '420px', logo: 'clamp(84px, 10cqi, 150px)', nameSize: 'clamp(20px, 2.6cqi, 34px)', timeSize: 'clamp(40px, 5cqi, 68px)' },
+      3: { minCol: '340px', logo: 'clamp(72px, 7.5cqi, 112px)', nameSize: 'clamp(18px, 2cqi, 26px)', timeSize: 'clamp(34px, 3.6cqi, 50px)' },
+      4: { minCol: '270px', logo: 'clamp(64px, 6cqi, 92px)', nameSize: 'clamp(16px, 1.7cqi, 22px)', timeSize: 'clamp(30px, 3cqi, 42px)' }
+    }[Math.min(4, Math.max(2, n))];
+    return Object.assign({}, size, {
+      sameDay,
+      kicker: 'Najbližšie zápasy · ' + (ks.length === 1 ? 'Kolo ' + ks[0] : 'Kolá ' + ks.join(', ')),
+      dayName: n ? this.dayName(ups[0].date) : '', dShort: n ? this.dShort(ups[0].date) : '',
+      cards: ups.map((m, i) => ({
+        H: T[m.h], A: T[m.a], time: m.time,
+        kicker: sameDay ? (i + 1) + '. zápas' : this.shortDate(m.date),
+        sub: 'Kolo ' + m.k,
+        note: [m.moved ? 'Presunutý · pôvodne ' + this.origLabel(m.orig) : '', m.note || ''].filter(Boolean).join(' · '),
+        bd: i === 0 ? '#FFFFFF' : '#1E1E1E'
+      }))
+    });
+  }
+
+  // ---------- sezóny ----------
+  seasonList() {
+    return [
+      { id: 'j26', name: 'Jarná sezóna 2026', state: 'done', blurb: 'Skončená · šampión Libresso Brewers', champ: 'bre' },
+      { id: 'z26', name: 'Zimná sezóna 2026', state: 'live', blurb: 'Prebieha · odohrané 2 kolá zo 6' },
+      { id: 'j27', name: 'Jarná sezóna 2027', state: 'soon', blurb: 'Pripravujeme · draft a termíny čoskoro' }
+    ];
+  }
+
+  stateStyle(state) {
+    if (state === 'live') return { status: 'Prebieha', chipBg: '#FFFFFF', chipFg: '#050505', chipBd: '#FFFFFF', chipLine: 'solid', dot: '#3DDC84', dotBd: '#3DDC84' };
+    if (state === 'done') return { status: 'Skončená', chipBg: 'transparent', chipFg: '#BDBDBD', chipBd: '#5A5A5A', chipLine: 'solid', dot: '#9A9A9A', dotBd: '#9A9A9A' };
+    return { status: 'Pripravujeme', chipBg: 'transparent', chipFg: '#FFFFFF', chipBd: '#FFFFFF', chipLine: 'dashed', dot: 'transparent', dotBd: '#FFFFFF' };
+  }
+
+  fakeGoals(id, roH, roA, hs, as) {
+    let seed = id.split('').reduce((x, c) => (x * 31 + c.charCodeAt(0)) >>> 0, 7);
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const order = [];
+    for (let i = 0; i < hs; i++) order.push('h');
+    for (let i = 0; i < as; i++) order.push('a');
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const x = order[i]; order[i] = order[j]; order[j] = x; }
+    return order.map((t) => {
+      const roster = t === 'h' ? roH : roA;
+      const s = roster[Math.floor(rnd() * Math.min(7, roster.length))];
+      let a2 = roster[Math.floor(rnd() * roster.length)];
+      if (a2 === s || rnd() < 0.3) a2 = '';
+      return { t, s, as: a2 };
+    });
+  }
+
+  pastMatches(T) {
+    const m = (id, stage, k, h, a, date, time, hs, as) => ({ id, stage, k, h, a, date, time, tbd: false, status: 'done', goals: this.fakeGoals(id, T[h].roster, T[a].roster, hs, as), moved: false, orig: null, note: '' });
+    return [
+      m('p1a', 'R', 1, 'gia', 'bre', '2026-03-03', '20:15', 3, 5), m('p1b', 'R', 1, 'ran', 'sai', '2026-03-03', '21:00', 4, 2),
+      m('p2a', 'R', 2, 'gia', 'ran', '2026-03-10', '20:15', 4, 1), m('p2b', 'R', 2, 'bre', 'sai', '2026-03-10', '21:00', 6, 2),
+      m('p3a', 'R', 3, 'gia', 'sai', '2026-03-17', '20:15', 3, 2), m('p3b', 'R', 3, 'bre', 'ran', '2026-03-17', '21:00', 2, 4),
+      m('p4a', 'R', 4, 'bre', 'gia', '2026-03-24', '20:15', 5, 3), m('p4b', 'R', 4, 'sai', 'ran', '2026-03-24', '21:00', 1, 3),
+      m('p5a', 'R', 5, 'ran', 'gia', '2026-03-31', '20:15', 2, 5), m('p5b', 'R', 5, 'sai', 'bre', '2026-03-31', '21:00', 4, 6),
+      m('p6a', 'R', 6, 'sai', 'gia', '2026-04-07', '20:15', 2, 1), m('p6b', 'R', 6, 'ran', 'bre', '2026-04-07', '21:00', 3, 4),
+      m('psf1', 'SF1', null, 'bre', 'sai', '2026-04-14', '20:15', 4, 3), m('psf2', 'SF2', null, 'gia', 'ran', '2026-04-14', '21:00', 2, 3),
+      m('pb3', 'B3', null, 'sai', 'gia', '2026-04-21', '20:15', 3, 5), m('pfin', 'F', null, 'bre', 'ran', '2026-04-21', '21:00', 4, 2)
+    ];
+  }
+
+  pastView(T) {
+    const st = this.state || {};
+    const open = st.open !== undefined ? st.open : (this.props.pastOpen || '');
+    const all = this.pastMatches(T).map((m) => this.decorate(m, T, open, false));
+    const reg = all.filter((m) => m.stage === 'R');
+    const table = this.standings(reg, T);
+    const win = (m) => (m.hs > m.as ? m.h : m.a);
+    const lose = (m) => (m.hs > m.as ? m.a : m.h);
+    const by = (st) => all.find((m) => m.stage === st);
+    const fin = by('F'), b3 = by('B3');
+    const places = [
+      { pos: 1, id: win(fin), note: 'Víťaz finále · ' + fin.hs + ':' + fin.as },
+      { pos: 2, id: lose(fin), note: 'Finalista' },
+      { pos: 3, id: win(b3), note: 'Vyhral zápas o 3. miesto' },
+      { pos: 4, id: lose(b3), note: '4. miesto' }
+    ].map((p) => ({
+      pos: p.pos, T: T[p.id], note: p.note, logo: p.pos === 1 ? T[p.id].gif : T[p.id].svg,
+      bd: p.pos === 1 ? '#FFFFFF' : '#1E1E1E', bw: p.pos === 1 ? '2px' : '1px',
+      numFill: p.pos === 1 ? '#FFFFFF' : 'rgba(255,255,255,0)', shardOp: p.pos === 1 ? '1' : '0.75'
+    }));
+    const playoff = [['SF1', 'Semifinále 1'], ['SF2', 'Semifinále 2'], ['B3', 'O 3. miesto'], ['F', 'Finále']].map((x) => {
+      const m = by(x[0]), isF = x[0] === 'F';
+      return {
+        lbl: x[1], d: this.shortDate(m.date),
+        bg: isF ? '#FFFFFF' : '#0E0E0E', fg: isF ? '#050505' : '#FFFFFF', bd: isF || m.isOpen ? '#FFFFFF' : '#1E1E1E', bw: '1px', line: isF ? '#E6E6E6' : '#171717', sub: isF ? '#5A5A5A' : '#9A9A9A',
+        toggle: m.toggle, isOpen: m.isOpen, expanded: m.expanded, rot: m.rot, goals: m.goals, toggleLabel: m.isOpen ? 'Skryť góly' : 'Kto dal góly',
+        sides: [[m.h, m.hs], [m.a, m.as]].map((s) => {
+          const w = s[0] === win(m);
+          return { c: T[s[0]].c, logo: w ? T[s[0]].gif : T[s[0]].svg, name: T[s[0]].name, score: s[1], op: w ? '1' : '0.45' };
+        })
+      };
+    });
+    const rounds = [1, 2, 3, 4, 5, 6].map((k) => {
+      const ms = reg.filter((m) => m.k === k);
+      return { title: 'Kolo ' + k, dShort: this.dShort(ms[0].date), day: this.dayName(ms[0].date), matches: ms.map((m) => Object.assign({}, m, { aria: m.H.name + ' ' + m.center + ' ' + m.A.name + ' — ' + (m.isOpen ? 'skryť góly' : 'ukázať góly') })) };
+    });
+    const champ = T[win(fin)], runner = T[lose(fin)];
+    const allPlayers = this.scorers(all, T, table).slice(0, 5);
+    return {
+      name: 'Jarná sezóna 2026',
+      champ: Object.assign({}, champ, { heroInk: '#FFFFFF' }), runner,
+      final: {
+        d: this.shortDate(fin.date),
+        sides: [[fin.h, fin.hs], [fin.a, fin.as]].map((s) => ({ logo: s[0] === win(fin) ? T[s[0]].gif : T[s[0]].svg, name: T[s[0]].name, score: s[1], op: s[0] === win(fin) ? '1' : '0.5' }))
+      },
+      places, table, playoff, rounds, players: allPlayers.map((p) => Object.assign({}, p, { av: this.avatar(p.name, p.T) }))
+    };
+  }
+
+  seasonVals(T) {
+    const st = this.state || {};
+    const id = st.season || this.props.season || 'z26';
+    const menuOpen = st.menuOpen !== undefined ? st.menuOpen : (this.props.menuOpen === true || this.props.menuOpen === 'true');
+    const list = this.seasonList();
+    const cur = list.find((s) => s.id === id) || list[1];
+    const nav = {
+      live: [['#vysledky', 'Výsledky'], ['#rozpis', 'Rozpis'], ['#tabulka', 'Tabuľka'], ['#hraci', 'Hráči'], ['#playoff', 'Playoff'], ['#timy', 'Tímy']],
+      done: [['#sampion', 'Šampión'], ['#poradie', 'Poradie'], ['#tabulka', 'Tabuľka'], ['#playoff', 'Playoff'], ['#vysledky', 'Výsledky'], ['#hraci', 'Hráči']],
+      soon: []
+    }[cur.state];
+    const shard = { live: 'linear-gradient(160deg, #FFFFFF, #6A6A6A)', done: 'linear-gradient(160deg, #D2AA79, #3F2010)', soon: 'repeating-linear-gradient(115deg, #2E2E2E 0 6px, #141414 6px 12px)' };
+    return {
+      season: Object.assign({}, cur, this.stateStyle(cur.state)),
+      seasonBtnBg: menuOpen ? '#FFFFFF' : 'transparent', seasonBtnFg: menuOpen ? '#050505' : '#FFFFFF',
+      navSeasonBg: menuOpen ? '#FFFFFF' : 'transparent', navSeasonFg: menuOpen ? '#050505' : '#FFFFFF',
+      seasons: list.map((s) => Object.assign({}, s, this.stateStyle(s.state), {
+        pressed: s.id === cur.id ? 'true' : 'false',
+        bd: s.id === cur.id ? '#FFFFFF' : '#2A2A2A',
+        shard: shard[s.state],
+        hasLogo: s.state === 'done', logo: s.champ ? T[s.champ].svg : '',
+        pick: () => this.setState({ season: s.id, menuOpen: false })
+      })),
+      navItems: nav.map((n, i) => ({ href: n[0], label: n[1], fg: i === 0 ? '#FFFFFF' : '#BDBDBD' })),
+      menuOpen, menuExpanded: menuOpen ? 'true' : 'false', menuRot: menuOpen ? '180' : '0',
+      toggleMenu: () => this.setState({ menuOpen: !menuOpen }),
+      isCurrent: cur.state === 'live', isPast: cur.state === 'done', isFuture: cur.state === 'soon',
+      past: cur.state === 'done' ? this.pastView(T) : { champ: {}, runner: {}, final: { sides: [] }, places: [], table: [], playoff: [], rounds: [], players: [] },
+      futureSteps: [{ n: '1', label: 'Prihlasovanie' }, { n: '2', label: 'Draft tímov' }, { n: '3', label: 'Prvý zápas' }],
+      goCurrent: () => this.setState({ season: 'z26', menuOpen: false }),
+      goHome: () => this.setState({ season: 'z26', menuOpen: false, open: 'k2b' })
+    };
+  }
+
+  // ---------- fotky hráčov ----------
+  photos() {
+    return {
+      'Jakub Štefaňák': { full: '../photos/gia_full.webp', face: '../photos/gia_face.webp', head: '../photos/gia_head.webp' },
+      'Andrej Bartoš': { full: '../photos/bre_full.webp', face: '../photos/bre_face.webp', head: '../photos/bre_head.webp' },
+      'Pavol Kliment': { full: '../photos/ran_full.webp', face: '../photos/ran_face.webp', head: '../photos/ran_head.webp' },
+      'Damián Štieber': { full: '../photos/sai_full.webp', face: '../photos/sai_face.webp', head: '../photos/sai_head.webp' }
+    };
+  }
+  initials(n) { return n.split(' ').filter(Boolean).map((x) => x[0]).join('').slice(0, 2).toUpperCase(); }
+  avatar(name, team) {
+    const ph = this.photos()[name];
+    return { has: !!ph, none: !ph, src: ph ? ph.face : '', ini: this.initials(name), bg: team ? team.c : '#333333', ink: team ? team.ink : '#FFFFFF' };
+  }
+  photoOf(name) {
+    const ph = this.photos()[name];
+    return { name, has: !!ph, none: !ph, full: ph ? ph.full : '', head: ph ? ph.head : '' };
+  }
+
+  renderVals() {
+    const T = this.teams();
+    const open = this.state && this.state.open !== undefined ? this.state.open : 'k2b';
+    const raw = this.matches();
+    const upcoming = raw.filter((m) => m.stage === 'R' && m.status !== 'done' && m.date && !m.tbd)
+      .sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time));
+    const nextId = upcoming.length ? upcoming[0].id : null;
+    const count = Math.max(1, Math.min(4, Number(this.props.bannerCount ?? 2) || 2));
+    const ups = upcoming.slice(0, count);
+    const M = raw.filter((m) => m.stage === 'R').map((m) => Object.assign(this.decorate(m, T, open, m.id === nextId), { isNextMatch: m.id === nextId }));
+    const reg = M;
+    const table = this.standings(reg, T);
+    const players = this.scorers(reg, T, table);
+    const nx = M.find((m) => m.isNextMatch) || reg[0];
+    const po = (st) => raw.find((m) => m.stage === st);
+    return Object.assign({
+      heroSingle: ups.length < 2, heroMulti: ups.length >= 2,
+      banner: ups.length >= 2 ? this.bannerVals(ups, T) : { cards: [] },
+      goHome: () => this.setState({ open: 'k2b' }),
+      next: { k: nx.k, H: nx.H, A: nx.A, dayName: nx.date ? this.dayName(nx.date) : '', dShort: nx.date ? this.dShort(nx.date) : '?', time: nx.time || '' },
+      results: reg.filter((m) => m.done).reverse(),
+      rounds: this.rounds(M),
+      table,
+      podium: players.slice(0, 3).map((p) => Object.assign({}, p, { ph: this.photoOf(p.name) })),
+      rest: players.slice(3).map((p) => Object.assign({}, p, { av: this.avatar(p.name, p.T) })),
+      semis: [
+        { lbl: 'Semifinále 1', d: this.slot(po('SF1').date, po('SF1').time), sides: [{ seed: 1, T: table[0].T }, { seed: 4, T: table[3].T }] },
+        { lbl: 'Semifinále 2', d: this.slot(po('SF2').date, po('SF2').time), sides: [{ seed: 2, T: table[1].T }, { seed: 3, T: table[2].T }] }
+      ],
+      finalWhen: this.slot(po('F').date, po('F').time),
+      bronzeWhen: this.slot(po('B3').date, po('B3').time),
+      teams: ['gia', 'bre', 'ran', 'sai'].map((id) => Object.assign({}, T[id], {
+        count: T[id].roster.length,
+        capt: Object.assign(this.photoOf(T[id].roster[0]), { alt: T[id].roster[0] + ', kapitán tímu ' + T[id].name }),
+        rosterView: T[id].roster.map((n, i) => ({ name: n, cap: i === 0, av: this.avatar(n, T[id]) }))
+      }))
+    }, this.seasonVals(T));
+  }
+}
+</script>
+</body>
+</html>

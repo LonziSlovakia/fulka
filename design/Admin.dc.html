@@ -1,0 +1,1513 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>FULka — admin s fotkami hráčov</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700&amp;family=Saira+Extra+Condensed:wght@600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#050505}
+</style>
+</helmet>
+<div style="container-type: inline-size; background: #050505; color: #FFFFFF; font-family: 'Saira', system-ui, sans-serif; font-size: 15px; line-height: 1.4; min-height: 100%">
+
+  <header style="background: #050505; border-bottom: 1px solid #1E1E1E">
+    <div style="max-width: 1320px; margin: 0 auto; padding: 10px clamp(12px, 2cqi, 24px); display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap">
+      <a href="Main.dc.html" aria-label="FULka — na hlavnú stránku webu" style="display: flex; align-items: center; gap: 10px; color: #FFFFFF; text-decoration: none">
+        <img src="../assets/logos/ful-mark-white.png" alt="" style="width: 44px; height: 44px; display: block">
+        <span style="display: flex; flex-direction: column; line-height: 1">
+          <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 30px; line-height: 0.9; transform: skewX(-8deg); transform-origin: left bottom">FULka</span>
+          <span style="margin-top: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #BDBDBD">Florbalová Upece Liga</span>
+        </span>
+      </a>
+      <span style="background: #FFFFFF; color: #050505; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 12px; transform: skewX(-10deg)">Admin</span>
+      <span style="display: inline-flex; align-items: center; gap: 8px; padding: 3px 10px; border: 1px solid #FFFFFF; transform: skewX(-10deg); font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap"><span aria-hidden="true" style="width: 8px; height: 8px; background: {{activeSeason.dot}}; border: 1px {{activeSeason.line}} {{activeSeason.dotBd}}"></span>{{activeSeason.name}}</span>
+      <a href="Main.dc.html" style="margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: #BDBDBD; font-weight: 600; text-decoration: none">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+        Na web
+      </a>
+    </div>
+  </header>
+
+  <div style="max-width: 1320px; margin: 0 auto; padding: 18px clamp(12px, 2cqi, 24px) 0">
+    <div role="group" aria-label="Sekcia administrácie" style="display: inline-flex; flex-wrap: wrap; max-width: 100%; gap: 4px; padding: 4px; background: #0A0A0A; border: 1px solid #2A2A2A">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="2">
+        <button type="button" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}" style="min-height: 44px; padding: 0 clamp(10px, 1.6cqi, 20px); background: {{t.bg}}; color: {{t.fg}}; border: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer">{{t.label}}</button>
+      </sc-for>
+    </div>
+    <sc-if value="{{showSeasonBar}}" hint-placeholder-val="{{ true }}">
+      <div style="margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Upravuješ sezónu</span>
+        <sc-for list="{{seasonChips}}" as="c" hint-placeholder-count="3">
+          <button type="button" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 12px; background: {{c.bg}}; color: {{c.fg}}; border: 1px solid {{c.bd}}; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer">
+            <span aria-hidden="true" style="width: 8px; height: 8px; background: {{c.dot}}; border: 1px {{c.dotLine}} {{c.dotBd}}"></span>{{c.short}}
+          </button>
+        </sc-for>
+      </div>
+      <sc-if value="{{seasonNotice}}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #0E0E0E; border: 1px dashed {{seasonNoticeBd}}; font-size: 14px; color: #E6E6E6">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16.5v.5"></path></svg>
+          {{seasonNotice}}
+        </div>
+      </sc-if>
+    </sc-if>
+  </div>
+
+  <main style="max-width: 1320px; margin: 0 auto; padding: 16px clamp(12px, 2cqi, 24px) 64px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+    <sc-if value="{{showLeft}}" hint-placeholder-val="{{ true }}">
+      <section aria-label="Zoznam" style="flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+
+        <sc-if value="{{isMatches}}" hint-placeholder-val="{{ true }}">
+          <div style="background: #0E0E0E; border: 1px solid #1E1E1E">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #1E1E1E">
+              <h1 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 34px; line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom">Zápasy</h1>
+              <button type="button" onClick="{{newMatch}}" style="min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 22px 0 14px; background: #FFFFFF; color: #050505; border: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 19px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%)">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                Nový zápas
+              </button>
+            </div>
+            <div role="group" aria-label="Filter" style="display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px; border-bottom: 1px solid #1E1E1E">
+              <sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+                <button type="button" aria-pressed="{{f.pressed}}" onClick="{{f.pick}}" style="min-height: 36px; padding: 0 10px; background: {{f.bg}}; color: {{f.fg}}; border: 1px solid {{f.bd}}; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer">{{f.label}} <span style="opacity: 0.65">{{f.count}}</span></button>
+              </sc-for>
+            </div>
+            <sc-for list="{{groups}}" as="gr" hint-placeholder-count="3">
+              <div>
+                <div style="display: flex; justify-content: space-between; padding: 8px 16px; background: #0A0A0A; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A"><span>{{gr.title}}</span><span>{{gr.sub}}</span></div>
+                <sc-for list="{{gr.rows}}" as="r" hint-placeholder-count="2">
+                  <button type="button" aria-current="{{r.current}}" onClick="{{r.select}}" style="display: flex; align-items: stretch; gap: 10px; width: 100%; min-height: 62px; padding: 0 12px 0 0; background: {{r.rowBg}}; color: inherit; border: 0; border-top: 1px solid #171717; outline: 2px solid {{r.rowBd}}; outline-offset: -2px; font: inherit; text-align: left; cursor: pointer">
+                    <span aria-hidden="true" style="width: 5px; flex: none; background: linear-gradient(180deg, {{r.hC}} 50%, {{r.aC}} 50%)"></span>
+                    <span style="width: 36px; flex: none; align-self: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 16px; color: #9A9A9A">{{r.kLabel}}</span>
+                    <span style="flex: 1; min-width: 0; align-self: center; display: flex; flex-direction: column; gap: 1px; padding: 8px 0">
+                      <span style="display: flex; align-items: center; gap: 6px; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 18px; text-transform: uppercase">
+                        <sc-if value="{{r.hKnown}}" hint-placeholder-val="{{ true }}"><img src="{{r.hLogo}}" alt="" style="width: 26px; height: 26px"></sc-if><sc-if value="{{r.hUnknown}}" hint-placeholder-val="{{ false }}"><span style="width: 20px; height: 20px; border: 2px dashed #555555"></span></sc-if>{{r.hAbbr}}
+                        <span style="min-width: 56px; padding: 0 4px; text-align: center; font-weight: 900; font-size: 20px; color: {{r.centerColor}}">{{r.center}}</span>
+                        {{r.aAbbr}}<sc-if value="{{r.aKnown}}" hint-placeholder-val="{{ true }}"><img src="{{r.aLogo}}" alt="" style="width: 26px; height: 26px"></sc-if><sc-if value="{{r.aUnknown}}" hint-placeholder-val="{{ false }}"><span style="width: 20px; height: 20px; border: 2px dashed #555555"></span></sc-if>
+                      </span>
+                      <span style="font-size: 12px; color: {{r.whenColor}}">{{r.when}}</span>
+                    </span>
+                    <span style="flex: none; align-self: center; padding: 2px 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; color: {{r.chipFg}}; background: {{r.chipBg}}; border: 1px {{r.chipLine}} {{r.chipBd}}">{{r.chip}}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-for>
+            <sc-if value="{{listEmpty}}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; padding: 20px 16px; color: #9A9A9A">{{listEmptyText}}</p>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isPlayoff}}" hint-placeholder-val="{{ false }}">
+          <div style="background: #0E0E0E; border: 1px solid #1E1E1E; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+            <h1 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 34px; line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom">Playoff</h1>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Kto s kým hrá semifinále</span>
+              <div role="group" aria-label="Nasadenie" style="display: flex; gap: 4px; padding: 4px; background: #050505; border: 1px solid #2A2A2A">
+                <sc-for list="{{seedTabs}}" as="t" hint-placeholder-count="2">
+                  <button type="button" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}" style="flex: 1; min-height: 42px; background: {{t.bg}}; color: {{t.fg}}; border: 0; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer">{{t.label}}</button>
+                </sc-for>
+              </div>
+              <span style="font-size: 13px; color: #BDBDBD">{{seedHint}}</span>
+            </div>
+            <sc-if value="{{seedAuto}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <sc-for list="{{miniTable}}" as="s" hint-placeholder-count="4">
+                  <div style="display: flex; align-items: center; gap: 10px; padding-right: 10px; background: #050505; border: 1px solid #1E1E1E">
+                    <span style="align-self: stretch; width: 34px; display: grid; place-items: center; background: {{s.T.c}}; color: {{s.T.ink}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 20px; clip-path: polygon(0 0, 100% 0, 76% 100%, 0 100%); padding-right: 6px">{{s.pos}}</span>
+                    <img src="{{s.T.svg}}" alt="" style="width: 26px; height: 26px; margin: 5px 0">
+                    <span style="flex: 1; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 18px; text-transform: uppercase">{{s.T.name}}</span>
+                    <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 20px">{{s.b}} b</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+              <sc-for list="{{bracket}}" as="b" hint-placeholder-count="4">
+                <button type="button" aria-current="{{b.current}}" onClick="{{b.select}}" style="display: flex; flex-direction: column; gap: 6px; padding: 10px; min-height: 108px; background: {{b.bg}}; color: {{b.fg}}; border: 2px solid {{b.bd}}; font: inherit; text-align: left; cursor: pointer">
+                  <span style="display: flex; flex-direction: column; gap: 1px"><span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 19px; line-height: 1; text-transform: uppercase">{{b.lbl}}</span><span style="font-size: 12px; font-weight: 600; opacity: 0.8">{{b.when}}</span></span>
+                  <sc-for list="{{b.sides}}" as="x" hint-placeholder-count="2">
+                    <span style="display: flex; align-items: center; gap: 6px; min-height: 26px">
+                      <sc-if value="{{x.known}}" hint-placeholder-val="{{ true }}"><img src="{{x.logo}}" alt="" style="width: 24px; height: 24px"></sc-if>
+                      <sc-if value="{{x.unknown}}" hint-placeholder-val="{{ false }}"><span style="width: 20px; height: 20px; border: 2px dashed {{b.dash}}"></span></sc-if>
+                      <span style="flex: 1; min-width: 0; font-weight: 600; font-size: 13px; opacity: {{x.op}}">{{x.name}}</span>
+                      <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 20px">{{x.score}}</span>
+                    </span>
+                  </sc-for>
+                </button>
+              </sc-for>
+            </div>
+            <span style="font-size: 12px; color: #9A9A9A">Finále a zápas o 3. miesto sa doplnia samé, keď zapíšeš výsledky semifinále.</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isTeams}}" hint-placeholder-val="{{ false }}">
+          <div style="background: #0E0E0E; border: 1px solid #1E1E1E">
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid #1E1E1E">
+              <h1 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 34px; line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom">Tímy a hráči</h1>
+              <span style="font-size: 13px; color: #9A9A9A">{{teamsHint}}</span>
+            </div>
+            <sc-for list="{{teamRows}}" as="tr" hint-placeholder-count="4">
+              <button type="button" aria-current="{{tr.current}}" onClick="{{tr.select}}" style="position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 88px; padding: 10px 14px; background: {{tr.rowBg}}; color: inherit; border: 0; border-top: 1px solid #171717; outline: 2px solid {{tr.rowBd}}; outline-offset: -2px; font: inherit; text-align: left; cursor: pointer">
+                <span aria-hidden="true" style="position: absolute; top: 0; right: 0; bottom: 0; width: 34%; background: linear-gradient(160deg, {{tr.c}}, {{tr.d}}); clip-path: polygon(40% 0, 100% 0, 100% 100%, 0 100%, 22% 52%, 10% 48%)"></span>
+                <span style="position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                  <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">{{tr.pre}}</span>
+                  <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 28px; line-height: 1; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom">{{tr.name}}</span>
+                  <span style="font-size: 12px; color: {{tr.infoColor}}">{{tr.info}}</span>
+                </span>
+                <img src="{{tr.logo}}" alt="" style="position: relative; width: 58px; height: 58px; flex: none">
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isSeasons}}" hint-placeholder-val="{{ false }}">
+          <div style="background: #0E0E0E; border: 1px solid #1E1E1E">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #1E1E1E">
+              <h1 style="margin: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 34px; line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom">Sezóny</h1>
+              <button type="button" onClick="{{newSeason}}" style="min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 22px 0 14px; background: #FFFFFF; color: #050505; border: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 19px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%)">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                Nová sezóna
+              </button>
+            </div>
+            <sc-for list="{{seasonRows}}" as="r" hint-placeholder-count="3">
+              <button type="button" aria-current="{{r.current}}" onClick="{{r.select}}" style="display: flex; align-items: center; gap: 12px; width: 100%; min-height: 84px; padding: 12px 14px; background: {{r.rowBg}}; color: inherit; border: 0; border-top: 1px solid #171717; outline: 2px solid {{r.rowBd}}; outline-offset: -2px; font: inherit; text-align: left; cursor: pointer">
+                <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 5px">
+                  <span style="display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; background: {{r.chipBg}}; color: {{r.chipFg}}; border: 1px {{r.chipLine}} {{r.chipBd}}; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase"><span aria-hidden="true" style="width: 7px; height: 7px; background: {{r.dot}}"></span>{{r.status}}</span>
+                  <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 26px; line-height: 1; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom">{{r.name}}</span>
+                  <span style="font-size: 12px; color: #BDBDBD">{{r.info}}</span>
+                </span>
+                <sc-if value="{{r.hasChamp}}" hint-placeholder-val="{{ false }}">
+                  <span style="flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #9A9A9A"><img src="{{r.champLogo}}" alt="" style="width: 44px; height: 44px">šampión</span>
+                </sc-if>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{showRight}}" hint-placeholder-val="{{ true }}">
+      <section aria-label="Úprava zápasu" style="flex: 999 1 600px; min-width: 0">
+
+        <sc-if value="{{noEd}}" hint-placeholder-val="{{ false }}">
+          <div style="background: #0E0E0E; border: 1px dashed #333333; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+            <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+              <span style="padding: 8px 12px; border: 1px solid #FFFFFF; font-weight: 600">{{toast}}</span>
+            </sc-if>
+            <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 30px; text-transform: uppercase; transform: skewX(-8deg)">Vyber zápas</span>
+            <span style="color: #BDBDBD">Klikni na zápas v zozname — budúci aj odohraný. Alebo pridaj nový.</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{hasEd}}" hint-placeholder-val="{{ true }}">
+          <div style="background: #0E0E0E; border: 1px solid #1E1E1E; display: flex; flex-direction: column">
+
+            <div style="position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 16px 18px; border-bottom: 1px solid #1E1E1E">
+              <span aria-hidden="true" style="position: absolute; top: 0; right: 0; bottom: 0; width: 34%; background: linear-gradient(160deg, {{ed.hC}}, {{ed.hD}}); clip-path: polygon(30% 0, 64% 0, 46% 100%, 12% 100%); opacity: 0.85"></span>
+              <span aria-hidden="true" style="position: absolute; top: 0; right: 0; bottom: 0; width: 34%; background: linear-gradient(160deg, {{ed.aC}}, {{ed.aD}}); clip-path: polygon(70% 0, 100% 0, 100% 100%, 52% 100%); opacity: 0.85"></span>
+              <sc-if value="{{isMobile}}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{back}}" aria-label="Späť na zoznam" style="position: relative; width: 44px; height: 44px; display: grid; place-items: center; background: #050505; color: #FFFFFF; border: 1px solid #333333; cursor: pointer">
+                  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+                </button>
+              </sc-if>
+              <span style="position: relative; display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0">
+                <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">{{ed.kicker}}</span>
+                <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(26px, 3cqi, 40px); line-height: 0.95; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom">{{ed.title}}</span>
+              </span>
+              <sc-if value="{{ed.dirty}}" hint-placeholder-val="{{ false }}">
+                <span style="position: relative; padding: 4px 8px; background: #050505; border: 1px dashed #FFB020; color: #FFB020; font-weight: 700; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase">Neuložené zmeny</span>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+              <div role="status" style="display: flex; align-items: center; gap: 10px; margin: 16px 18px 0; padding: 12px 14px; background: rgba(255,255,255,0.06); border: 1px solid #FFFFFF; font-weight: 600">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
+                {{toast}}
+              </div>
+            </sc-if>
+            <sc-if value="{{hasError}}" hint-placeholder-val="{{ false }}">
+              <div role="alert" style="display: flex; align-items: center; gap: 10px; margin: 16px 18px 0; padding: 12px 14px; background: rgba(255,92,92,0.1); border: 1px solid #FF5C5C; color: #FFC2C2; font-weight: 600">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF5C5C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+                {{error}}
+              </div>
+            </sc-if>
+
+            <div style="padding: 18px; display: flex; flex-direction: column; gap: 18px">
+
+              <sc-if value="{{ed.showTeamPicker}}" hint-placeholder-val="{{ false }}">
+                <fieldset style="margin: 0; padding: 14px; border: 1px solid #1E1E1E; background: #0A0A0A; display: flex; flex-direction: column; gap: 12px">
+                  <legend style="padding: 0 8px; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 21px; letter-spacing: 0.04em; text-transform: uppercase">Tímy</legend>
+                  <sc-for list="{{ed.teamRows}}" as="tr" hint-placeholder-count="2">
+                    <div style="display: flex; flex-direction: column; gap: 6px">
+                      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">{{tr.label}}</span>
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px">
+                        <sc-for list="{{tr.options}}" as="o" hint-placeholder-count="4">
+                          <button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 6px 10px; background: {{o.bg}}; color: {{o.fg}}; border: 2px solid {{o.bd}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 18px; text-transform: uppercase; cursor: pointer; opacity: {{o.op}}">
+                            <img src="{{o.logo}}" alt="" style="width: 34px; height: 34px">{{o.name}}
+                          </button>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ed.showKolo}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 6px">
+                      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Kolo</span>
+                      <div style="display: flex; flex-wrap: wrap; gap: 6px">
+                        <sc-for list="{{ed.koloOptions}}" as="o" hint-placeholder-count="7">
+                          <button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="min-width: 44px; min-height: 44px; padding: 0 10px; background: {{o.bg}}; color: {{o.fg}}; border: 1px solid {{o.bd}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 19px; cursor: pointer">{{o.label}}</button>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+                </fieldset>
+              </sc-if>
+
+              <sc-if value="{{ed.showFixedTeams}}" hint-placeholder-val="{{ true }}">
+                <div style="position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; min-height: 176px; padding: 16px 12px; background: #0A0A0A">
+                  <span aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(150deg, {{ed.hC}}, {{ed.hD}}); clip-path: polygon(0 0, 57% 0, 43% 100%, 0 100%)"></span>
+                  <span aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(210deg, {{ed.aC}}, {{ed.aD}}); clip-path: polygon(57% 0, 100% 0, 100% 100%, 43% 100%)"></span>
+                  <span aria-hidden="true" style="position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(0,0,0,0) 0 14px, rgba(0,0,0,0.07) 14px 15px)"></span>
+                  <span style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; text-align: center">
+                    <sc-if value="{{ed.hKnown}}" hint-placeholder-val="{{ true }}"><img src="{{ed.hLogo}}" alt="" style="width: clamp(56px, 7cqi, 88px); height: clamp(56px, 7cqi, 88px); filter: drop-shadow(0 6px 10px rgba(0,0,0,0.45))"></sc-if>
+                    <sc-if value="{{ed.hUnknown}}" hint-placeholder-val="{{ false }}"><span style="width: 64px; height: 64px; border: 3px dashed rgba(255,255,255,0.5)"></span></sc-if>
+                    <span style="max-width: 100%; padding: 2px 12px; background: #050505; color: #FFFFFF; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(18px, 2.2cqi, 28px); line-height: 1.1; text-transform: uppercase; transform: skewX(-10deg); overflow-wrap: anywhere">{{ed.hName}}</span>
+                    <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: {{ed.hInk}}; opacity: 0.8">Domáci</span>
+                  </span>
+                  <span style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 12px; background: #050505; transform: skewX(-10deg)">
+                    <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: {{ed.centerSize}}; line-height: 1; color: #FFFFFF">{{ed.center}}</span>
+                    <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A; white-space: nowrap">{{ed.centerSub}}</span>
+                  </span>
+                  <span style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; text-align: center">
+                    <sc-if value="{{ed.aKnown}}" hint-placeholder-val="{{ true }}"><img src="{{ed.aLogo}}" alt="" style="width: clamp(56px, 7cqi, 88px); height: clamp(56px, 7cqi, 88px); filter: drop-shadow(0 6px 10px rgba(0,0,0,0.45))"></sc-if>
+                    <sc-if value="{{ed.aUnknown}}" hint-placeholder-val="{{ false }}"><span style="width: 64px; height: 64px; border: 3px dashed rgba(255,255,255,0.5)"></span></sc-if>
+                    <span style="max-width: 100%; padding: 2px 12px; background: #050505; color: #FFFFFF; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(18px, 2.2cqi, 28px); line-height: 1.1; text-transform: uppercase; transform: skewX(-10deg); overflow-wrap: anywhere">{{ed.aName}}</span>
+                    <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: {{ed.aInk}}; opacity: 0.8">Hostia</span>
+                  </span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ed.teamsNote}}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: 13px; color: #BDBDBD">{{ed.teamsNote}}</span>
+              </sc-if>
+
+              <fieldset style="margin: 0; padding: 14px; border: 1px solid #1E1E1E; background: #0A0A0A; display: flex; flex-direction: column; gap: 14px">
+                <legend style="padding: 0 8px; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 21px; letter-spacing: 0.04em; text-transform: uppercase">Termín</legend>
+                <div role="group" aria-label="Typ termínu" style="display: flex; gap: 4px; padding: 4px; background: #050505; border: 1px solid #2A2A2A">
+                  <sc-for list="{{ed.termTabs}}" as="t" hint-placeholder-count="2">
+                    <button type="button" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}" style="flex: 1; min-height: 44px; background: {{t.bg}}; color: {{t.fg}}; border: 0; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer">{{t.label}}</button>
+                  </sc-for>
+                </div>
+
+                <sc-if value="{{ed.exact}}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 16px">
+                    <div style="flex: 1 1 290px; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+                        <button type="button" aria-label="Predchádzajúci mesiac" onClick="{{cal.prev}}" style="width: 40px; height: 40px; display: grid; place-items: center; background: transparent; color: #FFFFFF; border: 1px solid #333333; cursor: pointer"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></button>
+                        <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: 0.06em">{{cal.title}}</span>
+                        <button type="button" aria-label="Ďalší mesiac" onClick="{{cal.next}}" style="width: 40px; height: 40px; display: grid; place-items: center; background: transparent; color: #FFFFFF; border: 1px solid #333333; cursor: pointer"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></button>
+                      </div>
+                      <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px">
+                        <sc-for list="{{cal.weekdays}}" as="w" hint-placeholder-count="7">
+                          <span style="text-align: center; padding: 4px 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 0.08em; color: {{w.color}}">{{w.label}}</span>
+                        </sc-for>
+                        <sc-for list="{{cal.days}}" as="d" hint-placeholder-count="35">
+                          <button type="button" aria-label="{{d.aria}}" aria-pressed="{{d.pressed}}" onClick="{{d.pick}}" style="position: relative; height: 40px; padding: 0; background: {{d.bg}}; color: {{d.fg}}; border: 1px solid {{d.bd}}; font: inherit; font-weight: {{d.weight}}; font-size: 14px; cursor: pointer">
+                            {{d.label}}
+                            <span aria-hidden="true" style="position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2px; background: {{d.dot}}"></span>
+                          </button>
+                        </sc-for>
+                      </div>
+                      <span style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: #9A9A9A">
+                        <span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; background: #222222"></span>utorky</span>
+                        <span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 6px; height: 6px; background: #9A9A9A"></span>iný zápas v ten deň</span>
+                        <span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border: 1px solid #9A9A9A"></span>dnes</span>
+                      </span>
+                    </div>
+
+                    <div style="flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+                      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Čas začiatku</span>
+                      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px">
+                        <sc-for list="{{ed.timeChips}}" as="c" hint-placeholder-count="4">
+                          <button type="button" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}" style="min-height: 44px; background: {{c.bg}}; color: {{c.fg}}; border: 1px solid {{c.bd}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 21px; cursor: pointer">{{c.label}}</button>
+                        </sc-for>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 6px">
+                        <button type="button" aria-label="O 15 minút skôr" onClick="{{ed.timeMinus}}" style="width: 48px; height: 54px; display: grid; place-items: center; background: transparent; color: #FFFFFF; border: 1px solid #333333; font: inherit; font-size: 22px; font-weight: 700; cursor: pointer">−</button>
+                        <output aria-label="Zvolený čas" style="flex: 1; min-height: 54px; display: grid; place-items: center; background: #050505; border: 2px solid #FFFFFF; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 34px; line-height: 1">{{ed.timeLabel}}</output>
+                        <button type="button" aria-label="O 15 minút neskôr" onClick="{{ed.timePlus}}" style="width: 48px; height: 54px; display: grid; place-items: center; background: #FFFFFF; color: #050505; border: 1px solid #FFFFFF; font: inherit; font-size: 22px; font-weight: 700; cursor: pointer">+</button>
+                      </div>
+                      <span style="font-size: 12px; color: #9A9A9A">Tlačidlá posúvajú čas po 15 minútach.</span>
+                      <div style="margin-top: auto; padding: 12px; background: #050505; border: 1px solid #1E1E1E">
+                        <span style="display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Na webe sa zobrazí</span>
+                        <span style="display: block; margin-top: 4px; font-weight: 700; font-size: 16px; color: {{ed.summaryColor}}">{{ed.summary}}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <sc-if value="{{ed.showChanged}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; background: rgba(255,176,32,0.08); border: 1px solid #FFB020">
+                      <span style="flex: 1 1 260px; font-size: 14px; color: #FFE2AD">Termín sa mení z <s>{{ed.origLabel}}</s> na <strong style="color: #FFFFFF">{{ed.newLabel}}</strong>.</span>
+                      <button type="button" aria-pressed="{{ed.movedPressed}}" onClick="{{ed.toggleMoved}}" style="display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; background: transparent; color: #FFFFFF; border: 1px solid #FFB020; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer">
+                        <span aria-hidden="true" style="position: relative; width: 38px; height: 22px; background: {{ed.trackBg}}; border: 2px solid #FFB020"><span style="position: absolute; top: 2px; left: {{ed.knobX}}; width: 14px; height: 14px; background: {{ed.knobBg}}"></span></span>
+                        Ukázať na webe ako „Presunutý“
+                      </button>
+                    </div>
+                  </sc-if>
+                </sc-if>
+
+                <sc-if value="{{ed.tbd}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: 12px; align-items: flex-start; padding: 14px; background: #050505; border: 1px dashed #FFFFFF">
+                    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="16"></rect><path d="M3 10h18M8 3v4M16 3v4M10 14.5a2 2 0 1 1 2.5 2c-.3.2-.5.5-.5.9M12 19.5v.1"></path></svg>
+                    <span style="display: flex; flex-direction: column; gap: 4px">
+                      <strong>Na webe: „Termín sa hľadá“</strong>
+                      <span style="font-size: 14px; color: #BDBDBD">{{ed.tbdInfo}}</span>
+                    </span>
+                  </div>
+                </sc-if>
+
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Poznámka k zápasu (nepovinné, uvidia ju všetci)
+                  <input type="text" value="{{ed.note}}" onChange="{{ed.setNote}}" placeholder="napr. hrá sa v malej telocvični" style="min-height: 46px; padding: 0 12px; background: #050505; color: #FFFFFF; border: 1px solid #333333; font-family: inherit; font-size: 15px; font-weight: 500; letter-spacing: 0; text-transform: none; outline-color: #FFFFFF">
+                </label>
+              </fieldset>
+
+              <fieldset style="margin: 0; padding: 14px; border: 1px solid #1E1E1E; background: #0A0A0A; display: flex; flex-direction: column; gap: 14px">
+                <legend style="padding: 0 8px; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 21px; letter-spacing: 0.04em; text-transform: uppercase">Stav zápasu</legend>
+                <div role="group" aria-label="Stav" style="display: flex; gap: 4px; padding: 4px; background: #050505; border: 1px solid #2A2A2A">
+                  <sc-for list="{{ed.statusTabs}}" as="t" hint-placeholder-count="2">
+                    <button type="button" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}" style="flex: 1; min-height: 44px; background: {{t.bg}}; color: {{t.fg}}; border: 0; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer">{{t.label}}</button>
+                  </sc-for>
+                </div>
+
+                <sc-if value="{{ed.lockResult}}" hint-placeholder-val="{{ false }}">
+                  <span style="padding: 12px; background: #050505; border: 1px dashed #333333; color: #BDBDBD">{{ed.lockMsg}}</span>
+                </sc-if>
+
+                <sc-if value="{{ed.showResult}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px">
+                    <sc-for list="{{ed.scoreTeams}}" as="s" hint-placeholder-count="2">
+                      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; background: #050505; border: 1px solid #1E1E1E">
+                        <span style="flex: 1 1 110px; min-width: 0; display: flex; align-items: center; gap: 10px">
+                          <img src="{{s.logo}}" alt="" style="width: 44px; height: 44px; flex: none">
+                          <span style="min-width: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 22px; line-height: 1; text-transform: uppercase">{{s.name}}</span>
+                        </span>
+                        <span style="flex: none; display: flex; align-items: center; gap: 8px">
+                          <button type="button" aria-label="Uber gól {{s.name}}" onClick="{{s.minus}}" style="width: 44px; height: 54px; background: transparent; color: #FFFFFF; border: 1px solid #333333; font: inherit; font-size: 22px; font-weight: 700; cursor: pointer">−</button>
+                          <output aria-label="Góly {{s.name}}" style="min-width: 54px; text-align: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 52px; line-height: 1; color: {{s.color}}">{{s.n}}</output>
+                          <button type="button" aria-label="Pridaj gól {{s.name}}" onClick="{{s.plus}}" style="width: 44px; height: 54px; background: {{s.btnBg}}; color: {{s.btnFg}}; border: 0; font: inherit; font-size: 22px; font-weight: 700; cursor: pointer">+</button>
+                        </span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{ed.drawWarn}}" hint-placeholder-val="{{ false }}">
+                    <span style="padding: 10px 12px; border: 1px solid #FFB020; color: #FFE2AD; font-weight: 600">Playoff zápas nemôže skončiť remízou — zapíš aj gól z predĺženia alebo nájazdov.</span>
+                  </sc-if>
+                  <div style="display: flex; flex-direction: column; gap: 6px">
+                    <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Góly v poradí · klikni na meno a zmeň ho</span>
+                    <sc-if value="{{ed.noGoals}}" hint-placeholder-val="{{ false }}">
+                      <span style="padding: 12px; border: 1px dashed #333333; color: #BDBDBD">Zatiaľ žiadny gól. Pridaj ho tlačidlom + pri tíme.</span>
+                    </sc-if>
+                    <sc-for list="{{ed.goals}}" as="g" hint-placeholder-count="4">
+                      <div style="background: #050505; border: 1px solid {{g.bd}}">
+                        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px">
+                          <span style="min-width: 48px; padding: 2px 0; text-align: center; background: {{g.chipBg}}; color: {{g.chipFg}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 20px; line-height: 1.2">{{g.score}}</span>
+                          <img src="{{g.logo}}" alt="{{g.team}}" style="width: 28px; height: 28px">
+                          <button type="button" onClick="{{g.pickScorer}}" style="flex: 1 1 150px; min-height: 44px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 2px 10px; background: {{g.sBg}}; color: #FFFFFF; border: 1px solid {{g.sBd}}; font: inherit; text-align: left; cursor: pointer">
+                            <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Gól</span>
+                            <span style="font-weight: 700; color: {{g.sColor}}">{{g.scorer}}</span>
+                          </button>
+                          <button type="button" onClick="{{g.pickAssist}}" style="flex: 1 1 150px; min-height: 44px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 2px 10px; background: {{g.aBg}}; color: #FFFFFF; border: 1px solid {{g.aBd}}; font: inherit; text-align: left; cursor: pointer">
+                            <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Asistencia</span>
+                            <span style="font-weight: 600; color: {{g.aColor}}">{{g.assist}}</span>
+                          </button>
+                          <button type="button" aria-label="Vymazať gól {{g.n}}" onClick="{{g.remove}}" style="width: 44px; height: 44px; display: grid; place-items: center; background: transparent; color: #9A9A9A; border: 1px solid #2A2A2A; cursor: pointer">
+                            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                          </button>
+                        </div>
+                        <sc-if value="{{g.picking}}" hint-placeholder-val="{{ false }}">
+                          <div style="padding: 10px 8px 12px; border-top: 1px solid #1E1E1E; display: flex; flex-direction: column; gap: 8px">
+                            <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: 0.04em; text-transform: uppercase">{{g.pickTitle}}</span>
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px">
+                              <sc-for list="{{g.options}}" as="o" hint-placeholder-count="10">
+                                <button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="min-height: 40px; padding: 0 12px; background: {{o.bg}}; color: {{o.fg}}; border: 1px {{o.line}} {{o.bd}}; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer">{{o.label}}</button>
+                              </sc-for>
+                            </div>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </fieldset>
+
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+                <button type="button" onClick="{{ed.save}}" style="min-height: 58px; padding: 0 40px 0 26px; background: #FFFFFF; color: #050505; border: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 26px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%)">{{ed.saveLabel}}</button>
+                <button type="button" onClick="{{ed.cancel}}" style="min-height: 58px; padding: 0 18px; background: transparent; color: #BDBDBD; border: 1px solid #333333; font: inherit; font-weight: 600; cursor: pointer">Zahodiť zmeny</button>
+                <sc-if value="{{ed.canDelete}}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ed.remove}}" style="margin-left: auto; min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; background: transparent; color: #FF5C5C; border: 1px solid transparent; font: inherit; font-weight: 600; cursor: pointer">
+                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg>
+                    Vymazať zápas
+                  </button>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isSettings}}" hint-placeholder-val="{{ false }}">
+          <div style="background: #0E0E0E; border: 1px solid #1E1E1E; display: flex; flex-direction: column">
+            <div style="position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #1E1E1E">
+              <span aria-hidden="true" style="position: absolute; top: 0; right: 0; bottom: 0; width: 30%; background: repeating-linear-gradient(115deg, #2E2E2E 0 6px, #141414 6px 12px); clip-path: polygon(30% 0, 100% 0, 100% 100%, 12% 100%)"></span>
+              <span style="position: relative; display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0">
+                <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Nastavenia webu</span>
+                <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(26px, 3cqi, 40px); line-height: 0.95; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom">Hlavná stránka</span>
+              </span>
+              <sc-if value="{{set.dirty}}" hint-placeholder-val="{{ false }}">
+                <span style="position: relative; padding: 4px 8px; background: #050505; border: 1px dashed #FFB020; color: #FFB020; font-weight: 700; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase">Neuložené zmeny</span>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+              <div role="status" style="display: flex; align-items: center; gap: 10px; margin: 16px 18px 0; padding: 12px 14px; background: rgba(255,255,255,0.06); border: 1px solid #FFFFFF; font-weight: 600">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
+                {{toast}}
+              </div>
+            </sc-if>
+
+            <div style="padding: 18px; display: flex; flex-direction: column; gap: 18px">
+              <fieldset style="margin: 0; padding: 14px; border: 1px solid #1E1E1E; background: #0A0A0A; display: flex; flex-direction: column; gap: 12px">
+                <legend style="padding: 0 8px; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 21px; letter-spacing: 0.04em; text-transform: uppercase">Banner — najbližšie zápasy</legend>
+                <span style="font-size: 14px; color: #BDBDBD">Koľko najbližších zápasov ukázať hore na hlavnej stránke. Hrajú sa dva zápasy za kolo, takže „2“ ukáže celé najbližšie kolo.</span>
+                <div role="group" aria-label="Počet zápasov na banneri" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; background: #050505; border: 1px solid #2A2A2A">
+                  <sc-for list="{{set.countTabs}}" as="t" hint-placeholder-count="4">
+                    <button type="button" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}" style="min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; background: {{t.bg}}; color: {{t.fg}}; border: 0; cursor: pointer">
+                      <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 32px; line-height: 1">{{t.label}}</span>
+                      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase">{{t.unit}}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </fieldset>
+
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Takto bude vyzerať banner</span>
+                <div style="padding: 14px; background: #050505; border: 1px solid #1E1E1E; display: flex; flex-direction: column; align-items: center; gap: 10px">
+                  <span style="background: #FFFFFF; color: #050505; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 12px; transform: skewX(-10deg)">{{set.previewTitle}}</span>
+                  <div style="width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 8px">
+                    <sc-for list="{{set.preview}}" as="c" hint-placeholder-count="2">
+                      <div style="position: relative; overflow: hidden; min-height: 96px; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 4px; padding: 10px 8px">
+                        <span aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(150deg, {{c.hc}}, {{c.hd}})"></span>
+                        <span aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(150deg, {{c.ac}}, {{c.ad}}); clip-path: polygon(60% 0, 100% 0, 100% 100%, 40% 100%)"></span>
+                        <img src="{{c.hLogo}}" alt="" style="position: relative; justify-self: center; width: 48px; height: 48px">
+                        <span style="position: relative; display: flex; flex-direction: column; align-items: center; padding: 2px 8px; background: #050505; transform: skewX(-8deg)">
+                          <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 22px; line-height: 1">{{c.time}}</span>
+                          <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #BDBDBD; white-space: nowrap">{{c.day}}</span>
+                        </span>
+                        <img src="{{c.aLogo}}" alt="" style="position: relative; justify-self: center; width: 48px; height: 48px">
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <span style="font-size: 12px; color: #9A9A9A">{{set.previewNote}}</span>
+              </div>
+
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+                <button type="button" onClick="{{set.save}}" style="min-height: 58px; padding: 0 40px 0 26px; background: #FFFFFF; color: #050505; border: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 26px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%)">Uložiť nastavenia</button>
+                <button type="button" onClick="{{set.reset}}" style="min-height: 58px; padding: 0 18px; background: transparent; color: #BDBDBD; border: 1px solid #333333; font: inherit; font-weight: 600; cursor: pointer">Zahodiť zmeny</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{hasTeamEd}}" hint-placeholder-val="{{ false }}">
+          <div style="background: #0E0E0E; border: 1px solid #1E1E1E; display: flex; flex-direction: column">
+            <div style="position: relative; overflow: hidden; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; min-height: 150px; padding: 18px; background: #0A0A0A">
+              <span aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(150deg, {{te.c}}, {{te.d}}); clip-path: polygon(0 0, 62% 0, 50% 100%, 0 100%)"></span>
+              <span aria-hidden="true" style="position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(0,0,0,0) 0 14px, rgba(0,0,0,0.07) 14px 15px)"></span>
+              <sc-if value="{{te.capHas}}" hint-placeholder-val="{{ false }}">
+                <span aria-hidden="true" style="position: absolute; top: 0; right: 0; bottom: 0; width: 30%; background: linear-gradient(200deg, {{te.c}}, {{te.d}}); clip-path: polygon(34% 0, 100% 0, 100% 100%, 0 100%); opacity: 0.6"></span>
+                <img src="{{te.capFull}}" alt="{{te.capName}}, kapitán" style="position: absolute; right: 12px; bottom: 0; height: 170px; max-width: 40%; object-fit: contain; object-position: right bottom; filter: drop-shadow(0 10px 16px rgba(0,0,0,0.5))">
+              </sc-if>
+              <sc-if value="{{isMobile}}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{teamBack}}" aria-label="Späť na tímy" style="position: relative; width: 44px; height: 44px; display: grid; place-items: center; background: #050505; color: #FFFFFF; border: 1px solid #333333; cursor: pointer">
+                  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+                </button>
+              </sc-if>
+              <img src="{{te.logo}}" alt="" style="position: relative; width: clamp(72px, 8cqi, 108px); height: clamp(72px, 8cqi, 108px); flex: none; filter: drop-shadow(0 8px 14px rgba(0,0,0,0.45))">
+              <span style="position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px">
+                <span style="padding: 1px 8px; background: #050505; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #BDBDBD">{{te.kicker}}</span>
+                <span style="padding: 1px 8px; background: #050505; font-size: 12px; font-weight: 600; color: #FFFFFF">{{te.count}} · {{te.seasonName}}</span>
+                <span style="padding: 2px 14px; background: #050505; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(32px, 4cqi, 52px); line-height: 1; text-transform: uppercase; transform: skewX(-10deg)">{{te.name}}</span>
+              </span>
+            </div>
+
+            <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+              <div role="status" style="display: flex; align-items: center; gap: 10px; margin: 16px 18px 0; padding: 12px 14px; background: rgba(255,255,255,0.06); border: 1px solid #FFFFFF; font-weight: 600">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
+                {{toast}}
+              </div>
+            </sc-if>
+            <sc-if value="{{hasError}}" hint-placeholder-val="{{ false }}">
+              <div role="alert" style="display: flex; align-items: center; gap: 10px; margin: 16px 18px 0; padding: 12px 14px; background: rgba(255,92,92,0.1); border: 1px solid #FF5C5C; color: #FFC2C2; font-weight: 600">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF5C5C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+                {{error}}
+              </div>
+            </sc-if>
+
+            <div style="padding: 18px; display: flex; flex-direction: column; gap: 18px">
+              <fieldset style="margin: 0; padding: 14px; border: 1px solid #1E1E1E; background: #0A0A0A; display: flex; flex-direction: column; gap: 8px">
+                <legend style="padding: 0 8px; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 21px; letter-spacing: 0.04em; text-transform: uppercase">Súpiska · {{te.seasonName}}</legend>
+                <span style="font-size: 13px; color: #BDBDBD">Klikni na „C“ a nastavíš kapitána. „Presunúť“ pošle hráča do iného tímu. Tlačidlo s fotoaparátom nahrá fotku — najlepšie PNG s priehľadným pozadím, postava od pása hore. Zmeny sa ukladajú hneď.</span>
+                <sc-if value="{{te.empty}}" hint-placeholder-val="{{ false }}">
+                  <span style="padding: 14px; border: 1px dashed #333333; color: #BDBDBD">Súpiska je zatiaľ prázdna — pridaj hráčov, keď bude po drafte.</span>
+                </sc-if>
+                <sc-for list="{{te.players}}" as="p" hint-placeholder-count="8">
+                  <div style="background: #050505; border: 1px solid {{p.bd}}">
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 6px">
+                      <span style="position: relative; flex: none; width: 44px; height: 44px; overflow: hidden; background: {{p.av.bg}}; clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%)"><sc-if value="{{p.av.has}}" hint-placeholder-val="{{ false }}"><img src="{{p.av.src}}" alt="" style="display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top"></sc-if><sc-if value="{{p.av.none}}" hint-placeholder-val="{{ true }}"><span style="position: absolute; inset: 0; display: grid; place-items: center; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 18px; color: {{p.av.ink}}">{{p.av.ini}}</span></sc-if></span>
+                      <span style="flex: 1 1 130px; min-width: 0; display: flex; flex-direction: column">
+                        <span style="font-weight: 700">{{p.name}}</span>
+                        <span style="font-size: 12px; color: #9A9A9A">{{p.stats}}</span>
+                      </span>
+                      <span style="flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+                      <label title="{{p.photoLabel}}" style="position: relative; overflow: hidden; width: 44px; height: 44px; display: grid; place-items: center; background: transparent; color: {{p.photoFg}}; border: 1px solid {{p.photoBd}}; cursor: pointer">
+                        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+                        <input type="file" accept="image/png, image/jpeg, image/webp" aria-label="{{p.photoAria}}" onChange="{{p.onPhoto}}" style="position: absolute; inset: 0; opacity: 0; cursor: pointer">
+                      </label>
+                      <button type="button" aria-pressed="{{p.capPressed}}" aria-label="Kapitán: {{p.name}}" onClick="{{p.toggleCap}}" style="width: 44px; height: 44px; background: {{p.capBg}}; color: {{p.capFg}}; border: 1px solid {{p.capBd}}; font-family: 'Saira', sans-serif; font-weight: 800; font-size: 17px; cursor: pointer">C</button>
+                      <button type="button" aria-expanded="{{p.moveExpanded}}" onClick="{{p.toggleMove}}" style="min-height: 44px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; background: {{p.moveBg}}; color: #FFFFFF; border: 1px solid {{p.moveBd}}; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer">
+                        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M14 6l6 6-6 6"></path></svg>
+                        Presunúť
+                      </button>
+                      <button type="button" aria-label="Odstrániť: {{p.name}}" onClick="{{p.remove}}" style="width: 44px; height: 44px; display: grid; place-items: center; background: transparent; color: #9A9A9A; border: 1px solid #2A2A2A; cursor: pointer">
+                        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                      </button>
+                      </span>
+                    </div>
+                    <sc-if value="{{p.moving}}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 12px 12px; border-top: 1px solid #1E1E1E">
+                        <span style="margin-right: 4px; font-size: 13px; color: #BDBDBD">Presunúť do:</span>
+                        <sc-for list="{{p.targets}}" as="o" hint-placeholder-count="3">
+                          <button type="button" onClick="{{o.pick}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 12px 0 6px; background: #141414; color: #FFFFFF; border: 1px solid #333333; border-left: 4px solid {{o.c}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 18px; text-transform: uppercase; cursor: pointer"><img src="{{o.logo}}" alt="" style="width: 28px; height: 28px">{{o.name}}</button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </fieldset>
+
+              <fieldset style="margin: 0; padding: 14px; border: 1px solid #1E1E1E; background: #0A0A0A; display: flex; flex-direction: column; gap: 10px">
+                <legend style="padding: 0 8px; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 21px; letter-spacing: 0.04em; text-transform: uppercase">Pridať hráča</legend>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                  <input type="text" aria-label="Meno nového hráča" value="{{te.newName}}" onChange="{{te.setNewName}}" placeholder="Meno a priezvisko" style="flex: 1 1 220px; min-width: 0; min-height: 50px; padding: 0 14px; background: #050505; color: #FFFFFF; border: 1px solid #333333; font-family: inherit; font-size: 16px; font-weight: 500; outline-color: #FFFFFF">
+                  <button type="button" onClick="{{te.add}}" style="min-height: 50px; padding: 0 34px 0 20px; background: #FFFFFF; color: #050505; border: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%)">Pridať do tímu</button>
+                </div>
+                <span style="font-size: 12px; color: #9A9A9A">Nový hráč sa hneď objaví v súpiske na webe aj pri výbere strelca.</span>
+              </fieldset>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{hasSeasonEd}}" hint-placeholder-val="{{ false }}">
+          <div style="background: #0E0E0E; border: 1px solid #1E1E1E; display: flex; flex-direction: column">
+            <div style="position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 16px 18px; border-bottom: 1px solid #1E1E1E">
+              <span aria-hidden="true" style="position: absolute; top: 0; right: 0; bottom: 0; width: 34%; background: {{sed.shard}}; clip-path: polygon(30% 0, 100% 0, 100% 100%, 12% 100%); opacity: 0.85"></span>
+              <sc-if value="{{isMobile}}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{seasonBack}}" aria-label="Späť na sezóny" style="position: relative; width: 44px; height: 44px; display: grid; place-items: center; background: #050505; color: #FFFFFF; border: 1px solid #333333; cursor: pointer">
+                  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+                </button>
+              </sc-if>
+              <span style="position: relative; display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0">
+                <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">{{sed.kicker}}</span>
+                <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: clamp(26px, 3cqi, 40px); line-height: 0.95; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom">{{sed.title}}</span>
+              </span>
+            </div>
+
+            <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+              <div role="status" style="display: flex; align-items: center; gap: 10px; margin: 16px 18px 0; padding: 12px 14px; background: rgba(255,255,255,0.06); border: 1px solid #FFFFFF; font-weight: 600">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
+                {{toast}}
+              </div>
+            </sc-if>
+            <sc-if value="{{hasError}}" hint-placeholder-val="{{ false }}">
+              <div role="alert" style="display: flex; align-items: center; gap: 10px; margin: 16px 18px 0; padding: 12px 14px; background: rgba(255,92,92,0.1); border: 1px solid #FF5C5C; color: #FFC2C2; font-weight: 600">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF5C5C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 16.5v.5"></path></svg>
+                {{error}}
+              </div>
+            </sc-if>
+
+            <div style="padding: 18px; display: flex; flex-direction: column; gap: 18px">
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Názov sezóny
+                <input type="text" value="{{sed.name}}" onChange="{{sed.setName}}" placeholder="napr. Jarná sezóna 2027" style="min-height: 52px; padding: 0 14px; background: #050505; color: #FFFFFF; border: 1px solid #333333; font-family: 'Saira Extra Condensed', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: 0.02em; text-transform: none; outline-color: #FFFFFF">
+              </label>
+
+              <fieldset style="margin: 0; padding: 14px; border: 1px solid #1E1E1E; background: #0A0A0A; display: flex; flex-direction: column; gap: 12px">
+                <legend style="padding: 0 8px; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 21px; letter-spacing: 0.04em; text-transform: uppercase">Stav na webe</legend>
+                <div role="group" aria-label="Stav sezóny" style="display: flex; gap: 4px; padding: 4px; background: #050505; border: 1px solid #2A2A2A">
+                  <sc-for list="{{sed.stateTabs}}" as="t" hint-placeholder-count="3">
+                    <button type="button" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}" style="flex: 1; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: {{t.bg}}; color: {{t.fg}}; border: 0; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer"><span aria-hidden="true" style="width: 8px; height: 8px; background: {{t.dot}}; border: 1px {{t.dotLine}} {{t.dotBd}}"></span>{{t.label}}</button>
+                  </sc-for>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px; background: #050505; border: 1px solid #1E1E1E">
+                  <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px"><rect x="3" y="4" width="18" height="14"></rect><path d="M8 21h8M12 18v3"></path></svg>
+                  <span style="display: flex; flex-direction: column; gap: 2px">
+                    <strong>{{sed.stateTitle}}</strong>
+                    <span style="font-size: 14px; color: #BDBDBD">{{sed.stateHelp}}</span>
+                  </span>
+                </div>
+                <sc-if value="{{sed.liveWarn}}" hint-placeholder-val="{{ false }}">
+                  <span style="padding: 12px; background: rgba(255,176,32,0.08); border: 1px solid #FFB020; color: #FFE2AD; font-weight: 600">{{sed.liveWarn}}</span>
+                </sc-if>
+              </fieldset>
+
+              <fieldset style="margin: 0; padding: 14px; border: 1px solid #1E1E1E; background: #0A0A0A; display: flex; flex-direction: column; gap: 10px">
+                <legend style="padding: 0 8px; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 21px; letter-spacing: 0.04em; text-transform: uppercase">Tímy v sezóne</legend>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px">
+                  <sc-for list="{{sed.teamChips}}" as="o" hint-placeholder-count="4">
+                    <button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="display: flex; align-items: center; gap: 8px; min-height: 54px; padding: 6px 10px; background: {{o.bg}}; color: {{o.fg}}; border: 2px solid {{o.bd}}; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 800; font-size: 18px; text-transform: uppercase; cursor: pointer; opacity: {{o.op}}">
+                      <img src="{{o.logo}}" alt="" style="width: 34px; height: 34px">{{o.name}}
+                    </button>
+                  </sc-for>
+                </div>
+              </fieldset>
+
+              <sc-if value="{{sed.hasChamp}}" hint-placeholder-val="{{ false }}">
+                <div style="position: relative; overflow: hidden; display: flex; align-items: center; gap: 14px; padding: 14px; background: #050505; border: 1px solid #2A2A2A">
+                  <span aria-hidden="true" style="position: absolute; top: 0; right: 0; bottom: 0; width: 40%; background: linear-gradient(160deg, {{sed.champC}}, {{sed.champD}}); clip-path: polygon(40% 0, 100% 0, 100% 100%, 0 100%, 22% 52%, 10% 48%)"></span>
+                  <img src="{{sed.champLogo}}" alt="" style="position: relative; width: 64px; height: 64px">
+                  <span style="position: relative; display: flex; flex-direction: column; gap: 2px">
+                    <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A9A">Šampión (z výsledku finále)</span>
+                    <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 30px; line-height: 1; text-transform: uppercase">{{sed.champName}}</span>
+                  </span>
+                </div>
+              </sc-if>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px">
+                <sc-for list="{{sed.stats}}" as="x" hint-placeholder-count="3">
+                  <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px; background: #050505; border: 1px solid #1E1E1E">
+                    <span style="font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 40px; line-height: 1">{{x.value}}</span>
+                    <span style="font-size: 12px; color: #9A9A9A">{{x.label}}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+                <button type="button" onClick="{{sed.save}}" style="min-height: 58px; padding: 0 40px 0 26px; background: #FFFFFF; color: #050505; border: 0; font-family: 'Saira Extra Condensed', sans-serif; font-weight: 900; font-size: 26px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%)">{{sed.saveLabel}}</button>
+                <sc-if value="{{sed.canOpen}}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{sed.openMatches}}" style="min-height: 58px; display: inline-flex; align-items: center; gap: 8px; padding: 0 18px; background: transparent; color: #FFFFFF; border: 1px solid #333333; font: inherit; font-weight: 600; cursor: pointer">
+                    Upravovať zápasy tejto sezóny
+                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+                  </button>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </section>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","options":["matches","playoff","teams","seasons","settings"],"default":"matches"},"season":{"editor":"enum","options":["j26","z26","j27"],"default":"z26"},"seasonSel":{"editor":null},"teamSel":{"editor":null},"moving":{"editor":null},"sel":{"editor":"text","default":"k3a"},"pickGoal":{"editor":null},"mobile":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = Object.assign({}, this.state || {}, this.initState(this.props || {}));
+  }
+
+  // ---------- dáta ----------
+  teams() {
+    return {
+      gia: { id: 'gia', abbr: 'GIA', pre: 'Veľká sála', name: 'Giants', c: '#D9A252', d: '#6E4518', ink: '#111111', svg: '../assets/logos/giants.svg',
+        roster: ['Jakub Štefaňák', 'Jozef Urban', 'Marek Horváth', 'Gracjan Motýľ', 'František Müller', 'Šimon Kuba', 'Miroslava Kasáková', 'Šimon Sochuľák', 'Matúš Jaďuďa', 'Kristína Mikundová'] },
+      bre: { id: 'bre', abbr: 'BRE', pre: 'Libresso', name: 'Brewers', c: '#D2AA79', d: '#3F2010', ink: '#3F2010', svg: '../assets/logos/brewers.svg',
+        roster: ['Andrej Bartoš', 'Samuel Kohút', 'Tomáš Slavkov', 'Michal Slavkov', 'Tomáš Majerčík', 'Marek Škrinár', 'Matej Dráb', 'Dominika Filippová', 'Matúš Nazarej', 'Patrik Mucha'] },
+      ran: { id: 'ran', abbr: 'RAN', pre: 'Recepcia', name: 'Rangers', c: '#41CFDD', d: '#024F57', ink: '#111111', svg: '../assets/logos/rangers.svg',
+        roster: ['Pavol Kliment', 'Vojtech Babinský', 'Marek Štofko', 'Adam Kačmár', 'Veronika Mikulová', 'Damián Štyrák', 'Dávid Bunca', 'Ema Boleková', 'Miroslav Klein', 'Štefan Drobňák'] },
+      sai: { id: 'sai', abbr: 'SAI', pre: 'Kaplnka', name: 'Saints', c: '#E0262F', d: '#5E0710', ink: '#FFFFFF', svg: '../assets/logos/saints.svg',
+        roster: ['Damián Štieber', 'Adam Hrabovský', 'Martin Hlúbik', 'Ján Okál', 'Oliver Paradeiser', 'Tomáš Adamko', 'Martin Kostolník', 'Karolína Kaduková', 'Milan Tunys'] }
+    };
+  }
+  logoBlank() { return '../assets/logos/ful-mark-white.png'; }
+
+  goalsOf(list) { return list.map((g) => ({ t: g[0], s: g[1], as: g[2] })); }
+
+  initialMatches() {
+    const G = {
+      k1a: [['h', 'Jakub Štefaňák', 'Šimon Kuba'], ['a', 'Andrej Bartoš', 'Marek Škrinár'], ['h', 'Miroslava Kasáková', 'Jozef Urban'], ['h', 'Jozef Urban', 'Jakub Štefaňák'], ['a', 'Matej Dráb', 'Marek Škrinár'], ['h', 'Šimon Kuba', 'Miroslava Kasáková']],
+      k1b: [['h', 'Pavol Kliment', 'Vojtech Babinský'], ['a', 'Damián Štieber', 'Karolína Kaduková'], ['h', 'Ema Boleková', 'Damián Štyrák'], ['h', 'Damián Štyrák', 'Pavol Kliment'], ['a', 'Tomáš Adamko', 'Damián Štieber'], ['h', 'Dávid Bunca', 'Pavol Kliment'], ['h', 'Pavol Kliment', 'Ema Boleková'], ['a', 'Damián Štieber', 'Tomáš Adamko'], ['h', 'Ema Boleková', 'Vojtech Babinský']],
+      k2a: [['a', 'Pavol Kliment', 'Damián Štyrák'], ['h', 'Šimon Kuba', 'Jozef Urban'], ['a', 'Damián Štyrák', 'Vojtech Babinský'], ['h', 'Jakub Štefaňák', 'Šimon Kuba'], ['a', 'Vojtech Babinský', 'Pavol Kliment']],
+      k2b: [['h', 'Andrej Bartoš', 'Marek Škrinár'], ['a', 'Martin Hlúbik', 'Tomáš Adamko'], ['h', 'Marek Škrinár', 'Matej Dráb'], ['h', 'Andrej Bartoš', 'Dominika Filippová'], ['a', 'Damián Štieber', ''], ['h', 'Dominika Filippová', 'Marek Škrinár'], ['a', 'Karolína Kaduková', 'Damián Štieber'], ['h', 'Patrik Mucha', 'Matej Dráb'], ['a', 'Tomáš Adamko', 'Karolína Kaduková'], ['h', 'Marek Škrinár', 'Andrej Bartoš']]
+    };
+    const m = (id, stage, k, h, a, date, time, extra) => Object.assign({ id, stage, k, h, a, date, time, tbd: false, status: 'plan', goals: [], moved: false, orig: null, note: '' }, extra || {});
+    return [
+      m('k1a', 'R', 1, 'gia', 'bre', '2026-10-06', '20:15', { status: 'done', goals: this.goalsOf(G.k1a) }),
+      m('k1b', 'R', 1, 'ran', 'sai', '2026-10-06', '21:00', { status: 'done', goals: this.goalsOf(G.k1b) }),
+      m('k2a', 'R', 2, 'gia', 'ran', '2026-10-13', '20:15', { status: 'done', goals: this.goalsOf(G.k2a) }),
+      m('k2b', 'R', 2, 'bre', 'sai', '2026-10-13', '21:00', { status: 'done', goals: this.goalsOf(G.k2b) }),
+      m('k3a', 'R', 3, 'gia', 'sai', '2026-10-20', '20:15'),
+      m('k3b', 'R', 3, 'bre', 'ran', '2026-10-20', '21:00'),
+      m('k4a', 'R', 4, 'bre', 'gia', '2026-10-27', '20:15'),
+      m('k4b', 'R', 4, 'sai', 'ran', '2026-10-29', '19:00', { moved: true, orig: '2026-10-27|21:00', note: 'Hrá sa v malej telocvični' }),
+      m('k5a', 'R', 5, 'ran', 'gia', '2026-11-03', '20:15'),
+      m('k5b', 'R', 5, 'sai', 'bre', '2026-11-03', '21:00'),
+      m('k6a', 'R', 6, 'sai', 'gia', '2026-11-10', '20:15'),
+      m('k6b', 'R', 6, 'ran', 'bre', null, null, { tbd: true, orig: '2026-11-10|21:00' }),
+      m('sf1', 'SF1', null, null, null, '2026-11-24', '20:15'),
+      m('sf2', 'SF2', null, null, null, '2026-11-24', '21:00'),
+      m('b3', 'B3', null, null, null, '2026-12-01', '20:15'),
+      m('fin', 'F', null, null, null, '2026-12-01', '21:00')
+    ];
+  }
+
+  // ---------- dátumy ----------
+  pad(n) { return String(n).padStart(2, '0'); }
+  isoOf(y, m0, d) { const dt = new Date(y, m0, d); return dt.getFullYear() + '-' + this.pad(dt.getMonth() + 1) + '-' + this.pad(dt.getDate()); }
+  parts(iso) { const p = iso.split('-').map(Number); return { y: p[0], m0: p[1] - 1, d: p[2] }; }
+  dow(iso) { const p = this.parts(iso); return new Date(p.y, p.m0, p.d).getDay(); }
+  shortDate(iso) { const p = this.parts(iso); return ['Ne', 'Po', 'Ut', 'St', 'Št', 'Pi', 'So'][this.dow(iso)] + ' ' + p.d + '. ' + (p.m0 + 1) + '.'; }
+  longDate(iso) {
+    const p = this.parts(iso);
+    const day = ['Nedeľa', 'Pondelok', 'Utorok', 'Streda', 'Štvrtok', 'Piatok', 'Sobota'][this.dow(iso)];
+    return day + ' ' + p.d + '. ' + (p.m0 + 1) + '. ' + p.y;
+  }
+  slotLabel(date, time) { return date ? this.shortDate(date) + ' · ' + (time || '—') : '—'; }
+  origLabel(orig) { if (!orig) return ''; const s = orig.split('|'); return this.slotLabel(s[0], s[1]); }
+  shiftTime(t, delta) {
+    const p = (t || '20:00').split(':').map(Number);
+    const total = (((p[0] * 60 + p[1] + delta) % 1440) + 1440) % 1440;
+    return this.pad(Math.floor(total / 60)) + ':' + this.pad(total % 60);
+  }
+
+  // ---------- liga ----------
+  score(m) {
+    const g = m.goals || [];
+    return { h: g.filter((x) => x.t === 'h').length, a: g.filter((x) => x.t === 'a').length };
+  }
+  table(matches) {
+    const T = this.teams();
+    const st = {};
+    Object.keys(T).forEach((id) => { st[id] = { id, T: T[id], z: 0, v: 0, r: 0, p: 0, gf: 0, ga: 0 }; });
+    matches.filter((m) => m.stage === 'R' && m.status === 'done' && m.h && m.a).forEach((m) => {
+      const sc = this.score(m), h = st[m.h], a = st[m.a];
+      h.z++; a.z++; h.gf += sc.h; h.ga += sc.a; a.gf += sc.a; a.ga += sc.h;
+      if (sc.h > sc.a) { h.v++; a.p++; } else if (sc.h < sc.a) { a.v++; h.p++; } else { h.r++; a.r++; }
+    });
+    return Object.keys(st).map((id) => Object.assign({}, st[id], { b: st[id].v * 3 + st[id].r, diff: st[id].gf - st[id].ga }))
+      .sort((x, y) => y.b - x.b || y.diff - x.diff || y.gf - x.gf)
+      .map((s, i) => Object.assign({}, s, { pos: i + 1 }));
+  }
+  outcome(m, S) {
+    if (!m || m.status !== 'done') return null;
+    const t = this.teamsFor(m, S), sc = this.score(m);
+    if (!t[0] || !t[1] || sc.h === sc.a) return null;
+    return sc.h > sc.a ? { win: t[0], lose: t[1] } : { win: t[1], lose: t[0] };
+  }
+  teamsFor(m, S) {
+    if (m.stage === 'R') return [m.h, m.a];
+    if (m.stage === 'SF1' || m.stage === 'SF2') {
+      if (S.seedMode === 'auto') {
+        if (!S.matches.some((x) => x.stage === 'R' && x.status === 'done')) return [null, null];
+        const t = this.table(S.matches);
+        return m.stage === 'SF1' ? [t[0].id, t[3].id] : [t[1].id, t[2].id];
+      }
+      return [m.h, m.a];
+    }
+    const o1 = this.outcome(S.matches.find((x) => x.stage === 'SF1'), S);
+    const o2 = this.outcome(S.matches.find((x) => x.stage === 'SF2'), S);
+    if (m.stage === 'F') return [o1 ? o1.win : null, o2 ? o2.win : null];
+    return [o1 ? o1.lose : null, o2 ? o2.lose : null];
+  }
+  stageName(stage) { return { R: '', SF1: 'Semifinále 1', SF2: 'Semifinále 2', F: 'Finále', B3: 'O 3. miesto' }[stage]; }
+  placeholderName(stage, side) {
+    if (stage === 'F') return side === 0 ? 'Víťaz SF1' : 'Víťaz SF2';
+    if (stage === 'B3') return side === 0 ? 'Porazený SF1' : 'Porazený SF2';
+    return 'Vyber tím';
+  }
+
+  // ---------- sezóny ----------
+  isMobile() { return !!this.props.mobile && this.props.mobile !== 'false'; }
+  plural(n, one, few, many) { return n === 1 ? one : (n >= 2 && n <= 4 ? few : many); }
+  copyRosters(r) { const o = {}; Object.keys(r).forEach((id) => { o[id] = r[id].slice(); }); return o; }
+  seasonsInit() {
+    return [
+      { id: 'j26', name: 'Jarná sezóna 2026', short: 'Jar 2026', state: 'done', teams: ['gia', 'bre', 'ran', 'sai'] },
+      { id: 'z26', name: 'Zimná sezóna 2026', short: 'Zima 2026', state: 'live', teams: ['gia', 'bre', 'ran', 'sai'] },
+      { id: 'j27', name: 'Jarná sezóna 2027', short: 'Jar 2027', state: 'soon', teams: ['gia', 'bre', 'ran', 'sai'] }
+    ];
+  }
+  seasonOf(S) { return S.seasons.find((x) => x.id === S.season) || S.seasons[0]; }
+  rosters(S) { return (S.rostersBy && S.rostersBy[S.season]) || {}; }
+  fakeGoals(id, h, a, hs, as) {
+    const T = this.teams();
+    let seed = id.split('').reduce((x, c) => (x * 31 + c.charCodeAt(0)) >>> 0, 7);
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const order = [];
+    for (let i = 0; i < hs; i++) order.push('h');
+    for (let i = 0; i < as; i++) order.push('a');
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const x = order[i]; order[i] = order[j]; order[j] = x; }
+    return order.map((t) => {
+      const roster = T[t === 'h' ? h : a].roster;
+      const s = roster[Math.floor(rnd() * Math.min(7, roster.length))];
+      let a2 = roster[Math.floor(rnd() * roster.length)];
+      if (a2 === s || rnd() < 0.3) a2 = '';
+      return { t, s, as: a2 };
+    });
+  }
+  pastMatches() {
+    const m = (id, stage, k, h, a, date, time, hs, as) => ({ id, stage, k, h: stage === 'R' ? h : null, a: stage === 'R' ? a : null, date, time, tbd: false, status: 'done', goals: this.fakeGoals(id, h, a, hs, as), moved: false, orig: null, note: '' });
+    return [
+      m('p1a', 'R', 1, 'gia', 'bre', '2026-03-03', '20:15', 3, 5), m('p1b', 'R', 1, 'ran', 'sai', '2026-03-03', '21:00', 4, 2),
+      m('p2a', 'R', 2, 'gia', 'ran', '2026-03-10', '20:15', 4, 1), m('p2b', 'R', 2, 'bre', 'sai', '2026-03-10', '21:00', 6, 2),
+      m('p3a', 'R', 3, 'gia', 'sai', '2026-03-17', '20:15', 3, 2), m('p3b', 'R', 3, 'bre', 'ran', '2026-03-17', '21:00', 2, 4),
+      m('p4a', 'R', 4, 'bre', 'gia', '2026-03-24', '20:15', 5, 3), m('p4b', 'R', 4, 'sai', 'ran', '2026-03-24', '21:00', 1, 3),
+      m('p5a', 'R', 5, 'ran', 'gia', '2026-03-31', '20:15', 2, 5), m('p5b', 'R', 5, 'sai', 'bre', '2026-03-31', '21:00', 4, 6),
+      m('p6a', 'R', 6, 'sai', 'gia', '2026-04-07', '20:15', 2, 1), m('p6b', 'R', 6, 'ran', 'bre', '2026-04-07', '21:00', 3, 4),
+      m('psf1', 'SF1', null, 'bre', 'sai', '2026-04-14', '20:15', 4, 3), m('psf2', 'SF2', null, 'gia', 'ran', '2026-04-14', '21:00', 2, 3),
+      m('pb3', 'B3', null, 'sai', 'gia', '2026-04-21', '20:15', 3, 5), m('pfin', 'F', null, 'bre', 'ran', '2026-04-21', '21:00', 4, 2)
+    ];
+  }
+  futureMatches(prefix) {
+    const p = prefix || 'f';
+    const m = (id, stage) => ({ id: p + id, stage, k: null, h: null, a: null, date: null, time: '20:15', tbd: true, status: 'plan', goals: [], moved: false, orig: null, note: '' });
+    return [m('sf1', 'SF1'), m('sf2', 'SF2'), m('b3', 'B3'), m('fin', 'F')];
+  }
+  stateStyle(state) {
+    if (state === 'live') return { status: 'Prebieha', chipBg: '#FFFFFF', chipFg: '#050505', chipBd: '#FFFFFF', chipLine: 'solid', dot: '#3DDC84', dotBd: '#3DDC84' };
+    if (state === 'done') return { status: 'Skončená', chipBg: 'transparent', chipFg: '#BDBDBD', chipBd: '#5A5A5A', chipLine: 'solid', dot: '#9A9A9A', dotBd: '#9A9A9A' };
+    return { status: 'Pripravujeme', chipBg: 'transparent', chipFg: '#FFFFFF', chipBd: '#FFFFFF', chipLine: 'dashed', dot: 'transparent', dotBd: '#FFFFFF' };
+  }
+  champOf(S, seasonId) {
+    const ms = seasonId === S.season ? S.matches : (S.bySeason[seasonId] || []);
+    const fin = ms.find((m) => m.stage === 'F');
+    const o = fin ? this.outcome(fin, { matches: ms, seedMode: S.seedMode }) : null;
+    return o ? o.win : null;
+  }
+  switchSeason(id) {
+    this.setState((s) => {
+      if (id === s.season) return {};
+      const by = Object.assign({}, s.bySeason, { [s.season]: s.matches });
+      const sea = s.seasons.find((x) => x.id === id);
+      const keepTeam = s.teamSel && sea && sea.teams.indexOf(s.teamSel) >= 0 ? s.teamSel : (this.isMobile() || !sea ? null : sea.teams[0] || null);
+      const base = Object.assign({}, s, { bySeason: by, season: id, matches: by[id] || [], tab: s.tab === 'seasons' ? 'matches' : s.tab, filter: 'all', teamSel: keepTeam, moving: null, newName: '' });
+      return Object.assign(this.withSelection(base, null), { toast: '', error: '' });
+    });
+  }
+  selectSeason(id) {
+    this.setState((s) => {
+      const src = id === 'new' ? { id: 'new', name: '', short: '', state: 'soon', teams: ['gia', 'bre', 'ran', 'sai'] } : s.seasons.find((x) => x.id === id);
+      return { seasonSel: id, seasonDraft: Object.assign({}, src, { teams: src.teams.slice() }), toast: '', error: '' };
+    });
+  }
+  patchSeason(p) { this.setState((s) => ({ seasonDraft: Object.assign({}, s.seasonDraft, p), toast: '', error: '' })); }
+  shortName(name) {
+    return name.replace(/sez[oó]na\s*/i, '').replace('Jarná', 'Jar').replace('Zimná', 'Zima').replace('Letná', 'Leto').replace('Jesenná', 'Jeseň').trim() || name;
+  }
+  saveSeason() {
+    this.setState((s) => {
+      const d = s.seasonDraft;
+      const name = (d.name || '').trim();
+      if (!name) return { error: 'Daj sezóne názov, napr. „Jarná sezóna 2027“.', toast: '' };
+      if (d.teams.length < 2) return { error: 'Sezóna potrebuje aspoň 2 tímy.', toast: '' };
+      let seasons = s.seasons.map((x) => Object.assign({}, x));
+      let id = d.id;
+      const rec = Object.assign({}, d, { name, short: this.shortName(name) });
+      let note = 'Sezóna je uložená.';
+      if (d.state === 'live') {
+        seasons.forEach((x) => { if (x.state === 'live' && x.id !== d.id) { x.state = 'done'; note = 'Uložené. „' + x.name + '“ je teraz skončená a web ukazuje „' + name + '“.'; } });
+      }
+      const by = Object.assign({}, s.bySeason);
+      const rBy = Object.assign({}, s.rostersBy);
+      const cBy = Object.assign({}, s.captainsBy);
+      if (id === 'new') {
+        id = 's' + (seasons.length + 1);
+        rec.id = id;
+        seasons = seasons.concat([rec]);
+        by[id] = this.futureMatches(id);
+        const empty = {};
+        Object.keys(this.teams()).forEach((t) => { empty[t] = []; });
+        rBy[id] = empty;
+        cBy[id] = {};
+        note = 'Sezóna „' + name + '“ je vytvorená. Prepni sa na ňu hore a pridaj zápasy aj hráčov.';
+      } else {
+        seasons = seasons.map((x) => (x.id === id ? rec : x));
+      }
+      return { seasons, bySeason: by, rostersBy: rBy, captainsBy: cBy, seasonSel: id, seasonDraft: Object.assign({}, rec, { teams: rec.teams.slice() }), toast: note, error: '' };
+    });
+  }
+  openTab(tab) {
+    this.setState((s) => {
+      const next = { tab, toast: '', error: '', moving: null };
+      if (tab === 'seasons' && !s.seasonDraft && !this.isMobile()) {
+        const src = this.seasonOf(s);
+        next.seasonSel = src.id;
+        next.seasonDraft = Object.assign({}, src, { teams: src.teams.slice() });
+      }
+      if (tab === 'teams' && !s.teamSel && !this.isMobile()) next.teamSel = this.seasonOf(s).teams[0] || null;
+      return next;
+    });
+  }
+
+  // ---------- fotky hráčov ----------
+  initialPhotos() {
+    return {
+      'Jakub Štefaňák': { full: '../photos/gia_full.webp', face: '../photos/gia_face.webp' },
+      'Andrej Bartoš': { full: '../photos/bre_full.webp', face: '../photos/bre_face.webp' },
+      'Pavol Kliment': { full: '../photos/ran_full.webp', face: '../photos/ran_face.webp' },
+      'Damián Štieber': { full: '../photos/sai_full.webp', face: '../photos/sai_face.webp' }
+    };
+  }
+  initials(n) { return n.split(' ').filter(Boolean).map((x) => x[0]).join('').slice(0, 2).toUpperCase(); }
+  avatar(S, name, team) {
+    const ph = (S.photos || {})[name];
+    return { has: !!ph, none: !ph, src: ph ? ph.face : '', ini: this.initials(name), bg: team ? team.c : '#333333', ink: team ? team.ink : '#FFFFFF' };
+  }
+  uploadPhoto(name, e) {
+    const f = e && e.target && e.target.files && e.target.files[0];
+    if (!f) return;
+    if (!/^image\//.test(f.type)) { this.setState({ error: 'Toto nie je obrázok — vyber PNG alebo JPG.', toast: '' }); return; }
+    const reader = new FileReader();
+    reader.onload = () => this.setState((s) => ({
+      photos: Object.assign({}, s.photos, { [name]: { face: reader.result, full: reader.result } }),
+      toast: 'Fotka hráča ' + name + ' je nahratá. Na webe sa ukáže pri jeho mene.', error: ''
+    }));
+    reader.readAsDataURL(f);
+  }
+
+  // ---------- tímy a hráči ----------
+  selectTeam(id) { this.setState({ teamSel: id, moving: null, newName: '', toast: '', error: '' }); }
+  setMoving(name) { this.setState((s) => ({ moving: s.moving === name ? null : name, toast: '', error: '' })); }
+  editRoster(fn) {
+    this.setState((s) => {
+      const r = this.copyRosters(this.rosters(s));
+      const caps = Object.assign({}, s.captainsBy[s.season] || {});
+      const res = fn(r, caps, s) || {};
+      if (res.error) return { error: res.error, toast: '' };
+      return {
+        rostersBy: Object.assign({}, s.rostersBy, { [s.season]: r }),
+        captainsBy: Object.assign({}, s.captainsBy, { [s.season]: caps }),
+        toast: res.toast || 'Uložené.', error: '', moving: null, newName: res.clearName ? '' : s.newName
+      };
+    });
+  }
+  addPlayer() {
+    const T = this.teams();
+    this.editRoster((r, caps, s) => {
+      const name = (s.newName || '').trim().replace(/\s+/g, ' ');
+      if (!name) return { error: 'Napíš meno a priezvisko hráča.' };
+      const where = Object.keys(r).find((id) => r[id].indexOf(name) >= 0);
+      if (where) return { error: name + ' už je v tíme ' + T[where].name + '. Ak ho chceš presunúť, klikni pri ňom na „Presunúť“.' };
+      r[s.teamSel] = (r[s.teamSel] || []).concat([name]);
+      return { toast: name + ' je v tíme ' + T[s.teamSel].name + '.', clearName: true };
+    });
+  }
+  removePlayer(name) {
+    this.editRoster((r, caps, s) => {
+      r[s.teamSel] = (r[s.teamSel] || []).filter((n) => n !== name);
+      if (caps[s.teamSel] === name) caps[s.teamSel] = '';
+      return { toast: name + ' je odstránený zo súpisky. Jeho góly ostávajú v štatistikách.' };
+    });
+  }
+  toggleCaptain(name) {
+    this.editRoster((r, caps, s) => {
+      const on = caps[s.teamSel] !== name;
+      caps[s.teamSel] = on ? name : '';
+      return { toast: on ? name + ' je kapitán.' : 'Tím je zatiaľ bez kapitána.' };
+    });
+  }
+  moveTo(name, to) {
+    const T = this.teams();
+    this.editRoster((r, caps, s) => {
+      r[s.teamSel] = (r[s.teamSel] || []).filter((n) => n !== name);
+      r[to] = (r[to] || []).concat([name]);
+      if (caps[s.teamSel] === name) caps[s.teamSel] = '';
+      return { toast: name + ' hrá odteraz za ' + T[to].name + '.' };
+    });
+  }
+  teamEditor(S, T) {
+    const id = S.teamSel, t = T[id];
+    const r = this.rosters(S)[id] || [];
+    const cap = (S.captainsBy[S.season] || {})[id];
+    const sea = this.seasonOf(S);
+    const st = {};
+    S.matches.filter((m) => m.status === 'done').forEach((m) => (m.goals || []).forEach((g) => {
+      if (g.s) { st[g.s] = st[g.s] || { g: 0, a: 0 }; st[g.s].g++; }
+      if (g.as) { st[g.as] = st[g.as] || { g: 0, a: 0 }; st[g.as].a++; }
+    }));
+    const others = sea.teams.filter((x) => x !== id);
+    const players = r.map((name) => {
+      const isCap = cap === name, moving = S.moving === name, x = st[name] || { g: 0, a: 0 };
+      return {
+        name, stats: x.g + ' G · ' + x.a + ' A v tejto sezóne' + (isCap ? ' · kapitán' : ''),
+        bd: moving ? '#FFFFFF' : '#1E1E1E',
+        capPressed: isCap ? 'true' : 'false', capBg: isCap ? '#FFFFFF' : 'transparent', capFg: isCap ? '#050505' : '#6A6A6A', capBd: isCap ? '#FFFFFF' : '#333333',
+        moving, moveExpanded: moving ? 'true' : 'false', moveBg: moving ? '#161616' : 'transparent', moveBd: moving ? '#FFFFFF' : '#333333',
+        targets: others.map((o) => ({ name: T[o].name, logo: T[o].svg, c: T[o].c, pick: () => this.moveTo(name, o) })),
+        av: this.avatar(S, name, t),
+        photoLabel: (S.photos || {})[name] ? 'Zmeniť fotku' : 'Nahrať fotku',
+        photoAria: ((S.photos || {})[name] ? 'Zmeniť fotku: ' : 'Nahrať fotku: ') + name,
+        photoFg: (S.photos || {})[name] ? '#FFFFFF' : '#9A9A9A', photoBd: (S.photos || {})[name] ? '#555555' : '#333333',
+        onPhoto: (e) => this.uploadPhoto(name, e),
+        toggleCap: () => this.toggleCaptain(name), toggleMove: () => this.setMoving(name), remove: () => this.removePlayer(name)
+      };
+    });
+    return {
+      c: t.c, d: t.d, logo: t.svg, name: t.name, kicker: 'Tím · ' + t.pre,
+      capHas: !!(cap && (S.photos || {})[cap]), capFull: cap && (S.photos || {})[cap] ? S.photos[cap].full : '', capName: cap || '',
+      count: r.length + ' ' + this.plural(r.length, 'hráč', 'hráči', 'hráčov'), seasonName: sea.name,
+      empty: r.length === 0, players,
+      newName: S.newName || '', setNewName: (e) => this.setState({ newName: e.target.value, error: '', toast: '' }),
+      add: () => this.addPlayer()
+    };
+  }
+  seasonEditor(S, T) {
+    const d = S.seasonDraft;
+    const isNew = d.id === 'new';
+    const stateTabs = [['soon', 'Pripravujeme'], ['live', 'Prebieha'], ['done', 'Skončená']].map((o) => {
+      const ss = this.stateStyle(o[0]), on = d.state === o[0];
+      return Object.assign({ label: o[1], dot: on && o[0] === 'soon' ? 'transparent' : ss.dot, dotBd: on ? '#050505' : ss.dotBd, dotLine: ss.chipLine, pick: () => this.patchSeason({ state: o[0] }) }, this.btn(on));
+    });
+    const otherLive = S.seasons.find((x) => x.state === 'live' && x.id !== d.id);
+    const title = { soon: 'Na webe: banner „Pripravujeme“', live: 'Na webe: hlavná sezóna', done: 'Na webe: archív' };
+    const help = { soon: 'Ľudia uvidia len logo FULky a nápis, že sezóna sa chystá.', live: 'Web ju ukazuje ako hlavnú — výsledky, rozpis, tabuľku, hráčov aj playoff.', done: 'Ľudia si pozrú šampióna, konečné poradie, tabuľku, playoff a všetky výsledky.' };
+    const teamChips = Object.keys(T).map((id) => {
+      const on = d.teams.indexOf(id) >= 0;
+      return Object.assign({ logo: T[id].svg, name: T[id].name, op: on ? '1' : '0.45', pick: () => this.patchSeason({ teams: on ? d.teams.filter((x) => x !== id) : d.teams.concat([id]) }) },
+        this.btn(on, { activeBg: '#161616', activeFg: '#FFFFFF', activeBd: '#FFFFFF', bg: '#050505', fg: '#9A9A9A', bd: '#2A2A2A' }));
+    });
+    const ms = isNew ? [] : (d.id === S.season ? S.matches : (S.bySeason[d.id] || []));
+    const champ = isNew ? null : this.champOf(S, d.id);
+    const shard = { live: 'linear-gradient(160deg, #FFFFFF, #6A6A6A)', done: champ ? 'linear-gradient(160deg, ' + T[champ].c + ', ' + T[champ].d + ')' : 'linear-gradient(160deg, #6A6A6A, #1A1A1A)', soon: 'repeating-linear-gradient(115deg, #2E2E2E 0 6px, #141414 6px 12px)' };
+    const nPlayers = isNew ? 0 : Object.keys(S.rostersBy[d.id] || {}).reduce((n, k) => n + S.rostersBy[d.id][k].length, 0);
+    return {
+      kicker: isNew ? 'Nová sezóna' : 'Sezóna · ' + this.stateStyle(d.state).status, title: d.name || 'Nová sezóna', shard: shard[d.state],
+      name: d.name, setName: (e) => this.patchSeason({ name: e.target.value }),
+      stateTabs, stateTitle: title[d.state], stateHelp: help[d.state],
+      liveWarn: d.state === 'live' && otherLive ? '„' + otherLive.name + '“ sa po uložení prepne na Skončená — naraz môže prebiehať len jedna sezóna.' : '',
+      teamChips,
+      hasChamp: !!champ, champName: champ ? T[champ].name : '', champLogo: champ ? T[champ].gif : '', champC: champ ? T[champ].c : '#333333', champD: champ ? T[champ].d : '#111111',
+      stats: [
+        { value: String(ms.filter((m) => m.stage === 'R').length), label: 'zápasov v základnej časti' },
+        { value: String(ms.filter((m) => m.status === 'done').length), label: 'odohraných zápasov' },
+        { value: String(nPlayers), label: 'hráčov na súpiskách' }
+      ],
+      saveLabel: isNew ? 'Vytvoriť sezónu' : 'Uložiť sezónu', save: () => this.saveSeason(),
+      canOpen: !isNew,
+      openMatches: () => { this.switchSeason(d.id); this.setState({ tab: 'matches' }); }
+    };
+  }
+
+  // ---------- zmeny stavu ----------
+  initState(props) {
+    const T = this.teams();
+    const seasons = this.seasonsInit();
+    const full = {}, empty = {}, caps = {};
+    Object.keys(T).forEach((id) => { full[id] = T[id].roster.slice(); empty[id] = []; caps[id] = T[id].roster[0]; });
+    const rostersBy = { j26: this.copyRosters(full), z26: this.copyRosters(full), j27: this.copyRosters(empty) };
+    const captainsBy = { j26: Object.assign({}, caps), z26: Object.assign({}, caps), j27: {} };
+    const bySeason = { j26: this.pastMatches(), z26: this.initialMatches(), j27: this.futureMatches('f') };
+    const season = props.season && bySeason[props.season] ? props.season : 'z26';
+    const base = { tab: props.view || 'matches', photos: this.initialPhotos(), bannerCount: 2, bannerDraft: 2, filter: 'all', seedMode: 'auto', seasons, bySeason, rostersBy, captainsBy, season, matches: bySeason[season], sel: null, draft: null, cal: { y: 2026, m0: 9 }, pick: null, toast: '', error: '', seasonSel: null, seasonDraft: null, teamSel: null, newName: '', moving: null };
+    const sel = props.sel !== undefined ? props.sel : (season === 'z26' ? 'k3a' : '');
+    const next = this.withSelection(base, sel === '' ? null : sel);
+    if (props.pickGoal != null && next.draft) next.pick = { i: Number(props.pickGoal), f: 's' };
+    if (props.view === 'seasons') {
+      const src = seasons.find((x) => x.id === (props.seasonSel || season)) || seasons[0];
+      next.seasonSel = src.id;
+      next.seasonDraft = Object.assign({}, src, { teams: src.teams.slice() });
+    }
+    if (props.view === 'teams') {
+      next.teamSel = props.teamSel !== undefined ? (props.teamSel || null) : 'gia';
+      if (props.moving) next.moving = props.moving;
+    }
+    return next;
+  }
+  clone(m) { return Object.assign({}, m, { goals: (m.goals || []).map((g) => Object.assign({}, g)), markMoved: true }); }
+  newDraft(S) {
+    const ks = S.matches.filter((m) => m.stage === 'R').map((m) => m.k);
+    const maxK = ks.length ? Math.max.apply(null, ks) : 1;
+    return { id: 'new', stage: 'R', k: maxK, h: null, a: null, date: null, time: '20:15', tbd: false, status: 'plan', goals: [], moved: false, orig: null, note: '', markMoved: true };
+  }
+  withSelection(S, id) {
+    if (id === null) return Object.assign({}, S, { sel: null, draft: null, pick: null });
+    const saved = S.matches.find((m) => m.id === id);
+    if (id !== 'new' && !saved) return Object.assign({}, S, { sel: null, draft: null, pick: null });
+    const draft = id === 'new' ? this.newDraft(S) : this.clone(saved);
+    const ref = draft.date || (draft.orig ? draft.orig.split('|')[0] : null);
+    const cal = ref ? { y: this.parts(ref).y, m0: this.parts(ref).m0 } : S.cal;
+    return Object.assign({}, S, { sel: id, draft, cal, pick: null });
+  }
+  select(id) { this.setState((s) => Object.assign(this.withSelection(s, id), { toast: '', error: '' })); }
+  patch(p) { this.setState((s) => ({ draft: Object.assign({}, s.draft, p), toast: '', error: '' })); }
+  setGoals(fn, pick) { this.setState((s) => ({ draft: Object.assign({}, s.draft, { goals: fn(s.draft.goals.map((g) => Object.assign({}, g))) }), pick, toast: '', error: '' })); }
+  addGoal(t) { this.setGoals((gs) => gs.concat([{ t, s: '', as: '' }]), { i: this.state.draft.goals.length, f: 's' }); }
+  dropLastGoal(t) {
+    this.setGoals((gs) => { for (let i = gs.length - 1; i >= 0; i--) { if (gs[i].t === t) { gs.splice(i, 1); break; } } return gs; }, null);
+  }
+  choosePlayer(i, f, name) {
+    const nextPick = f === 's' ? { i, f: 'as' } : null;
+    this.setGoals((gs) => { gs[i][f] = name; return gs; }, nextPick);
+  }
+
+  validate(S, d) {
+    const t = this.teamsFor(d, S);
+    const needTeams = d.stage === 'R' || (S.seedMode === 'manual' && (d.stage === 'SF1' || d.stage === 'SF2'));
+    if (needTeams && (!t[0] || !t[1])) return 'Vyber oba tímy.';
+    if (needTeams && t[0] === t[1]) return 'Tím nemôže hrať sám so sebou — vyber dva rôzne tímy.';
+    if (!d.tbd && !d.date) return 'Vyber dátum v kalendári alebo prepni na „Termín neznámy“.';
+    if (d.status === 'done' && d.tbd) return 'Odohraný zápas potrebuje dátum — prepni na „Presný termín“.';
+    if (d.status === 'done' && (!t[0] || !t[1])) return 'Výsledok sa dá zapísať, až keď sú známe oba tímy.';
+    const missing = (d.goals || []).findIndex((g) => !g.s);
+    if (d.status === 'done' && missing >= 0) return 'Pri góle č. ' + (missing + 1) + ' chýba strelec (môžeš dať aj „Neznámy hráč“).';
+    const sc = this.score(d);
+    if (d.status === 'done' && d.stage !== 'R' && sc.h === sc.a) return 'V playoff musí byť víťaz — výsledok nemôže byť remíza.';
+    return '';
+  }
+  save() {
+    this.setState((s) => {
+      const d = s.draft;
+      const err = this.validate(s, d);
+      if (err) return { error: err, toast: '' };
+      const saved = s.matches.find((m) => m.id === d.id);
+      const rec = Object.assign({}, d);
+      delete rec.markMoved;
+      if (s.seedMode === 'auto' && (d.stage === 'SF1' || d.stage === 'SF2')) { rec.h = null; rec.a = null; }
+      if (saved && saved.date) {
+        const changed = d.tbd || d.date !== saved.date || d.time !== saved.time;
+        if (changed && (d.markMoved || d.tbd)) { rec.orig = saved.orig || saved.date + '|' + saved.time; rec.moved = !d.tbd; }
+      }
+      let matches, id = d.id;
+      if (d.id === 'new') {
+        id = 'n' + (s.matches.length + 1);
+        rec.id = id;
+        matches = s.matches.concat([rec]);
+      } else {
+        matches = s.matches.map((m) => (m.id === d.id ? rec : m));
+      }
+      const next = this.withSelection(Object.assign({}, s, { matches }), id);
+      return Object.assign(next, { toast: 'Uložené. Web sa hneď aktualizuje — tabuľka aj štatistiky sa prepočítali.', error: '' });
+    });
+  }
+  removeMatch() {
+    this.setState((s) => Object.assign(this.withSelection(Object.assign({}, s, { matches: s.matches.filter((m) => m.id !== s.sel) }), null), { toast: 'Zápas je vymazaný.', error: '' }));
+  }
+
+  // ---------- nastavenia ----------
+  settingsVals(S, T, ms) {
+    const up = ms.filter((m) => m.stage === 'R' && m.status !== 'done' && m.date && !m.tbd && m.h && m.a)
+      .sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time));
+    const n = S.bannerDraft;
+    const shown = up.slice(0, n);
+    const unit = (k) => (k === 1 ? 'zápas' : (k <= 4 ? 'zápasy' : 'zápasov'));
+    return {
+      dirty: S.bannerDraft !== S.bannerCount,
+      countTabs: [1, 2, 3, 4].map((k) => Object.assign({ label: String(k), unit: unit(k), pick: () => this.setState({ bannerDraft: k, toast: '', error: '' }) }, this.btn(n === k))),
+      previewTitle: shown.length === 1 ? 'Najbližší zápas' : 'Najbližšie zápasy',
+      preview: shown.map((m) => ({ hc: T[m.h].c, hd: T[m.h].d, ac: T[m.a].c, ad: T[m.a].d, hLogo: T[m.h].svg, aLogo: T[m.a].svg, time: m.time, day: this.shortDate(m.date) + ' · K' + m.k })),
+      previewNote: shown.length < n
+        ? 'Naplánovaných zápasov s termínom je teraz len ' + shown.length + ', viac ich na banneri nebude.'
+        : (n === 1 ? 'Jeden veľký zápas cez celý banner.' : 'Na počítači budú zápasy vedľa seba, na mobile pod sebou.'),
+      save: () => this.setState((s) => ({ bannerCount: s.bannerDraft, toast: 'Uložené. Banner na webe ukazuje ' + s.bannerDraft + ' ' + unit(s.bannerDraft) + '.', error: '' })),
+      reset: () => this.setState((s) => ({ bannerDraft: s.bannerCount, toast: '', error: '' }))
+    };
+  }
+
+  // ---------- pohľady ----------
+  btn(active, opt) {
+    const o = opt || {};
+    return {
+      pressed: active ? 'true' : 'false',
+      bg: active ? (o.activeBg || '#FFFFFF') : (o.bg || 'transparent'),
+      fg: active ? (o.activeFg || '#050505') : (o.fg || '#BDBDBD'),
+      bd: active ? (o.activeBd || '#FFFFFF') : (o.bd || '#333333')
+    };
+  }
+  chipFor(m) {
+    if (m.status === 'done') return { chip: 'Odohraný', chipFg: '#BDBDBD', chipBg: 'transparent', chipBd: '#3A3A3A', chipLine: 'solid' };
+    if (m.tbd) return { chip: 'Bez termínu', chipFg: '#FFFFFF', chipBg: 'transparent', chipBd: '#FFFFFF', chipLine: 'dashed' };
+    if (m.moved) return { chip: 'Presunutý', chipFg: '#050505', chipBg: '#FFB020', chipBd: '#FFB020', chipLine: 'solid' };
+    return { chip: 'Plán', chipFg: '#BDBDBD', chipBg: 'transparent', chipBd: '#3A3A3A', chipLine: 'solid' };
+  }
+  listRow(m, S, T) {
+    const t = this.teamsFor(m, S), sc = this.score(m), cur = S.sel === m.id;
+    const logo = (id) => (id ? T[id].svg : this.logoBlank());
+    return Object.assign({
+      id: m.id, kLabel: m.stage === 'R' ? 'K' + m.k : ({ SF1: 'SF1', SF2: 'SF2', F: 'FIN', B3: '3.M' })[m.stage],
+      hAbbr: t[0] ? T[t[0]].abbr : '?', aAbbr: t[1] ? T[t[1]].abbr : '?',
+      hKnown: !!t[0], hUnknown: !t[0], aKnown: !!t[1], aUnknown: !t[1],
+      hLogo: logo(t[0]), aLogo: logo(t[1]),
+      hC: t[0] ? T[t[0]].c : '#333333', aC: t[1] ? T[t[1]].c : '#333333',
+      center: m.status === 'done' ? sc.h + ':' + sc.a : (m.tbd ? 'TBD' : (m.time || '')),
+      centerColor: m.status === 'done' ? '#FFFFFF' : '#9A9A9A',
+      when: m.tbd ? 'Termín sa hľadá' + (m.orig ? ' · pôvodne ' + this.origLabel(m.orig) : '') : this.slotLabel(m.date, m.time) + (m.moved ? ' · pôvodne ' + this.origLabel(m.orig) : ''),
+      whenColor: m.moved || m.tbd ? '#FFB020' : '#BDBDBD',
+      current: cur ? 'true' : 'false',
+      rowBg: cur ? '#161616' : 'transparent', rowBd: cur ? '#FFFFFF' : 'transparent',
+      select: () => this.select(m.id)
+    }, this.chipFor(m));
+  }
+  listGroups(S, T) {
+    const pass = (m) => S.filter === 'all' || (S.filter === 'done' ? m.status === 'done' : S.filter === 'tbd' ? m.tbd && m.status !== 'done' : m.status !== 'done' && !m.tbd);
+    const groups = [];
+    const ks = Array.from(new Set(S.matches.filter((m) => m.stage === 'R').map((m) => m.k))).sort((a, b) => a - b);
+    ks.forEach((k) => {
+      const rows = S.matches.filter((m) => m.stage === 'R' && m.k === k && pass(m)).map((m) => this.listRow(m, S, T));
+      const first = S.matches.find((m) => m.stage === 'R' && m.k === k && m.date);
+      if (rows.length) groups.push({ title: 'Kolo ' + k, sub: first ? this.shortDate(first.date) : '', rows });
+    });
+    const po = ['SF1', 'SF2', 'B3', 'F'].map((st) => S.matches.find((m) => m.stage === st)).filter((m) => m && pass(m)).map((m) => this.listRow(m, S, T));
+    if (po.length) groups.push({ title: 'Playoff', sub: '', rows: po });
+    return groups;
+  }
+  bracketCards(S, T) {
+    return ['SF1', 'SF2', 'B3', 'F'].map((st) => {
+      const m = S.matches.find((x) => x.stage === st);
+      if (!m) return null;
+      const t = this.teamsFor(m, S), sc = this.score(m), cur = S.sel === m.id, isF = st === 'F';
+      const o = this.outcome(m, S);
+      const sides = [0, 1].map((i) => ({
+        known: !!t[i], unknown: !t[i],
+        logo: t[i] ? T[t[i]].svg : '',
+        name: t[i] ? T[t[i]].name : this.placeholderName(st, i),
+        op: !o || o.win === t[i] ? '1' : '0.5',
+        score: m.status === 'done' ? (i === 0 ? sc.h : sc.a) : ''
+      }));
+      return {
+        lbl: this.stageName(st), when: m.tbd ? 'Termín sa hľadá' : this.slotLabel(m.date, m.time), sides,
+        current: cur ? 'true' : 'false',
+        bg: isF ? '#FFFFFF' : (cur ? '#161616' : '#0A0A0A'),
+        fg: isF ? '#050505' : '#FFFFFF',
+        bd: cur ? (isF ? '#FFB020' : '#FFFFFF') : (isF ? '#FFFFFF' : '#2A2A2A'),
+        dash: isF ? '#050505' : '#6A6A6A',
+        select: () => this.select(m.id)
+      };
+    }).filter(Boolean);
+  }
+  calendar(S, d) {
+    const y = S.cal.y, m0 = S.cal.m0;
+    const months = ['JANUÁR', 'FEBRUÁR', 'MAREC', 'APRÍL', 'MÁJ', 'JÚN', 'JÚL', 'AUGUST', 'SEPTEMBER', 'OKTÓBER', 'NOVEMBER', 'DECEMBER'];
+    const startDow = (new Date(y, m0, 1).getDay() + 6) % 7;
+    const dim = new Date(y, m0 + 1, 0).getDate();
+    const cells = Math.ceil((startDow + dim) / 7) * 7;
+    const busy = {};
+    S.matches.forEach((m) => { if (m.date && m.id !== d.id) busy[m.date] = true; });
+    const days = [];
+    for (let i = 0; i < cells; i++) {
+      const iso = this.isoOf(y, m0, i - startDow + 1);
+      const p = this.parts(iso), inMonth = p.m0 === m0;
+      const sel = !d.tbd && d.date === iso, tue = this.dow(iso) === 2, today = iso === '2026-10-17';
+      days.push({
+        label: String(p.d), aria: this.longDate(iso), pressed: sel ? 'true' : 'false',
+        bg: sel ? '#FFFFFF' : (tue && inMonth ? '#222222' : 'transparent'),
+        fg: sel ? '#050505' : (inMonth ? '#FFFFFF' : '#3A3A3A'),
+        bd: sel ? '#FFFFFF' : (today ? '#9A9A9A' : 'transparent'),
+        weight: sel || tue ? '800' : '500',
+        dot: busy[iso] ? (sel ? '#050505' : '#9A9A9A') : 'transparent',
+        pick: () => this.patch({ date: iso, tbd: false })
+      });
+    }
+    return {
+      title: months[m0] + ' ' + y, days,
+      weekdays: ['PO', 'UT', 'ST', 'ŠT', 'PI', 'SO', 'NE'].map((w) => ({ label: w, color: w === 'UT' ? '#FFFFFF' : '#6A6A6A' })),
+      prev: () => this.setState((s) => ({ cal: s.cal.m0 === 0 ? { y: s.cal.y - 1, m0: 11 } : { y: s.cal.y, m0: s.cal.m0 - 1 } })),
+      next: () => this.setState((s) => ({ cal: s.cal.m0 === 11 ? { y: s.cal.y + 1, m0: 0 } : { y: s.cal.y, m0: s.cal.m0 + 1 } }))
+    };
+  }
+  goalRows(S, d, t, T) {
+    let h = 0, a = 0;
+    const optStyle = { activeBg: '#FFFFFF', activeFg: '#050505', activeBd: '#FFFFFF', bg: '#141414', fg: '#FFFFFF', bd: '#333333' };
+    const specStyle = { activeBg: '#FFFFFF', activeFg: '#050505', activeBd: '#FFFFFF', fg: '#BDBDBD', bd: '#555555' };
+    return d.goals.map((g, i) => {
+      if (g.t === 'h') h++; else a++;
+      const team = T[g.t === 'h' ? t[0] : t[1]];
+      const picking = !!(S.pick && S.pick.i === i);
+      const field = picking ? S.pick.f : null;
+      const roster = team ? (this.rosters(S)[team.id] || []) : [];
+      const pool = field === 'as' ? roster.filter((n) => n !== g.s) : roster;
+      const options = pool.map((n) => Object.assign({ label: n, line: 'solid', pick: () => this.choosePlayer(i, field, n) }, this.btn(g[field] === n, optStyle)));
+      const special = field === 's'
+        ? Object.assign({ label: 'Neznámy hráč', line: 'dashed', pick: () => this.choosePlayer(i, 's', 'Neznámy hráč') }, this.btn(g.s === 'Neznámy hráč', specStyle))
+        : Object.assign({ label: 'Bez asistencie', line: 'dashed', pick: () => this.choosePlayer(i, 'as', '') }, this.btn(!g.as, specStyle));
+      return {
+        n: i + 1, score: h + ':' + a, logo: team ? team.svg : '', team: team ? team.name : '',
+        chipBg: team ? team.c : '#333333', chipFg: team ? team.ink : '#FFFFFF',
+        scorer: g.s || 'Vyber strelca', sColor: g.s ? '#FFFFFF' : '#FFB020',
+        assist: g.as || 'bez asistencie', aColor: g.as ? '#FFFFFF' : '#9A9A9A',
+        sBg: field === 's' ? '#161616' : '#0A0A0A', sBd: field === 's' ? '#FFFFFF' : (g.s ? '#2A2A2A' : '#FFB020'),
+        aBg: field === 'as' ? '#161616' : '#0A0A0A', aBd: field === 'as' ? '#FFFFFF' : '#2A2A2A',
+        bd: picking ? '#FFFFFF' : '#1E1E1E',
+        picking, pickTitle: field === 's' ? 'Kto dal gól? (' + (team ? team.name : '') + ')' : 'Kto asistoval?',
+        options: options.concat([special]),
+        pickScorer: () => this.setState({ pick: picking && field === 's' ? null : { i, f: 's' } }),
+        pickAssist: () => this.setState({ pick: picking && field === 'as' ? null : { i, f: 'as' } }),
+        remove: () => this.setGoals((gs) => { gs.splice(i, 1); return gs; }, null)
+      };
+    });
+  }
+  editor(S, T) {
+    const d = S.draft;
+    const saved = S.matches.find((m) => m.id === d.id);
+    const t = this.teamsFor(d, S);
+    const isNew = d.id === 'new';
+    const manualSF = S.seedMode === 'manual' && (d.stage === 'SF1' || d.stage === 'SF2');
+    const showTeamPicker = d.stage === 'R' ? isNew : manualSF;
+    const nm = (id, side) => (id ? T[id].name : this.placeholderName(d.stage, side));
+    const kicker = isNew ? 'Nový zápas' : (d.stage === 'R' ? 'Kolo ' + d.k : 'Playoff · ' + this.stageName(d.stage));
+    const title = isNew ? (t[0] && t[1] ? nm(t[0], 0) + ' vs ' + nm(t[1], 1) : 'Vyber tímy') : (d.stage === 'R' ? nm(t[0], 0) + ' vs ' + nm(t[1], 1) : this.stageName(d.stage));
+    const teamRows = [['Domáci', 'h', 0], ['Hostia', 'a', 1]].map((r) => ({
+      label: r[0],
+      options: Object.keys(T).map((id) => {
+        const other = t[1 - r[2]] === id;
+        return Object.assign({ logo: T[id].svg, name: T[id].name, op: other ? '0.45' : '1', pick: () => this.patch(r[1] === 'h' ? { h: id, a: d.a === id ? null : d.a } : { a: id, h: d.h === id ? null : d.h }) },
+          this.btn(t[r[2]] === id, { activeBg: '#161616', activeFg: '#FFFFFF', activeBd: '#FFFFFF', bg: '#050505', fg: '#FFFFFF', bd: '#2A2A2A' }));
+      })
+    }));
+    const ks = S.matches.filter((m) => m.stage === 'R').map((m) => m.k);
+    const maxK = ks.length ? Math.max.apply(null, ks) : 0;
+    const koloOptions = [];
+    for (let k = 1; k <= maxK + 1; k++) {
+      koloOptions.push(Object.assign({ label: k > maxK ? 'Nové ' + k + '.' : String(k), pick: () => this.patch({ k }) }, this.btn(d.k === k, { fg: '#FFFFFF' })));
+    }
+    const changed = !!(saved && saved.date && !d.tbd && (d.date !== saved.date || d.time !== saved.time));
+    const sc = this.score(d);
+    const teamsKnown = !!(t[0] && t[1]);
+    const isDone = d.status === 'done';
+    const statusTabs = [['plan', 'Naplánovaný'], ['done', 'Odohraný']].map((o) => Object.assign({ label: o[1], pick: () => this.patch({ status: o[0] }) }, this.btn(d.status === o[0])));
+    const termTabs = [[false, 'Presný termín'], [true, 'Termín neznámy']].map((o) => Object.assign({ label: o[1], pick: () => this.patch({ tbd: o[0] }) }, this.btn(d.tbd === o[0])));
+    const timeChips = ['19:00', '19:45', '20:15', '21:00'].map((tm) => Object.assign({ label: tm, pick: () => this.patch({ time: tm }) }, this.btn(d.time === tm, { fg: '#FFFFFF' })));
+    const dirty = isNew || JSON.stringify(Object.assign({}, d, { markMoved: undefined })) !== JSON.stringify(Object.assign({}, saved, { markMoved: undefined }));
+    const origForTbd = saved && saved.date ? this.slotLabel(saved.date, saved.time) : (d.orig ? this.origLabel(d.orig) : '');
+    const col = (id, k, fb) => (id ? T[id][k] : fb);
+    return {
+      kicker, title, dirty: dirty && !S.toast,
+      hC: col(t[0], 'c', '#1A1A1A'), hD: col(t[0], 'd', '#0E0E0E'), aC: col(t[1], 'c', '#1A1A1A'), aD: col(t[1], 'd', '#0E0E0E'),
+      showTeamPicker, teamRows, showKolo: isNew, koloOptions,
+      showFixedTeams: !showTeamPicker,
+      hName: nm(t[0], 0), aName: nm(t[1], 1),
+      hLogo: t[0] ? T[t[0]].svg : '', aLogo: t[1] ? T[t[1]].svg : '',
+      hKnown: !!t[0], hUnknown: !t[0], aKnown: !!t[1], aUnknown: !t[1],
+      hInk: t[0] ? T[t[0]].ink : '#FFFFFF', aInk: t[1] ? T[t[1]].ink : '#FFFFFF',
+      center: isDone && teamsKnown ? sc.h + ':' + sc.a : 'VS',
+      centerSize: isDone && teamsKnown ? 'clamp(40px, 5cqi, 64px)' : '30px',
+      centerSub: isDone ? 'Odohraný' : (d.tbd ? 'Termín sa hľadá' : this.slotLabel(d.date, d.time)),
+      teamsNote: d.stage === 'SF1' || d.stage === 'SF2'
+        ? (S.seedMode === 'auto' ? 'Dvojica sa berie z aktuálnej tabuľky (1.–4., 2.–3.). Ak ju chceš určiť sám, prepni vľavo na „Ručne“.' : '')
+        : (d.stage === 'F' || d.stage === 'B3' ? 'Tímy sa doplnia samé po zapísaní výsledkov semifinále.' : ''),
+      termTabs, exact: !d.tbd, tbd: d.tbd,
+      timeChips, timeLabel: d.time || '--:--',
+      timeMinus: () => this.patch({ time: this.shiftTime(d.time, -15) }),
+      timePlus: () => this.patch({ time: this.shiftTime(d.time, 15) }),
+      summary: d.date ? this.longDate(d.date) + ' · ' + (d.time || '') : 'Vyber dátum v kalendári',
+      summaryColor: d.date ? '#FFFFFF' : '#FFB020',
+      showChanged: changed, origLabel: saved && saved.date ? this.slotLabel(saved.date, saved.time) : '', newLabel: this.slotLabel(d.date, d.time),
+      movedPressed: d.markMoved ? 'true' : 'false', trackBg: d.markMoved ? '#FFB020' : 'transparent', knobX: d.markMoved ? '18px' : '2px', knobBg: d.markMoved ? '#050505' : '#FFFFFF',
+      toggleMoved: () => this.patch({ markMoved: !d.markMoved }),
+      tbdInfo: origForTbd ? 'Pôvodný termín ' + origForTbd + ' ostane na webe prečiarknutý. Keď sa dohodnete, prepni späť na „Presný termín“.' : 'Keď sa dohodnete, prepni späť na „Presný termín“ a vyber deň.',
+      note: d.note || '', setNote: (e) => this.patch({ note: e.target.value }),
+      statusTabs,
+      lockResult: isDone && !teamsKnown,
+      lockMsg: 'Výsledok sa dá zapísať, až keď sú známe oba tímy.',
+      showResult: isDone && teamsKnown,
+      scoreTeams: [['h', 0], ['a', 1]].map((s) => {
+        const id = t[s[1]];
+        const mine = s[0] === 'h' ? sc.h : sc.a, theirs = s[0] === 'h' ? sc.a : sc.h;
+        return {
+          logo: id ? T[id].svg : '', name: nm(id, s[1]), n: mine,
+          color: mine >= theirs ? '#FFFFFF' : '#7A7A7A',
+          btnBg: id ? T[id].c : '#FFFFFF', btnFg: id ? T[id].ink : '#050505',
+          minus: () => this.dropLastGoal(s[0]), plus: () => this.addGoal(s[0])
+        };
+      }),
+      drawWarn: isDone && d.stage !== 'R' && sc.h === sc.a && (sc.h + sc.a) > 0,
+      noGoals: d.goals.length === 0,
+      goals: teamsKnown ? this.goalRows(S, d, t, T) : [],
+      saveLabel: isNew ? 'Pridať zápas' : 'Uložiť zmeny',
+      save: () => this.save(), cancel: () => this.select(d.id === 'new' ? 'new' : d.id),
+      canDelete: !isNew && d.stage === 'R', remove: () => this.removeMatch()
+    };
+  }
+
+  renderVals() {
+    const S = this.state;
+    const T = this.teams();
+    const mobile = this.isMobile();
+    const tabs = [['matches', 'Zápasy'], ['playoff', 'Playoff'], ['teams', 'Tímy'], ['seasons', 'Sezóny'], ['settings', 'Nastavenia']].map((o) => Object.assign({ label: o[1], pick: () => this.openTab(o[0]) }, this.btn(S.tab === o[0], { bd: 'transparent' })));
+    const counts = { all: S.matches.length, plan: S.matches.filter((m) => m.status !== 'done' && !m.tbd).length, done: S.matches.filter((m) => m.status === 'done').length, tbd: S.matches.filter((m) => m.tbd && m.status !== 'done').length };
+    const filters = [['all', 'Všetky'], ['plan', 'Naplánované'], ['done', 'Odohrané'], ['tbd', 'Bez termínu']].map((o) => Object.assign({ label: o[1], count: counts[o[0]], pick: () => this.setState({ filter: o[0] }) }, this.btn(S.filter === o[0])));
+    const seedTabs = [['auto', 'Podľa tabuľky'], ['manual', 'Ručne']].map((o) => Object.assign({ label: o[1], pick: () => this.setState({ seedMode: o[0] }) }, this.btn(S.seedMode === o[0])));
+    const groups = this.listGroups(S, T);
+    const isSeasons = S.tab === 'seasons', isTeams = S.tab === 'teams', isSettings = S.tab === 'settings', isMP = S.tab === 'matches' || S.tab === 'playoff';
+    const hasEd = !!S.draft && isMP;
+    const hasTeamEd = isTeams && !!S.teamSel;
+    const hasSeasonEd = isSeasons && !!S.seasonDraft;
+    const detail = isSeasons ? hasSeasonEd : (isTeams ? hasTeamEd : !!S.draft);
+    const liveSea = S.seasons.find((x) => x.state === 'live');
+    const liveMs = !liveSea ? [] : (liveSea.id === S.season ? S.matches : (S.bySeason[liveSea.id] || []));
+    const sea = this.seasonOf(S);
+    const ss = this.stateStyle(sea.state);
+    const R = this.rosters(S);
+    const seasonChips = S.seasons.map((x) => {
+      const st = this.stateStyle(x.state);
+      return Object.assign({ short: x.short || x.name, dot: st.dot, dotBd: st.dotBd, dotLine: st.chipLine, pick: () => this.switchSeason(x.id) }, this.btn(x.id === S.season));
+    });
+    const seasonRows = S.seasons.map((x) => {
+      const ms = x.id === S.season ? S.matches : (S.bySeason[x.id] || []);
+      const reg = ms.filter((m) => m.stage === 'R');
+      const cur = S.seasonSel === x.id;
+      const champ = x.state === 'done' ? this.champOf(S, x.id) : null;
+      const info = reg.length ? reg.length + ' zápasov · ' + ms.filter((m) => m.status === 'done').length + ' odohraných' : 'Zatiaľ bez zápasov';
+      return Object.assign({ name: x.name, info: info + (x.id === S.season ? ' · práve upravuješ' : ''), current: cur ? 'true' : 'false', rowBg: cur ? '#161616' : 'transparent', rowBd: cur ? '#FFFFFF' : 'transparent', hasChamp: !!champ, champLogo: champ ? T[champ].svg : '', select: () => this.selectSeason(x.id) }, this.stateStyle(x.state));
+    });
+    const teamRows = sea.teams.map((id) => {
+      const r = R[id] || [];
+      const cap = (S.captainsBy[S.season] || {})[id];
+      const cur = S.teamSel === id;
+      return {
+        pre: T[id].pre, name: T[id].name, logo: T[id].svg, c: T[id].c, d: T[id].d,
+        info: r.length ? r.length + ' ' + this.plural(r.length, 'hráč', 'hráči', 'hráčov') + ' · ' + (cap ? 'kapitán ' + cap : 'bez kapitána') : 'Súpiska je prázdna',
+        infoColor: r.length ? '#BDBDBD' : '#FFB020',
+        current: cur ? 'true' : 'false', rowBg: cur ? '#161616' : 'transparent', rowBd: cur ? '#FFFFFF' : 'transparent',
+        select: () => this.selectTeam(id)
+      };
+    });
+    const nPlayers = sea.teams.reduce((n, id) => n + (R[id] || []).length, 0);
+    const notice = {
+      done: 'Upravuješ skončenú sezónu — zmeny uvidia ľudia v archíve.',
+      soon: 'Táto sezóna sa len pripravuje — na webe je zatiaľ banner. Zápasy aj súpisky môžeš chystať dopredu.',
+      live: ''
+    }[sea.state];
+    const noReg = !S.matches.some((m) => m.stage === 'R');
+    return {
+      tabs, filters, groups, listEmpty: groups.length === 0,
+      listEmptyText: noReg && S.filter === 'all' ? 'Táto sezóna zatiaľ nemá zápasy základnej časti. Pridaj prvý cez „Nový zápas“.' : 'V tomto filtri nie je žiadny zápas.',
+      isMatches: S.tab === 'matches', isPlayoff: S.tab === 'playoff', isTeams, isSeasons,
+      showSeasonBar: !isSeasons && !isSettings,
+      isSettings, set: isSettings ? this.settingsVals(S, T, liveMs) : {}, seasonChips, seasonNotice: notice, seasonNoticeBd: sea.state === 'done' ? '#9A9A9A' : '#FFFFFF',
+      activeSeason: { name: sea.name, dot: ss.dot, dotBd: ss.dotBd, line: ss.chipLine },
+      seasonRows, newSeason: () => this.selectSeason('new'),
+      hasSeasonEd, sed: hasSeasonEd ? this.seasonEditor(S, T) : {},
+      seasonBack: () => this.setState({ seasonSel: null, seasonDraft: null, toast: '', error: '' }),
+      teamRows, teamsHint: sea.teams.length + ' ' + this.plural(sea.teams.length, 'tím', 'tímy', 'tímov') + ' · ' + nPlayers + ' ' + this.plural(nPlayers, 'hráč', 'hráči', 'hráčov'),
+      hasTeamEd, te: hasTeamEd ? this.teamEditor(S, T) : {},
+      teamBack: () => this.setState({ teamSel: null, moving: null, toast: '', error: '' }),
+      newMatch: () => this.select('new'),
+      seedTabs, seedAuto: S.seedMode === 'auto',
+      seedHint: S.seedMode === 'auto' ? 'Semifinále: 1. vs 4. a 2. vs 3. — mení sa samo podľa tabuľky.' : 'Klikni na semifinále a vyber tímy ručne.',
+      miniTable: this.table(S.matches),
+      bracket: this.bracketCards(S, T),
+      showLeft: !isSettings && !(mobile && detail), showRight: isSettings || !mobile || detail,
+      isMobile: mobile, back: () => this.select(null),
+      hasEd, noEd: isMP && !S.draft,
+      ed: hasEd ? this.editor(S, T) : {},
+      cal: hasEd ? this.calendar(S, S.draft) : {},
+      toast: S.toast, hasToast: !!S.toast,
+      error: S.error, hasError: !!S.error
+    };
+  }
+}
+</script>
+</body>
+</html>

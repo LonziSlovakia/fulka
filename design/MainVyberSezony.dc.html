@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>FULka — výber sezóny</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700&amp;family=Saira+Extra+Condensed:wght@600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#050505}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1100px; overflow: hidden; background: #050505">
+  <dc-import name="Main" menu-open="true" hint-size="1440px,1100px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

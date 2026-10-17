@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>FULka admin — sezóny (mobil)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700&amp;family=Saira+Extra+Condensed:wght@600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#050505}
+</style>
+</helmet>
+<div style="width: 390px; height: 1290px; overflow: hidden; background: #050505">
+  <dc-import name="Admin" mobile="true" view="seasons" season-sel="z26" hint-size="390px,1290px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1290}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
