@@ -7,3 +7,5 @@ node_modules/
 .env.*
 # fotky hráčov patria do Supabase, nie sem
 photos/
+# písmo Monument je platené (Pangram Pangram) – do verejného repozitára iba s webovou licenciou
+assets/fonts/

@@ -11,7 +11,7 @@
     data: null, tab: "matches", season: null, filter: "all",
     sel: null, draft: null, pick: null, cal: null,
     teamSel: null, moving: null, newName: "",
-    seasonSel: null, seasonDraft: null, bannerDraft: null,
+    seasonSel: null, seasonDraft: null, setDraft: null,
     toast: "", error: "", busy: false, uploading: null, loginError: "",
   };
 
@@ -778,8 +778,12 @@
   }
 
   /* ---------- Nastavenia ---------- */
+  // rozpracované nastavenia (banner, fotky, písmo); null = také, aké sú uložené
+  const setDraftOf = (c) => S.setDraft || { bannerCount: c.settings.bannerCount, photos: c.settings.photos !== false, headFont: c.settings.headFont === "monument" ? "monument" : "saira" };
+
   function settingsPanel(c) {
-    const n = S.bannerDraft ?? c.settings.bannerCount;
+    const sd = setDraftOf(c);
+    const n = sd.bannerCount;
     const unit = (k) => (k === 1 ? "zápas" : "zápasy");
     const tabs = [1, 2, 3, 4].map((k) => `<button type="button" data-a="count" data-id="${k}" ${pressed(n === k)}><b>${k}</b><span>${unit(k)}</span></button>`).join("");
     const live = c.live ? seasonData(c.d, c.live, c.P) : null;
@@ -793,13 +797,23 @@
         <img src="${esc(H.svg)}" alt=""><span class="t"><b>${m.starts_at ? L.matchTime(m) : "vs"}</b><span>${esc(day)}</span></span><img src="${esc(A.svg)}" alt=""></div>`;
     }).join("");
     const pn = shown.length < n ? `Naplánovaných zápasov je teraz len ${shown.length}, viac ich na banneri nebude.` : n === 1 ? "Jeden veľký zápas cez celý banner." : "Na počítači budú zápasy vedľa seba, na mobile pod sebou.";
-    const dirty = n !== c.settings.bannerCount;
+    const dirty = n !== c.settings.bannerCount || sd.photos !== (c.settings.photos !== false) || sd.headFont !== (c.settings.headFont === "monument" ? "monument" : "saira");
+    const seg = (act, opts, cur) => `<div class="a-seg" role="group">${opts.map(([v, label]) => `<button type="button" data-a="${act}" data-id="${v}" ${pressed(String(cur) === v)}>${label}</button>`).join("")}</div>`;
+    const look = (q, label) => `<a class="a-ghost w" href="./?${q}" target="_blank" rel="noopener">${label}${icon.next}</a>`;
     return `<div class="a-ed"><div class="a-ed-head"><span class="sh" aria-hidden="true" style="width:30%;background:repeating-linear-gradient(115deg, #2E2E2E 0 6px, #141414 6px 12px);clip-path:polygon(30% 0, 100% 0, 100% 100%, 12% 100%)"></span>
         <span class="tt"><span class="lbl">Nastavenia webu</span><b>Hlavná stránka</b></span>${dirty ? '<span class="a-dirty">Neuložené zmeny</span>' : ""}</div>
       ${msgs()}
       <div class="a-body"><fieldset class="a-fs" style="gap:12px"><legend>Banner — najbližšie zápasy</legend>
           <span class="muted" style="font-size:14px">Koľko najbližších zápasov ukázať hore na hlavnej stránke. Hrajú sa dva zápasy za kolo, takže „2“ ukáže celé najbližšie kolo.</span>
           <div class="a-count" role="group" aria-label="Počet zápasov na banneri">${tabs}</div></fieldset>
+        <fieldset class="a-fs" style="gap:12px"><legend>Fotky hráčov</legend>
+          <span class="muted" style="font-size:14px">Bez fotiek ukáže web iniciály a siluety. Nahraté fotky ostanú uložené, dajú sa kedykoľvek znova zapnúť.</span>
+          ${seg("sphotos", [["true", "Ukazovať fotky"], ["false", "Bez fotiek"]], sd.photos)}
+          <div class="a-actions">${look("fotky=ano", "Pozrieť s fotkami")}${look("fotky=nie", "Pozrieť bez fotiek")}</div></fieldset>
+        <fieldset class="a-fs" style="gap:12px"><legend>Písmo nadpisov</legend>
+          <span class="muted" style="font-size:14px">Nadpisy a mená tímov a hráčov. Čísla (skóre, časy, body) ostávajú v úzkom písme.</span>
+          ${seg("sfont", [["saira", '<span style="font-family:var(--fc);font-weight:900;font-size:18px;text-transform:uppercase">Saira (návrh)</span>'], ["monument", '<span style="font-family:\'PP Monument Extended\', var(--fc);font-weight:900;font-size:14px;text-transform:uppercase">Monument</span>']], sd.headFont)}
+          <div class="a-actions">${look("pismo=saira", "Pozrieť so Saira")}${look("pismo=monument", "Pozrieť s Monument")}</div></fieldset>
         <div class="a-field" style="gap:8px"><span class="lbl">Takto bude vyzerať banner</span>
           <div class="a-prev"><span class="kicker sm" style="font-size:14px;padding:3px 12px">${shown.length === 1 ? "Najbližší zápas" : "Najbližšie zápasy"}</span><div class="a-prev-grid">${cards}</div></div>
           <span class="small">${pn}</span></div>
@@ -846,7 +860,7 @@
   /* ---------- Udalosti ---------- */
   const ACTIONS = {
     logout: () => { DB.signOut(); render(); },
-    tab: (el) => { S.tab = el.dataset.id; S.toast = ""; S.error = ""; S.moving = null; if (S.tab !== "matches" && S.tab !== "playoff") { S.sel = null; S.draft = null; } if (S.tab === "settings") S.bannerDraft = null; render(); },
+    tab: (el) => { S.tab = el.dataset.id; S.toast = ""; S.error = ""; S.moving = null; if (S.tab !== "matches" && S.tab !== "playoff") { S.sel = null; S.draft = null; } if (S.tab === "settings") S.setDraft = null; render(); },
     season: (el) => { S.season = el.dataset.id; S.sel = null; S.draft = null; S.teamSel = null; S.moving = null; S.filter = "all"; S.toast = ""; S.error = ""; render(); },
     filter: (el) => { S.filter = el.dataset.id; render(); },
     select: (el) => select(el.dataset.id),
@@ -889,11 +903,15 @@
     steam: (el) => { const t = S.seasonDraft.teams; const i = t.indexOf(el.dataset.id); if (i >= 0) t.splice(i, 1); else t.push(el.dataset.id); render(); },
     saveSeason: () => saveSeason(),
     openSeason: (el) => { S.season = el.dataset.id; S.tab = "matches"; S.sel = null; S.draft = null; S.toast = ""; S.error = ""; render(); },
-    count: (el) => { S.bannerDraft = Number(el.dataset.id); S.toast = ""; render(); },
-    resetSettings: () => { S.bannerDraft = null; render(); },
+    count: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { bannerCount: Number(el.dataset.id) }); S.toast = ""; render(); },
+    sphotos: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { photos: el.dataset.id === "true" }); S.toast = ""; render(); },
+    sfont: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { headFont: el.dataset.id }); S.toast = ""; render(); },
+    resetSettings: () => { S.setDraft = null; render(); },
     saveSettings: () => {
-      const n = S.bannerDraft ?? L.settingsOf(S.data.settings).bannerCount;
-      run(() => DB.saveSettings(Object.assign({}, S.data.settings, { bannerCount: n })), `Uložené. Banner na webe ukazuje ${n} ${n === 1 ? "zápas" : "zápasy"}.`, () => { S.bannerDraft = null; });
+      const sd = setDraftOf(ctx());
+      run(() => DB.saveSettings(Object.assign({}, S.data.settings, sd)),
+        `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, písmo ${sd.headFont === "monument" ? "Monument" : "Saira"}.`,
+        () => { S.setDraft = null; });
     },
   };
 

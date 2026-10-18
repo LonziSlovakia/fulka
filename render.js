@@ -5,7 +5,7 @@
   "use strict";
   const L = window.Logic;
   const app = document.getElementById("app");
-  const state = { data: null, season: null, open: undefined, menu: false };
+  const state = { data: null, season: null, open: undefined, menu: false, photos: true, font: "saira" };
 
   /* ---------- Drobnosti ---------- */
   const STAGE = { SF1: "Semifinále 1", SF2: "Semifinále 2", B3: "O 3. miesto", F: "Finále" };
@@ -73,7 +73,18 @@
   const label = (m) => (m.stage === "R" ? `Kolo ${m.round}` : STAGE[m.stage]);
   const week = (m) => (m.window_from ? `Týždeň ${L.weekLabel(m.window_from, m.window_to)}` : "");
   const dayLabel = (m) => (m.starts_at ? L.shortDate(L.matchDate(m)) : week(m));
-  const photo = (p, key) => (p && p[key] ? window.DB.photoUrl(p[key]) : "");
+  const photo = (p, key) => (state.photos && p && p[key] ? window.DB.photoUrl(p[key]) : "");
+
+  /* Fotky a písmo nadpisov: podľa nastavení z adminu, ale adresa ich vie dočasne prepnúť
+     na porovnanie (?fotky=ano|nie, ?pismo=saira|monument), nič sa tým neukladá. */
+  const URLP = new URLSearchParams(location.search);
+  function viewOptions(settings) {
+    const f = URLP.get("fotky");
+    const font = URLP.get("pismo");
+    state.photos = f === "ano" ? true : f === "nie" ? false : settings.photos !== false;
+    state.font = font === "monument" || font === "saira" ? font : settings.headFont === "monument" ? "monument" : "saira";
+    document.documentElement.dataset.font = state.font;
+  }
 
   // rozbalený zápas: kým ho nikto nezavrel, v prebiehajúcej sezóne je otvorený posledný výsledok
   function openId(c) {
@@ -204,7 +215,7 @@
   function heroSingle(m, c, day, kicker) {
     const { H, A } = sides(m, c);
     const team = (t) => `<div class="side" style="gap:10px"><img src="${esc(t.svg)}" alt="${esc(t.name)}" style="width:clamp(110px, 22cqi, 260px);height:clamp(110px, 22cqi, 260px);filter:drop-shadow(0 14px 22px rgba(0,0,0,0.45))">
-      <span class="tname" style="padding:4px 14px;font-size:clamp(24px, 4.4cqi, 56px)">${esc(t.name)}</span></div>`;
+      <span class="tname" style="padding:4px 14px;--ts:clamp(24px, 4.4cqi, 56px)">${esc(t.name)}</span></div>`;
     const notes = matchNotes(m, false);
     return `<section class="hero" aria-label="Najbližší zápas">
       <div class="fill" aria-hidden="true" style="background:linear-gradient(150deg, ${H.c} 0%, ${H.d} 70%)"></div>
@@ -226,7 +237,7 @@
 
   function heroMulti(ups, c, day, kicker) {
     const sz = BANNER_SIZE[Math.min(4, ups.length)];
-    const team = (t) => `<div class="side"><img src="${esc(t.svg)}" alt="${esc(t.name)}" style="width:${sz.logo};height:${sz.logo}"><span class="tname" style="font-size:${sz.name}">${esc(t.name)}</span></div>`;
+    const team = (t) => `<div class="side"><img src="${esc(t.svg)}" alt="${esc(t.name)}" style="width:${sz.logo};height:${sz.logo}"><span class="tname" style="--ts:${sz.name}">${esc(t.name)}</span></div>`;
     const cards = ups.map((m, i) => {
       const { H, A } = sides(m, c);
       const notes = matchNotes(m, !day);
@@ -342,7 +353,7 @@
     const p = c.P[x.player_id];
     const head = photo(p, "photo_head");
     const pic = head ? `<img class="photo" src="${esc(head)}" alt="${esc(x.name)}">`
-      : `${ghost("right:5%;width:48%")}<span class="soon">Fotka čoskoro</span>`;
+      : `${ghost("right:5%;width:48%")}${state.photos ? '<span class="soon">Fotka čoskoro</span>' : ""}`;
     return `<article class="pod"><div class="shard grad-160" aria-hidden="true" style="${vars(t)}"></div><div class="shard stripes" aria-hidden="true"></div>${pic}
       <span class="outline-num" style="font-size:64px">${x.pos}</span>
       <span class="pod-info"><span class="pod-team"><img src="${esc(t.svg)}" alt="">${esc(t.name)}</span>
@@ -581,6 +592,7 @@
     if (!state.data) return;
     if (!state.data.seasons.length) { app.innerHTML = '<p class="msg">Zatiaľ tu nie je žiadna sezóna.</p>'; return; }
     const c = context();
+    viewOptions(c.v.settings);
     const open = openId(c);
     const body = c.cur.state === "live" ? liveBody(c, open) : c.cur.state === "done" ? pastBody(c, open) : futureBody(c);
     const focus = document.activeElement && document.activeElement.closest && document.activeElement.closest("[data-act]");

@@ -18,6 +18,9 @@
   --pad: clamp(16px, 2cqi, 24px);
   color-scheme: dark;
 }
+/* PP Monument Extended (Pangram Pangram) – voliteľné písmo nadpisov, súbory sa stiahnu iba keď je zapnuté */
+@font-face { font-family: "PP Monument Extended"; src: url("assets/fonts/PPMonumentExtended-Black.woff2") format("woff2"); font-weight: 700 900; font-display: swap; }
+@font-face { font-family: "PP Monument Extended"; src: url("assets/fonts/PPMonumentExtended-Regular.woff2") format("woff2"); font-weight: 400 600; font-display: swap; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); }
 body { color: var(--fg); font-family: "Saira", system-ui, sans-serif; font-size: 16px; line-height: 1.4; }
@@ -106,7 +109,7 @@ a { color: inherit; }
 .vs3 { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
 .side { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
 .side img { filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45)); }
-.tname { max-width: 100%; background: var(--bg); padding: 3px 12px; transform: skewX(-10deg); font-family: var(--fc); font-weight: 900; line-height: 1; text-transform: uppercase; overflow-wrap: anywhere; }
+.tname { max-width: 100%; background: var(--bg); padding: 3px 12px; transform: skewX(-10deg); font-family: var(--fc); font-weight: 900; font-size: var(--ts, 20px); line-height: 1; text-transform: uppercase; overflow-wrap: anywhere; }
 .mid { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; text-shadow: 0 3px 16px rgba(0, 0, 0, 0.55); }
 .mid .time { font-family: var(--fc); font-weight: 900; line-height: 0.9; transform: skewX(-8deg); }
 .mid .sub { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #ededed; }
@@ -360,3 +363,35 @@ a { color: inherit; }
 .foot-in .admin { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--fg); font-weight: 700; text-decoration: none; }
 .main { padding-bottom: 72px; }
 .msg { padding: 80px var(--pad); text-align: center; color: var(--fg-2); }
+
+/* ---------- Písmo nadpisov Monument Extended (admin → Nastavenia, alebo ?pismo=monument) ----------
+   Iba texty (nadpisy, mená tímov a hráčov); čísla ostávajú v úzkom Saira. Monument je široký,
+   preto menšie veľkosti a bez šikmého sklonu (ako na plagátoch). */
+:root[data-font="monument"] { --fm: "PP Monument Extended", var(--fc); }
+:root[data-font="monument"] :is(.sec-head h2, .tname, .kicker, .res-side span, .row-team span, .round-title b, .tbl-team b, .pod-name, .seed .nm,
+  .fin-head b, .fin-sides .nm, .po-head b, .po-side .nm, .team-title b, .champ-name, .champ-final .nm, .place-txt b, .future-in h1, .future-chip,
+  .season-card .name, .step b, .btn-white) { font-family: var(--fm); font-weight: 900; letter-spacing: 0.01em; }
+:root[data-font="monument"] :is(.sec-head h2, .champ-name, .future-in h1, .season-card .name, .fin-head b, .po-head b) { transform: none; }
+:root[data-font="monument"] .sec-head h2 { font-size: clamp(28px, 3.6cqi, 48px); line-height: 1; }
+:root[data-font="monument"] .tname { font-size: calc(var(--ts, 20px) * 0.6); padding-top: 5px; padding-bottom: 5px; }
+:root[data-font="monument"] .kicker { font-size: 14px; letter-spacing: 0.06em; }
+:root[data-font="monument"] .kicker.sm { font-size: 12px; }
+:root[data-font="monument"] .res-side span { font-size: 12px; }
+:root[data-font="monument"] .row-team span { font-size: clamp(10px, 1.1cqi, 15px); }
+:root[data-font="monument"] .round-title b { font-size: 15px; }
+:root[data-font="monument"] .tbl-team b { font-size: 18px; }
+:root[data-font="monument"] .pod-name { font-size: 18px; line-height: 1.1; }
+:root[data-font="monument"] .seed .nm { font-size: 16px; }
+:root[data-font="monument"] .fin-head b { font-size: 28px; }
+:root[data-font="monument"] :is(.fin-sides .nm, .po-side .nm) { font-size: 15px; }
+:root[data-font="monument"] .po-head b { font-size: 16px; }
+:root[data-font="monument"] .team-title b { font-size: 24px; padding-top: 4px; padding-bottom: 4px; }
+:root[data-font="monument"] .champ-name { font-size: clamp(36px, 6.5cqi, 92px); line-height: 1; }
+:root[data-font="monument"] .champ-final .nm { font-size: 16px; }
+:root[data-font="monument"] .place-txt b { font-size: 20px; }
+:root[data-font="monument"] .future-in h1 { font-size: clamp(30px, 6cqi, 78px); line-height: 1; }
+:root[data-font="monument"] .future-chip { font-size: 13px; }
+:root[data-font="monument"] .season-card .name { font-size: 19px; line-height: 1.05; }
+:root[data-font="monument"] .step b { font-size: 15px; }
+:root[data-font="monument"] .btn-white { font-size: 14px; }
+:root[data-font="monument"] .btn-white.big { font-size: 18px; }

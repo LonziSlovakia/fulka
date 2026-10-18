@@ -287,3 +287,5 @@
 .a-login { max-width: 460px; margin: 48px auto; }
 .a-login form { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
 .a-login .a-save { align-self: flex-start; }
+.a-ghost { text-decoration: none; }
+.a-fs .a-ghost { min-height: 44px; font-size: 14px; }
