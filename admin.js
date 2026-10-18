@@ -113,8 +113,8 @@
       const result = await fn();
       const d = await DB.load();
       window.App.setData(d);
+      if (after) after(result); // napr. znova vyberie zápas (to by hlášku zmazalo, preto je až potom)
       S.toast = typeof toast === "function" ? toast(result) : toast;
-      if (after) after(result);
     } catch (e) {
       S.error = messageOf(e);
     } finally {
