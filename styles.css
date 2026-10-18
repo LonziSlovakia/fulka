@@ -163,8 +163,8 @@ a { color: inherit; }
 .row-teams { flex: 1 1 360px; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
 .row-team { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .row-team.h { justify-content: flex-end; }
-.row-team span { font-family: var(--fc); font-weight: 800; font-size: clamp(14px, 1.7cqi, 24px); letter-spacing: 0.02em; text-transform: uppercase; }
-.row-team img { width: clamp(26px, 3.2cqi, 44px); height: clamp(26px, 3.2cqi, 44px); flex: none; }
+.row-team span { font-family: var(--fc); font-weight: 800; font-size: clamp(16px, 1.9cqi, 26px); letter-spacing: 0.02em; text-transform: uppercase; }
+.row-team img { width: clamp(32px, 3.6cqi, 48px); height: clamp(32px, 3.6cqi, 48px); flex: none; }
 .row-mid { min-width: clamp(40px, 5cqi, 70px); text-align: center; font-family: var(--fc); font-weight: 900; font-size: clamp(24px, 2.4cqi, 32px); line-height: 1; color: #6a6a6a; }
 .row-mid.done { color: var(--fg); }
 .row-when { flex: 0 1 230px; min-width: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-left: auto; text-align: right; }
@@ -377,7 +377,7 @@ a { color: inherit; }
 :root[data-font="monument"] .kicker { font-size: 14px; letter-spacing: 0.06em; }
 :root[data-font="monument"] .kicker.sm { font-size: 12px; }
 :root[data-font="monument"] .res-side span { font-size: 12px; }
-:root[data-font="monument"] .row-team span { font-size: clamp(10px, 1.1cqi, 15px); }
+:root[data-font="monument"] .row-team span { font-size: clamp(12px, 1.3cqi, 17px); }
 :root[data-font="monument"] .round-title b { font-size: 15px; }
 :root[data-font="monument"] .tbl-team b { font-size: 18px; }
 :root[data-font="monument"] .pod-name { font-size: 18px; line-height: 1.1; }
@@ -395,3 +395,14 @@ a { color: inherit; }
 :root[data-font="monument"] .step b { font-size: 15px; }
 :root[data-font="monument"] .btn-white { font-size: 14px; }
 :root[data-font="monument"] .btn-white.big { font-size: 18px; }
+
+/* ---------- Úzke rozloženie (admin → Nastavenia, alebo ?rozlozenie=uzke) ----------
+   Užšia stránka, štatistiky v tabuľkách hneď pri menách a v rozpise termín pod zápasom v strede. */
+:root[data-layout="narrow"] .wrap { max-width: 1000px; }
+:root[data-layout="narrow"] .tbl-row { grid-template-columns: 72px minmax(0, 320px) repeat(4, 48px) 80px 56px 72px; }
+:root[data-layout="narrow"] .ptbl-row { grid-template-columns: 28px minmax(0, 300px) repeat(3, 44px) 48px; }
+:root[data-layout="narrow"] .ptbl.nz .ptbl-row { grid-template-columns: 28px minmax(0, 300px) repeat(2, 44px) 48px; }
+:root[data-layout="narrow"] .row-in { flex-direction: column; align-items: stretch; gap: 8px; }
+:root[data-layout="narrow"] .row-teams { flex: none; }
+:root[data-layout="narrow"] .row-when { flex: none; margin: 0; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px; text-align: center; }
+:root[data-layout="narrow"] .teams { grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); }

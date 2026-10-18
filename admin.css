@@ -289,3 +289,7 @@
 .a-login .a-save { align-self: flex-start; }
 .a-ghost { text-decoration: none; }
 .a-fs .a-ghost { min-height: 44px; font-size: 14px; }
+.a-bulk { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-top: 1px solid var(--line-soft); }
+.a-bulk label { position: relative; overflow: hidden; min-height: 44px; align-self: flex-start; font-size: 14px; }
+.a-bulk label.busy { opacity: 0.6; cursor: wait; }
+.a-bulk input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }

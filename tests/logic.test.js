@@ -341,7 +341,7 @@ test("kontrola zápasu: playoff", () => {
 test("iniciály a nastavenia", () => {
   assert.equal(L.initials("Jakub Štefaňák"), "JŠ");
   assert.equal(L.initials("Ema"), "E");
-  assert.deepEqual(L.settingsOf({ bannerCount: 3 }), { bannerCount: 3, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, defaultTime: "21:15", photos: true, headFont: "saira" });
+  assert.deepEqual(L.settingsOf({ bannerCount: 3 }), { bannerCount: 3, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, defaultTime: "21:15", photos: true, headFont: "saira", layout: "wide" });
   assert.deepEqual(L.settingsOf(null), L.DEFAULTS);
 });
 

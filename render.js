@@ -5,7 +5,7 @@
   "use strict";
   const L = window.Logic;
   const app = document.getElementById("app");
-  const state = { data: null, season: null, open: undefined, menu: false, photos: true, font: "saira" };
+  const state = { data: null, season: null, open: undefined, menu: false, photos: true, font: "saira", layout: "wide" };
 
   /* ---------- Drobnosti ---------- */
   const STAGE = { SF1: "Semifinále 1", SF2: "Semifinále 2", B3: "O 3. miesto", F: "Finále" };
@@ -81,9 +81,21 @@
   function viewOptions(settings) {
     const f = URLP.get("fotky");
     const font = URLP.get("pismo");
+    const lay = URLP.get("rozlozenie");
     state.photos = f === "ano" ? true : f === "nie" ? false : settings.photos !== false;
     state.font = font === "monument" || font === "saira" ? font : settings.headFont === "monument" ? "monument" : "saira";
-    document.documentElement.dataset.font = state.font;
+    state.layout = lay === "uzke" ? "narrow" : lay === "siroke" ? "wide" : settings.layout === "narrow" ? "narrow" : "wide";
+    document.documentElement.dataset.layout = state.layout;
+    applyFont(state.font);
+  }
+  // Monument sa zapne až keď sa písmo naozaj načíta (inak by ostalo Saira so zmenšenými veľkosťami)
+  function applyFont(font) {
+    const root = document.documentElement;
+    if (font !== "monument") { delete root.dataset.font; return; }
+    if (!document.fonts || !document.fonts.load) return;
+    document.fonts.load('900 20px "PP Monument Extended"').then((list) => {
+      if (list.length && state.font === "monument") root.dataset.font = "monument";
+    }, () => {});
   }
 
   // rozbalený zápas: kým ho nikto nezavrel, v prebiehajúcej sezóne je otvorený posledný výsledok

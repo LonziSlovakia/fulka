@@ -7,8 +7,9 @@
   const TZ = "Europe/Bratislava";
   const UNKNOWN = "?"; // v admine: strelec vybraný ako „Neznámy hráč“ (v databáze null)
   const STAGES = ["SF1", "SF2", "B3", "F"];
-  // defaultTime = predvolený čas zápasu v admine (po sv. omši); photos = ukazovať fotky hráčov; headFont = písmo nadpisov
-  const DEFAULTS = { bannerCount: 2, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, defaultTime: "21:15", photos: true, headFont: "saira" };
+  // defaultTime = predvolený čas zápasu v admine (po sv. omši); photos = ukazovať fotky hráčov; headFont = písmo nadpisov;
+  // layout = "wide" (ako návrh) alebo "narrow" (užšia stránka, štatistiky bližšie pri menách)
+  const DEFAULTS = { bannerCount: 2, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, defaultTime: "21:15", photos: true, headFont: "saira", layout: "wide" };
 
   /* ---------- Dátumy a časy (vždy v čase Bratislavy) ---------- */
   const DAYS = ["Nedeľa", "Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok", "Sobota"];

@@ -313,27 +313,48 @@
     return { full: await scaled(img, "full"), head: await auto.head, face: await auto.face };
   }
 
+  // nahrá fotky jedného hráča do bucketu a zapíše cesty k nemu
+  async function storePhotos(p, files) {
+    const blobs = await photoBlobs(files);
+    const v = Date.now().toString(36); // nová adresa, aby prehliadače nedržali starú fotku
+    const row = { id: p.id, name: p.name };
+    const FIELD = { full: "photo", head: "photo_head", face: "photo_face" };
+    for (const kind of Object.keys(blobs)) {
+      const b = blobs[kind];
+      if (!b) continue;
+      const ext = b.type === "image/webp" ? "webp" : "png";
+      const path = await DB.upload(`hraci/${p.id}/${kind}.${ext}`, b);
+      row[FIELD[kind]] = `${path}?v=${v}`;
+    }
+    await DB.upsert("players", row);
+  }
+  const notImage = (files) => files.some((f) => !/^image\/(png|jpeg|webp)$/.test(f.type));
+
   async function uploadPhoto(playerId, fileList) {
     const files = Array.from(fileList || []);
     if (!files.length) return;
-    if (files.some((f) => !/^image\/(png|jpeg|webp)$/.test(f.type))) return fail("Toto nie je obrázok — vyber PNG, JPG alebo WebP.");
-    const c = ctx();
-    const p = c.P[playerId];
+    if (notImage(files)) return fail("Toto nie je obrázok — vyber PNG, JPG alebo WebP.");
+    const p = ctx().P[playerId];
     S.uploading = playerId;
-    await run(async () => {
-      const blobs = await photoBlobs(files);
-      const v = Date.now().toString(36); // nová adresa, aby prehliadače nedržali starú fotku
-      const row = { id: p.id, name: p.name };
-      const FIELD = { full: "photo", head: "photo_head", face: "photo_face" };
-      for (const kind of Object.keys(blobs)) {
-        const b = blobs[kind];
-        if (!b) continue;
-        const ext = b.type === "image/webp" ? "webp" : "png";
-        const path = await DB.upload(`hraci/${p.id}/${kind}.${ext}`, b);
-        row[FIELD[kind]] = `${path}?v=${v}`;
-      }
-      await DB.upsert("players", row);
-    }, `Fotka hráča ${p.name} je nahratá. Na webe sa ukáže pri jeho mene.`);
+    await run(() => storePhotos(p, files), `Fotka hráča ${p.name} je nahratá. Na webe sa ukáže pri jeho mene.`);
+    S.uploading = null;
+    render();
+  }
+
+  // viac hráčov naraz: súbory <id_hráča>_full / _head / _face (napr. p-bartos-andrej_full.webp)
+  async function uploadMany(fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    if (notImage(files)) return fail("Niektorý súbor nie je obrázok — vyber PNG, JPG alebo WebP.");
+    const c = ctx();
+    const groups = {};
+    files.forEach((f) => { const m = /^(.+)_(full|head|face)\.\w+$/i.exec(f.name); if (m) (groups[m[1]] = groups[m[1]] || []).push(f); });
+    const ids = Object.keys(groups).filter((id) => c.P[id]);
+    const unknown = Object.keys(groups).filter((id) => !c.P[id]);
+    if (!ids.length) return fail("Súbory musia mať meno <id_hráča>_full / _head / _face, napr. p-bartos-andrej_full.webp.");
+    S.uploading = "*";
+    await run(async () => { for (const id of ids) await storePhotos(c.P[id], groups[id]); },
+      `Nahraté fotky: ${ids.map((id) => c.P[id].name).join(", ")}.${unknown.length ? ` Neznámi hráči (preskočené): ${unknown.join(", ")}.` : ""}`);
     S.uploading = null;
     render();
   }
@@ -674,7 +695,10 @@
         <span class="txt"><span class="lbl">${esc(t.pre)}</span><span class="nm">${esc(t.name)}</span><span class="info${rs.length ? "" : " warn"}">${esc(info)}</span></span><img src="${esc(t.svg)}" alt=""></button>`;
     }).join("");
     return `<div class="a-panel"><div class="a-panel-head" style="align-items:flex-end"><h1 class="a-h1">Tímy a hráči</h1>
-      <span class="small" style="font-size:13px">${c.teamIds.length} ${plural(c.teamIds.length, "tím", "tímy", "tímov")} · ${n} ${plural(n, "hráč", "hráči", "hráčov")}</span></div>${rows}</div>`;
+      <span class="small" style="font-size:13px">${c.teamIds.length} ${plural(c.teamIds.length, "tím", "tímy", "tímov")} · ${n} ${plural(n, "hráč", "hráči", "hráčov")}</span></div>${rows}
+      <div class="a-bulk"><label class="a-ghost w${S.uploading === "*" ? " busy" : ""}">${icon.cam}${S.uploading === "*" ? "Nahrávam…" : "Nahrať fotky viacerých hráčov naraz"}
+          <input type="file" accept="image/png, image/jpeg, image/webp" multiple data-photos-bulk="1"${S.uploading === "*" ? " disabled" : ""}></label>
+        <span class="small">Súbory pomenované <code>id-hráča_full</code>, <code>_head</code>, <code>_face</code> (napr. <code>p-bartos-andrej_full.webp</code>) — priradia sa samé.</span></div></div>`;
   }
 
   function teamEditor(c) {
@@ -779,7 +803,8 @@
 
   /* ---------- Nastavenia ---------- */
   // rozpracované nastavenia (banner, fotky, písmo); null = také, aké sú uložené
-  const setDraftOf = (c) => S.setDraft || { bannerCount: c.settings.bannerCount, photos: c.settings.photos !== false, headFont: c.settings.headFont === "monument" ? "monument" : "saira" };
+  const savedSet = (c) => ({ bannerCount: c.settings.bannerCount, photos: c.settings.photos !== false, headFont: c.settings.headFont === "monument" ? "monument" : "saira", layout: c.settings.layout === "narrow" ? "narrow" : "wide" });
+  const setDraftOf = (c) => S.setDraft || savedSet(c);
 
   function settingsPanel(c) {
     const sd = setDraftOf(c);
@@ -797,7 +822,7 @@
         <img src="${esc(H.svg)}" alt=""><span class="t"><b>${m.starts_at ? L.matchTime(m) : "vs"}</b><span>${esc(day)}</span></span><img src="${esc(A.svg)}" alt=""></div>`;
     }).join("");
     const pn = shown.length < n ? `Naplánovaných zápasov je teraz len ${shown.length}, viac ich na banneri nebude.` : n === 1 ? "Jeden veľký zápas cez celý banner." : "Na počítači budú zápasy vedľa seba, na mobile pod sebou.";
-    const dirty = n !== c.settings.bannerCount || sd.photos !== (c.settings.photos !== false) || sd.headFont !== (c.settings.headFont === "monument" ? "monument" : "saira");
+    const dirty = JSON.stringify(sd) !== JSON.stringify(savedSet(c));
     const seg = (act, opts, cur) => `<div class="a-seg" role="group">${opts.map(([v, label]) => `<button type="button" data-a="${act}" data-id="${v}" ${pressed(String(cur) === v)}>${label}</button>`).join("")}</div>`;
     const look = (q, label) => `<a class="a-ghost w" href="./?${q}" target="_blank" rel="noopener">${label}${icon.next}</a>`;
     return `<div class="a-ed"><div class="a-ed-head"><span class="sh" aria-hidden="true" style="width:30%;background:repeating-linear-gradient(115deg, #2E2E2E 0 6px, #141414 6px 12px);clip-path:polygon(30% 0, 100% 0, 100% 100%, 12% 100%)"></span>
@@ -814,6 +839,10 @@
           <span class="muted" style="font-size:14px">Nadpisy a mená tímov a hráčov. Čísla (skóre, časy, body) ostávajú v úzkom písme.</span>
           ${seg("sfont", [["saira", '<span style="font-family:var(--fc);font-weight:900;font-size:18px;text-transform:uppercase">Saira (návrh)</span>'], ["monument", '<span style="font-family:\'PP Monument Extended\', var(--fc);font-weight:900;font-size:14px;text-transform:uppercase">Monument</span>']], sd.headFont)}
           <div class="a-actions">${look("pismo=saira", "Pozrieť so Saira")}${look("pismo=monument", "Pozrieť s Monument")}</div></fieldset>
+        <fieldset class="a-fs" style="gap:12px"><legend>Rozloženie</legend>
+          <span class="muted" style="font-size:14px">Úzke: užšia stránka, štatistiky v tabuľkách hneď pri menách a v rozpise termín pod zápasom v strede.</span>
+          ${seg("slayout", [["wide", "Široké (ako návrh)"], ["narrow", "Úzke"]], sd.layout)}
+          <div class="a-actions">${look("rozlozenie=siroke", "Pozrieť široké")}${look("rozlozenie=uzke", "Pozrieť úzke")}</div></fieldset>
         <div class="a-field" style="gap:8px"><span class="lbl">Takto bude vyzerať banner</span>
           <div class="a-prev"><span class="kicker sm" style="font-size:14px;padding:3px 12px">${shown.length === 1 ? "Najbližší zápas" : "Najbližšie zápasy"}</span><div class="a-prev-grid">${cards}</div></div>
           <span class="small">${pn}</span></div>
@@ -905,12 +934,13 @@
     openSeason: (el) => { S.season = el.dataset.id; S.tab = "matches"; S.sel = null; S.draft = null; S.toast = ""; S.error = ""; render(); },
     count: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { bannerCount: Number(el.dataset.id) }); S.toast = ""; render(); },
     sphotos: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { photos: el.dataset.id === "true" }); S.toast = ""; render(); },
+    slayout: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { layout: el.dataset.id }); S.toast = ""; render(); },
     sfont: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { headFont: el.dataset.id }); S.toast = ""; render(); },
     resetSettings: () => { S.setDraft = null; render(); },
     saveSettings: () => {
       const sd = setDraftOf(ctx());
       run(() => DB.saveSettings(Object.assign({}, S.data.settings, sd)),
-        `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, písmo ${sd.headFont === "monument" ? "Monument" : "Saira"}.`,
+        `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, písmo ${sd.headFont === "monument" ? "Monument" : "Saira"}, rozloženie ${sd.layout === "narrow" ? "úzke" : "široké"}.`,
         () => { S.setDraft = null; });
     },
   };
@@ -934,6 +964,7 @@
   app.addEventListener("change", (e) => {
     const id = e.target.dataset && e.target.dataset.photo;
     if (id) uploadPhoto(id, e.target.files);
+    if (e.target.dataset && e.target.dataset.photosBulk) uploadMany(e.target.files);
   });
   app.addEventListener("submit", async (e) => {
     if (e.target.dataset.form !== "login") return;
