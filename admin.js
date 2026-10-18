@@ -124,6 +124,43 @@
   }
   const fail = (msg) => { S.error = msg; S.toast = ""; render(); };
 
+  /* ---------- Potvrdenie pred mazaním (vlastný dialóg v štýle webu, nie window.confirm) ---------- */
+  function confirmDialog(title, text, ok = "Vymazať") {
+    return new Promise((resolve) => {
+      const prev = document.activeElement;
+      const box = document.createElement("div");
+      box.className = "a-modal";
+      box.innerHTML = `<div class="a-modal-card" role="alertdialog" aria-modal="true" aria-labelledby="a-modal-t" aria-describedby="a-modal-d">
+        <div class="a-ed-head"><span class="sh" aria-hidden="true" style="background:linear-gradient(160deg, #FF5C5C, #5E0710);clip-path:polygon(30% 0, 100% 0, 100% 100%, 12% 100%)"></span>
+          <span class="tt"><span class="lbl">Naozaj?</span><b id="a-modal-t">${esc(title)}</b></span></div>
+        <div class="a-body"><p id="a-modal-d" class="muted" style="margin:0">${esc(text)}</p>
+          <div class="a-actions"><button type="button" class="a-save danger" data-m="ok">${esc(ok)}</button><button type="button" class="a-ghost" data-m="no">Zrušiť</button></div></div></div>`;
+      const close = (v) => {
+        box.remove();
+        document.removeEventListener("keydown", onKey, true);
+        if (prev && prev.focus) prev.focus();
+        resolve(v);
+      };
+      const onKey = (e) => {
+        if (e.key === "Escape") { e.preventDefault(); close(false); }
+        if (e.key === "Tab") { // zameranie ostáva v dialógu
+          const btns = Array.from(box.querySelectorAll("button"));
+          const i = btns.indexOf(document.activeElement);
+          e.preventDefault();
+          btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
+        }
+      };
+      box.addEventListener("click", (e) => {
+        const m = e.target.closest("[data-m]");
+        if (m) close(m.dataset.m === "ok");
+        else if (e.target === box) close(false);
+      });
+      document.addEventListener("keydown", onKey, true);
+      document.body.appendChild(box);
+      box.querySelector('[data-m="no"]').focus();
+    });
+  }
+
   /* ---------- Zápasy: výber a draft ---------- */
   function select(id) {
     const c = ctx();
@@ -171,9 +208,9 @@
     }, "Uložené. Web sa hneď aktualizuje — tabuľka aj štatistiky sa prepočítali.", () => select(id));
   }
 
-  function removeMatch() {
+  async function removeMatch() {
     const id = S.sel;
-    if (!window.confirm("Naozaj vymazať tento zápas aj s gólmi?")) return;
+    if (!(await confirmDialog("Vymazať zápas?", "Zápas aj všetky jeho góly sa natrvalo vymažú z webu."))) return;
     run(() => DB.remove("matches", { id }), "Zápas je vymazaný.", () => { S.sel = null; S.draft = null; });
   }
 
@@ -220,10 +257,10 @@
       `${c.P[playerId].name} hrá odteraz za ${(c.T[to] || NOTEAM).name}.`);
   }
 
-  function removePlayer(playerId) {
+  async function removePlayer(playerId) {
     const c = ctx();
     const name = c.P[playerId].name;
-    if (!window.confirm(`Odstrániť ${name} zo súpisky? Jeho góly ostanú v štatistikách.`)) return;
+    if (!(await confirmDialog(`Odstrániť ${name}?`, "Hráč zmizne zo súpisky tímu. Jeho góly a asistencie ostanú v štatistikách.", "Odstrániť"))) return;
     run(() => DB.remove("roster", { season_id: c.s.id, player_id: playerId }), `${name} je odstránený zo súpisky. Jeho góly ostávajú v štatistikách.`);
   }
 
@@ -241,6 +278,83 @@
       if (!same) await DB.upsert("players", { id, name });
       await DB.upsert("roster", { season_id: c.s.id, player_id: id, team_id: team, captain: false }, KEY);
     }, `${name} je v tíme ${(c.T[team] || NOTEAM).name}.`, () => { S.newName = ""; });
+  }
+
+  /* ---------- Tímy: pridanie a úprava ---------- */
+  const HEX = /^#[0-9a-f]{6}$/i;
+  function startTeam(id) {
+    const c = ctx();
+    const t = id === "new" ? null : c.d.teams.find((x) => x.id === id);
+    S.teamDraft = t
+      ? { id: t.id, name: t.name, venue: t.venue, abbr: t.abbr, color: t.color, color_dark: t.color_dark, ink: t.ink, logo: t.logo, logo_anim: t.logo_anim, files: {} }
+      : { id: "new", name: "", venue: "", abbr: "", color: "#888888", color_dark: "#333333", ink: "#FFFFFF", logo: "", logo_anim: "", files: {} };
+    S.teamSel = id === "new" ? null : id;
+    S.toast = ""; S.error = "";
+    render();
+  }
+
+  function newTeamId(abbr, name) {
+    const ids = new Set(S.data.teams.map((t) => t.id));
+    const base = L.slug(abbr || name).replace(/-/g, "").slice(0, 6) || "tim";
+    let id = base;
+    for (let n = 2; ids.has(id); n++) id = `${base}${n}`;
+    return id;
+  }
+
+  function saveTeam() {
+    const c = ctx();
+    const d = S.teamDraft;
+    const name = (d.name || "").trim();
+    const abbr = (d.abbr || "").trim().toUpperCase();
+    if (!name) return fail("Napíš názov tímu, napr. „Giants“.");
+    if (!/^[A-ZÁ-Ž0-9]{2,4}$/u.test(abbr)) return fail("Skratka tímu má 2 až 4 písmená, napr. „GIA“.");
+    if (![d.color, d.color_dark, d.ink].every((x) => HEX.test(x))) return fail("Farby musia byť v tvare #RRGGBB.");
+    const isNew = d.id === "new";
+    const id = isNew ? newTeamId(abbr, name) : d.id;
+    run(async () => {
+      const v = Date.now().toString(36);
+      const url = async (kind, file) => {
+        const ext = file.type === "image/webp" ? "webp" : file.type === "image/png" ? "png" : "jpg";
+        const path = await DB.upload(`timy/${id}/${kind}.${ext}`, file);
+        return `${DB.photoUrl(path)}?v=${v}`;
+      };
+      const row = { id, name, venue: (d.venue || "").trim(), abbr, color: d.color.toUpperCase(), color_dark: d.color_dark.toUpperCase(), ink: d.ink.toUpperCase(), logo: d.logo || "", logo_anim: d.logo_anim || "" };
+      if (d.files.logo) row.logo = await url("logo", d.files.logo);
+      if (d.files.anim) row.logo_anim = await url("anim", d.files.anim);
+      await DB.upsert("teams", row);
+      if (isNew) await DB.upsert("season_teams", { season_id: c.s.id, team_id: id }, "season_id,team_id");
+    }, isNew ? `Tím ${name} je pridaný do sezóny ${c.s.name}. Teraz mu pridaj hráčov.` : `Tím ${name} je uložený.`,
+    () => { S.teamDraft = null; S.teamSel = id; });
+  }
+
+  function teamForm(c) {
+    const d = S.teamDraft;
+    const isNew = d.id === "new";
+    const prev = { logo: d.files.logo ? d.files.logoUrl : d.logo, anim: d.files.anim ? d.files.animUrl : d.logo_anim };
+    const color = (key, label) => `<label class="a-field lbl">${label}<span class="a-color"><input type="color" data-tcolor="${key}" value="${esc(HEX.test(d[key]) ? d[key] : "#888888")}" aria-label="${label}"><code>${esc(d[key])}</code></span></label>`;
+    const file = (kind, label, note) => `<div class="a-field"><span class="lbl">${label}</span><span class="a-filerow">
+        ${prev[kind] ? `<img src="${esc(prev[kind])}" alt="">` : '<span class="blank" aria-hidden="true" style="width:56px;height:56px"></span>'}
+        <label class="a-ghost w a-filebtn">${icon.cam}${prev[kind] ? "Zmeniť" : "Nahrať"}<input type="file" accept="image/png, image/webp${kind === "logo" ? ", image/jpeg" : ""}" data-tfile="${kind}"></label></span>
+        <span class="small">${note}</span></div>`;
+    const T = { c: HEX.test(d.color) ? d.color : "#888888", d: HEX.test(d.color_dark) ? d.color_dark : "#333333", ink: HEX.test(d.ink) ? d.ink : "#FFFFFF" };
+    return `<div class="a-ed"><div class="a-team-head" style="min-height:120px">
+        <span class="fill" aria-hidden="true" style="background:linear-gradient(150deg, ${T.c}, ${T.d});clip-path:polygon(0 0, 62% 0, 50% 100%, 0 100%)"></span>
+        ${backBtn("cancelTeam", "Späť na tímy")}${prev.logo ? `<img class="logo" src="${esc(prev.logo)}" alt="">` : ""}
+        <span class="tt"><small>${isNew ? "Nový tím" : "Úprava tímu"}${d.venue ? ` · ${esc(d.venue)}` : ""}</small><b>${esc(d.name || "Nový tím")}</b></span></div>
+      ${msgs()}
+      <div class="a-body">
+        <fieldset class="a-fs"><legend>Názov</legend>
+          <label class="a-field lbl">Názov tímu<input type="text" class="a-input big" data-in="tname" value="${esc(d.name)}" placeholder="napr. Giants" style="text-transform:none"></label>
+          <div class="a-two"><label class="a-field lbl">Prvá časť názvu (miesto)<input type="text" class="a-input" data-in="tvenue" value="${esc(d.venue)}" placeholder="napr. Veľká sála" style="text-transform:none;letter-spacing:0"></label>
+            <label class="a-field lbl">Skratka (2–4 písmená)<input type="text" class="a-input" data-in="tabbr" value="${esc(d.abbr)}" placeholder="GIA" maxlength="4" style="letter-spacing:0.08em"></label></div></fieldset>
+        <fieldset class="a-fs"><legend>Farby</legend><div class="a-three">${color("color", "Hlavná")}${color("color_dark", "Tmavá (prechod)")}${color("ink", "Text na hlavnej farbe")}</div>
+          <span class="a-colorprev" style="${vars(T)}"><span class="sc">2:1</span><b>${esc(d.abbr || "TÍM")}</b></span></fieldset>
+        <fieldset class="a-fs"><legend>Logá</legend>
+          ${file("logo", "Logo", "PNG alebo WebP s priehľadným pozadím, ideálne štvorec aspoň 512 × 512 px. SVG sa nahrať nedá.")}
+          ${file("anim", "Animované logo (víťaz zápasu, nepovinné)", "Animovaný WebP. Keď chýba, víťaz má obyčajné logo.")}</fieldset>
+        <div class="a-actions"><button type="button" class="a-save" data-a="saveTeam"${S.busy ? " disabled" : ""}>${S.busy ? "Ukladám…" : isNew ? "Pridať tím" : "Uložiť tím"}</button>
+          <button type="button" class="a-ghost" data-a="cancelTeam">Zrušiť</button></div>
+        ${isNew ? `<span class="small">Tím sa pridá do sezóny ${esc(c.s.name)}. Do iných sezón ho pridáš v záložke Sezóny.</span>` : ""}</div></div>`;
   }
 
   /* ---------- Fotky hráčov ----------
@@ -378,7 +492,7 @@
     return id;
   }
 
-  function saveSeason() {
+  async function saveSeason() {
     const c = ctx();
     const d = S.seasonDraft;
     const name = (d.name || "").trim();
@@ -390,6 +504,9 @@
     const row = { id, name, short: L.shortName(name), state: d.state, seed_mode: d.seed_mode || "auto", sort };
     const otherLive = c.d.seasons.filter((x) => x.state === "live" && x.id !== id);
     const had = c.d.season_teams.filter((x) => x.season_id === id).map((x) => x.team_id);
+    const dropped = had.filter((t) => !d.teams.includes(t));
+    if (dropped.length && !(await confirmDialog("Odobrať tímy zo sezóny?",
+      `${dropped.map((t) => (c.T[t] || NOTEAM).name).join(", ")} ${dropped.length === 1 ? "zmizne" : "zmiznú"} zo sezóny „${name}“. Zápasy a súpisky ostanú v databáze.`, "Odobrať"))) return;
     let note = isNew ? `Sezóna „${name}“ je vytvorená. Prepni sa na ňu hore a pridaj zápasy aj hráčov.` : "Sezóna je uložená.";
     if (d.state === "live" && otherLive.length) note = `Uložené. „${otherLive[0].name}“ je teraz skončená a web ukazuje „${name}“.`;
     run(async () => {
@@ -694,8 +811,9 @@
       return `<button type="button" class="a-trow" data-a="team-sel" data-id="${esc(id)}" aria-current="${S.teamSel === id}" style="${vars(t)}"><span class="shard" aria-hidden="true"></span>
         <span class="txt"><span class="lbl">${esc(t.pre)}</span><span class="nm">${esc(t.name)}</span><span class="info${rs.length ? "" : " warn"}">${esc(info)}</span></span><img src="${esc(t.svg)}" alt=""></button>`;
     }).join("");
-    return `<div class="a-panel"><div class="a-panel-head" style="align-items:flex-end"><h1 class="a-h1">Tímy a hráči</h1>
-      <span class="small" style="font-size:13px">${c.teamIds.length} ${plural(c.teamIds.length, "tím", "tímy", "tímov")} · ${n} ${plural(n, "hráč", "hráči", "hráčov")}</span></div>${rows}
+    return `<div class="a-panel"><div class="a-panel-head"><span><h1 class="a-h1">Tímy a hráči</h1>
+      <span class="small" style="font-size:13px">${c.teamIds.length} ${plural(c.teamIds.length, "tím", "tímy", "tímov")} · ${n} ${plural(n, "hráč", "hráči", "hráčov")}</span></span>
+      <button type="button" class="a-new" data-a="newTeam">${icon.plus}Nový tím</button></div>${rows}
       <div class="a-bulk"><label class="a-ghost w${S.uploading === "*" ? " busy" : ""}">${icon.cam}${S.uploading === "*" ? "Nahrávam…" : "Nahrať fotky viacerých hráčov naraz"}
           <input type="file" accept="image/png, image/jpeg, image/webp" multiple data-photos-bulk="1"${S.uploading === "*" ? " disabled" : ""}></label>
         <span class="small">Súbory pomenované <code>id-hráča_full</code>, <code>_head</code>, <code>_face</code> (napr. <code>p-bartos-andrej_full.webp</code>) — priradia sa samé.</span></div></div>`;
@@ -738,7 +856,8 @@
         ${capFull ? `<span aria-hidden="true" style="position:absolute;top:0;right:0;bottom:0;width:30%;background:linear-gradient(200deg, ${t.c}, ${t.d});clip-path:polygon(34% 0, 100% 0, 100% 100%, 0 100%);opacity:0.6"></span>
           <img class="capt" src="${esc(capFull)}" alt="${esc(cap.p.name)}, kapitán">` : ""}
         ${backBtn("teamBack", "Späť na tímy")}<img class="logo" src="${esc(t.svg)}" alt="">
-        <span class="tt"><small>Tím · ${esc(t.pre)}</small><span>${rs.length} ${plural(rs.length, "hráč", "hráči", "hráčov")} · ${esc(c.s.name)}</span><b>${esc(t.name)}</b></span></div>
+        <span class="tt"><small>Tím · ${esc(t.pre)}</small><span>${rs.length} ${plural(rs.length, "hráč", "hráči", "hráčov")} · ${esc(c.s.name)}</span><b>${esc(t.name)}</b></span>
+        <button type="button" class="a-ghost w a-edteam" data-a="editTeam" data-id="${esc(id)}">Upraviť tím</button></div>
       ${msgs()}
       <div class="a-body"><fieldset class="a-fs" style="gap:8px"><legend>Súpiska · ${esc(c.s.name)}</legend>
           <span class="muted" style="font-size:13px">Klikni na „C“ a nastavíš kapitána. „Presunúť“ pošle hráča do iného tímu. Tlačidlo s fotoaparátom nahrá fotku — najlepšie PNG s priehľadným pozadím, postava od pása hore (pripravené súbory <code>_full</code>, <code>_head</code>, <code>_face</code> môžeš vybrať naraz). Zmeny sa ukladajú hneď.</span>
@@ -830,7 +949,10 @@
       ${msgs()}
       <div class="a-body"><fieldset class="a-fs" style="gap:12px"><legend>Banner — najbližšie zápasy</legend>
           <span class="muted" style="font-size:14px">Koľko najbližších zápasov ukázať hore na hlavnej stránke. Hrajú sa dva zápasy za kolo, takže „2“ ukáže celé najbližšie kolo.</span>
-          <div class="a-count" role="group" aria-label="Počet zápasov na banneri">${tabs}</div></fieldset>
+          <div class="a-count" role="group" aria-label="Počet zápasov na banneri">${tabs}</div>
+          <div class="a-field" style="gap:8px"><span class="lbl">Takto bude vyzerať banner</span>
+            <div class="a-prev"><span class="kicker sm" style="font-size:14px;padding:3px 12px">${shown.length === 1 ? "Najbližší zápas" : "Najbližšie zápasy"}</span><div class="a-prev-grid">${cards}</div></div>
+            <span class="small">${pn}</span></div></fieldset>
         <fieldset class="a-fs" style="gap:12px"><legend>Fotky hráčov</legend>
           <span class="muted" style="font-size:14px">Bez fotiek ukáže web iniciály a siluety. Nahraté fotky ostanú uložené, dajú sa kedykoľvek znova zapnúť.</span>
           ${seg("sphotos", [["true", "Ukazovať fotky"], ["false", "Bez fotiek"]], sd.photos)}
@@ -839,9 +961,6 @@
           <span class="muted" style="font-size:14px">Úzke: užšia stránka, štatistiky v tabuľkách hneď pri menách a v rozpise termín pod zápasom v strede.</span>
           ${seg("slayout", [["wide", "Široké (ako návrh)"], ["narrow", "Úzke"]], sd.layout)}
           <div class="a-actions">${look("rozlozenie=siroke", "Pozrieť široké")}${look("rozlozenie=uzke", "Pozrieť úzke")}</div></fieldset>
-        <div class="a-field" style="gap:8px"><span class="lbl">Takto bude vyzerať banner</span>
-          <div class="a-prev"><span class="kicker sm" style="font-size:14px;padding:3px 12px">${shown.length === 1 ? "Najbližší zápas" : "Najbližšie zápasy"}</span><div class="a-prev-grid">${cards}</div></div>
-          <span class="small">${pn}</span></div>
         <div class="a-actions"><button type="button" class="a-save" data-a="saveSettings"${S.busy ? " disabled" : ""}>${S.busy ? "Ukladám…" : "Uložiť nastavenia"}</button>
           <button type="button" class="a-ghost" data-a="resetSettings">Zahodiť zmeny</button></div></div></div>`;
   }
@@ -865,14 +984,14 @@
     if (!S.data) { app.innerHTML = '<p class="msg">Načítavam…</p>'; return; }
     const c = ctx();
     if (!c.s) { app.innerHTML = `<div class="adm">${header(c)}<p class="msg">V databáze nie je žiadna sezóna.</p></div>`; return; }
-    if (S.tab === "teams" && !S.teamSel && !mobile()) S.teamSel = c.teamIds[0] || null;
+    if (S.tab === "teams" && !S.teamSel && !S.teamDraft && !mobile()) S.teamSel = c.teamIds[0] || null;
     if (S.tab === "seasons" && !S.seasonDraft && !mobile()) { selectSeason(c.s.id); return; }
     const isMP = S.tab === "matches" || S.tab === "playoff";
-    const detail = isMP ? !!S.draft : S.tab === "teams" ? !!S.teamSel : S.tab === "seasons" ? !!S.seasonDraft : true;
+    const detail = isMP ? !!S.draft : S.tab === "teams" ? !!(S.teamSel || S.teamDraft) : S.tab === "seasons" ? !!S.seasonDraft : true;
     const showLeft = S.tab !== "settings" && !(mobile() && detail);
     const showRight = S.tab === "settings" || !mobile() || detail;
     const left = { matches: matchList, playoff: playoffLeft, teams: teamList, seasons: seasonList }[S.tab];
-    const right = isMP ? matchEditor(c) : S.tab === "teams" ? (S.teamSel ? teamEditor(c) : "") : S.tab === "seasons" ? (S.seasonDraft ? seasonEditor(c) : "") : settingsPanel(c);
+    const right = isMP ? matchEditor(c) : S.tab === "teams" ? (S.teamDraft ? teamForm(c) : S.teamSel ? teamEditor(c) : "") : S.tab === "seasons" ? (S.seasonDraft ? seasonEditor(c) : "") : settingsPanel(c);
     const focus = document.activeElement && document.activeElement.closest && document.activeElement.closest("[data-a]");
     const key = focus ? `[data-a="${focus.dataset.a}"]${focus.dataset.id !== undefined ? `[data-id="${CSS.escape(focus.dataset.id)}"]` : ""}${focus.dataset.i !== undefined ? `[data-i="${focus.dataset.i}"]` : ""}` : null;
     app.innerHTML = `<div class="adm">${header(c)}${nav(c)}<main class="wrap a-main">
@@ -885,8 +1004,8 @@
   /* ---------- Udalosti ---------- */
   const ACTIONS = {
     logout: () => { DB.signOut(); render(); },
-    tab: (el) => { S.tab = el.dataset.id; S.toast = ""; S.error = ""; S.moving = null; if (S.tab !== "matches" && S.tab !== "playoff") { S.sel = null; S.draft = null; } if (S.tab === "settings") S.setDraft = null; render(); },
-    season: (el) => { S.season = el.dataset.id; S.sel = null; S.draft = null; S.teamSel = null; S.moving = null; S.filter = "all"; S.toast = ""; S.error = ""; render(); },
+    tab: (el) => { S.tab = el.dataset.id; S.toast = ""; S.error = ""; S.moving = null; S.teamDraft = null; if (S.tab !== "matches" && S.tab !== "playoff") { S.sel = null; S.draft = null; } if (S.tab === "settings") S.setDraft = null; render(); },
+    season: (el) => { S.season = el.dataset.id; S.teamDraft = null; S.sel = null; S.draft = null; S.teamSel = null; S.moving = null; S.filter = "all"; S.toast = ""; S.error = ""; render(); },
     filter: (el) => { S.filter = el.dataset.id; render(); },
     select: (el) => select(el.dataset.id),
     back: () => select(null),
@@ -915,7 +1034,11 @@
       run(() => DB.upsert("seasons", Object.assign({}, c.s, { seed_mode: el.dataset.id })),
         el.dataset.id === "auto" ? "Semifinále sa teraz určí podľa tabuľky." : "Semifinále určuješ ručne — klikni na zápas a vyber tímy.", () => { if (S.sel) select(S.sel); });
     },
-    "team-sel": (el) => { S.teamSel = el.dataset.id; S.moving = null; S.newName = ""; S.toast = ""; S.error = ""; render(); },
+    newTeam: () => startTeam("new"),
+    editTeam: (el) => startTeam(el.dataset.id),
+    cancelTeam: () => { S.teamDraft = null; S.error = ""; render(); },
+    saveTeam: () => saveTeam(),
+    "team-sel": (el) => { S.teamDraft = null; S.teamSel = el.dataset.id; S.moving = null; S.newName = ""; S.toast = ""; S.error = ""; render(); },
     teamBack: () => { S.teamSel = null; S.moving = null; render(); },
     cap: (el) => toggleCaptain(el.dataset.id),
     moving: (el) => { S.moving = S.moving === el.dataset.id ? null : el.dataset.id; S.toast = ""; S.error = ""; render(); },
@@ -952,6 +1075,10 @@
     if (k === "note" && S.draft) S.draft.note = e.target.value;
     if (k === "newName") S.newName = e.target.value;
     if (k === "seasonName" && S.seasonDraft) S.seasonDraft.name = e.target.value;
+    if (S.teamDraft && k === "tname") S.teamDraft.name = e.target.value;
+    if (S.teamDraft && k === "tvenue") S.teamDraft.venue = e.target.value;
+    if (S.teamDraft && k === "tabbr") S.teamDraft.abbr = e.target.value.toUpperCase();
+    if (S.teamDraft && e.target.dataset.tcolor) { S.teamDraft[e.target.dataset.tcolor] = e.target.value.toUpperCase(); const code = e.target.nextElementSibling; if (code) code.textContent = e.target.value.toUpperCase(); }
   });
   app.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && e.target.dataset && e.target.dataset.in === "newName") { e.preventDefault(); addPlayer(); }
@@ -960,6 +1087,16 @@
     const id = e.target.dataset && e.target.dataset.photo;
     if (id) uploadPhoto(id, e.target.files);
     if (e.target.dataset && e.target.dataset.photosBulk) uploadMany(e.target.files);
+    if (S.teamDraft && e.target.dataset && e.target.dataset.tcolor) render(); // farba vybraná → prekresliť náhľad
+    const kind = e.target.dataset && e.target.dataset.tfile;
+    if (S.teamDraft && kind) {
+      const f = e.target.files[0];
+      if (!f) return;
+      if (!/^image\/(png|webp|jpeg)$/.test(f.type)) return fail("Logo musí byť PNG, WebP alebo JPG (SVG sa nahrať nedá).");
+      S.teamDraft.files[kind] = f;
+      S.teamDraft.files[`${kind}Url`] = URL.createObjectURL(f);
+      render();
+    }
   });
   app.addEventListener("submit", async (e) => {
     if (e.target.dataset.form !== "login") return;

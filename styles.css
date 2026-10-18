@@ -228,7 +228,7 @@ a { color: inherit; }
 .ptbl-head > span:last-child { color: var(--fg); }
 .ptbl-row .n { color: var(--fg-3); font-weight: 700; }
 .ptbl-row .pl { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.ptbl-row .pl b { font-weight: 600; min-width: 0; }
+.ptbl-row .pl b { font-weight: 600; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ptbl-row .pl > img { width: 20px; height: 20px; flex: none; opacity: 0.85; }
 .ptbl-row .soft { color: #cfcfcf; }
 .ptbl-row .pts { font-family: var(--fc); font-weight: 900; font-size: 24px; line-height: 1; }
@@ -399,10 +399,21 @@ a { color: inherit; }
 /* ---------- Úzke rozloženie (admin → Nastavenia, alebo ?rozlozenie=uzke) ----------
    Užšia stránka, štatistiky v tabuľkách hneď pri menách a v rozpise termín pod zápasom v strede. */
 :root[data-layout="narrow"] .wrap { max-width: 1000px; }
-:root[data-layout="narrow"] .tbl-row { grid-template-columns: 72px minmax(0, 320px) repeat(4, 48px) 80px 56px 72px; }
-:root[data-layout="narrow"] .ptbl-row { grid-template-columns: 28px minmax(0, 300px) repeat(3, 44px) 48px; }
-:root[data-layout="narrow"] .ptbl.nz .ptbl-row { grid-template-columns: 28px minmax(0, 300px) repeat(2, 44px) 48px; }
+/* stĺpce hneď pri mene iba na širšej obrazovke; na mobile ostáva meno cez celú šírku */
+@container (min-width: 700px) {
+  :root[data-layout="narrow"] .tbl-row { grid-template-columns: 72px minmax(0, 320px) repeat(4, 48px) 80px 56px 72px; }
+  :root[data-layout="narrow"] .ptbl-row { grid-template-columns: 28px minmax(0, 300px) repeat(3, 44px) 48px; }
+  :root[data-layout="narrow"] .ptbl.nz .ptbl-row { grid-template-columns: 28px minmax(0, 300px) repeat(2, 44px) 48px; }
+}
 :root[data-layout="narrow"] .row-in { flex-direction: column; align-items: stretch; gap: 8px; }
 :root[data-layout="narrow"] .row-teams { flex: none; }
 :root[data-layout="narrow"] .row-when { flex: none; margin: 0; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px; text-align: center; }
 :root[data-layout="narrow"] .teams { grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); }
+
+/* kanadské bodovanie na mobile: meno sa zmestí na jeden riadok (logo tímu skryté, farbu tímu ukazuje avatar) */
+@container (max-width: 480px) {
+  .ptbl-row, .ptbl.nz .ptbl-row { grid-template-columns: 22px minmax(0, 1fr) repeat(3, 24px) 30px; gap: 4px; padding-left: 10px; padding-right: 10px; }
+  .ptbl.nz .ptbl-row { grid-template-columns: 22px minmax(0, 1fr) repeat(2, 24px) 30px; }
+  .ptbl-row .pl { gap: 8px; }
+  .ptbl-row .pl > img { display: none; }
+}
