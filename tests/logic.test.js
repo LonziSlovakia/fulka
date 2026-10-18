@@ -291,7 +291,8 @@ test("najbližšie zápasy: bez presného termínu podľa týždňa, ktorý ešt
 
 test("stav zápasu v rozpise", () => {
   assert.equal(L.matchState({ status: "done" }, null), "done");
-  assert.equal(L.matchState({ id: "x", status: "plan", starts_at: null }, "x"), "tbd");
+  assert.equal(L.matchState({ id: "x", status: "plan", starts_at: null }, "y"), "tbd");
+  assert.equal(L.matchState({ id: "x", status: "plan", starts_at: null }, "x"), "next", "najbližší, hoci má iba týždeň");
   assert.equal(L.matchState({ id: "x", status: "plan", starts_at: "2026-10-20T18:15:00Z", moved: true }, "x"), "moved");
   assert.equal(L.matchState({ id: "x", status: "plan", starts_at: "2026-10-20T18:15:00Z" }, "x"), "next");
   assert.equal(L.matchState({ id: "y", status: "plan", starts_at: "2026-10-20T18:15:00Z" }, "x"), "plan");

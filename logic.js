@@ -225,10 +225,11 @@
       .slice(0, Math.max(1, Math.min(4, Number(count) || DEFAULTS.bannerCount)));
   }
 
-  // stav zápasu v rozpise: done / tbd (bez termínu) / moved / next / plan
+  // stav zápasu v rozpise: done / next / tbd (bez termínu) / moved / plan
+  // najbližší zápas bez presného termínu je „next“ (má aspoň týždeň), presunutý najbližší ostáva „moved“
   function matchState(m, nextId) {
     if (m.status === "done") return "done";
-    if (!m.starts_at) return "tbd";
+    if (!m.starts_at) return m.id === nextId ? "next" : "tbd";
     if (m.moved) return "moved";
     if (m.id === nextId) return "next";
     return "plan";

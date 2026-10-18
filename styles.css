@@ -1,0 +1,362 @@
+/* FULka – vzhľad podľa návrhu „Shard“ (design/Main.dc.html). Tímové farby prichádzajú
+   z databázy cez premenné --c (hlavná), --d (tmavá) a --ink (text na hlavnej farbe). */
+:root {
+  --bg: #050505;
+  --card: #0e0e0e;
+  --card-2: #0a0a0a;
+  --line: #1e1e1e;
+  --line-2: #2a2a2a;
+  --line-3: #3a3a3a;
+  --line-soft: #171717;
+  --fg: #ffffff;
+  --fg-2: #bdbdbd;
+  --fg-3: #9a9a9a;
+  --fg-4: #5a5a5a;
+  --moved: #ffb020;
+  --live: #3ddc84;
+  --fc: "Saira Extra Condensed", "Saira", system-ui, sans-serif;
+  --pad: clamp(16px, 2cqi, 24px);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); }
+body { color: var(--fg); font-family: "Saira", system-ui, sans-serif; font-size: 16px; line-height: 1.4; }
+img { display: block; }
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.page { container-type: inline-size; min-height: 100vh; background: var(--bg); }
+.fc { font-family: var(--fc); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-left: var(--pad); padding-right: var(--pad); }
+.skew { transform: skewX(-10deg); }
+.upper { text-transform: uppercase; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Pozadia „shard“ ---------- */
+.fill { position: absolute; inset: 0; }
+.grad { background: linear-gradient(150deg, var(--c) 0%, var(--d) 78%); }
+.grad-160 { background: linear-gradient(160deg, var(--c), var(--d)); }
+.stripes { background: repeating-linear-gradient(-62deg, rgba(0, 0, 0, 0.1) 0 2px, rgba(0, 0, 0, 0) 2px 16px); }
+.stripes-light { background: repeating-linear-gradient(-62deg, rgba(255, 255, 255, 0.035) 0 2px, rgba(0, 0, 0, 0) 2px 16px); }
+.fade { background: linear-gradient(180deg, rgba(5, 5, 5, 0) 55%, rgba(5, 5, 5, 0.82) 100%); }
+.teeth { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; transform: rotate(180deg);
+  background: linear-gradient(135deg, var(--bg) 50%, rgba(5, 5, 5, 0) 50%) 0 0 / 28px 14px repeat-x,
+    linear-gradient(225deg, var(--bg) 50%, rgba(5, 5, 5, 0) 50%) 0 0 / 28px 14px repeat-x; }
+
+/* ---------- Hlavička ---------- */
+.top { background: var(--bg); border-bottom: 1px solid var(--line); }
+.top-in { padding-top: 10px; padding-bottom: 10px; display: flex; align-items: center; gap: 10px 20px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.brand img { width: 52px; height: 52px; }
+.brand-name { display: flex; flex-direction: column; line-height: 1; }
+.brand-name b { font-family: var(--fc); font-weight: 900; font-size: 38px; line-height: 0.9; transform: skewX(-8deg); transform-origin: left bottom; }
+.brand-name small { margin-top: 5px; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-2); }
+.season-btn { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; background: transparent; border: 1px solid var(--fg);
+  transform: skewX(-10deg); font-family: var(--fc); font-weight: 800; font-size: 17px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; cursor: pointer; }
+.season-btn[aria-expanded="true"], .nav-season[aria-expanded="true"] { background: var(--fg); color: var(--bg); }
+.dot { width: 9px; height: 9px; flex: none; }
+.chev { transition: transform 0.15s; }
+[aria-expanded="true"] > .chev, [aria-expanded="true"] .chev { transform: rotate(180deg); }
+.nav { margin-left: auto; display: flex; align-items: center; max-width: 100%; overflow-x: auto; }
+.nav a { padding: 12px 9px; color: var(--fg-2); text-decoration: none; white-space: nowrap; font-family: var(--fc); font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+.nav a:first-child, .nav a:hover { color: var(--fg); }
+.nav-season { margin-left: 6px; min-height: 40px; padding: 0 14px; background: transparent; border: 1px solid var(--fg); font-family: var(--fc); font-weight: 800; font-size: 20px;
+  letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; cursor: pointer; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+
+/* ---------- Výber sezóny ---------- */
+.seasons { background: var(--card-2); border-bottom: 1px solid var(--line); }
+.seasons-in { padding-top: 24px; padding-bottom: 28px; display: flex; flex-direction: column; gap: 16px; }
+.seasons-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.season-card { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-height: 132px; padding: 16px 18px;
+  background: var(--card); border: 2px solid var(--line-2); text-align: left; cursor: pointer; }
+.season-card[aria-pressed="true"] { border-color: var(--fg); }
+.season-card .shard { position: absolute; top: 0; right: 0; bottom: 0; width: 34%; clip-path: polygon(40% 0, 100% 0, 100% 100%, 0 100%, 22% 52%, 10% 48%); }
+.season-card .logo { position: absolute; right: 12px; top: 50%; width: 64px; height: 64px; margin-top: -32px; }
+.season-card .name { position: relative; max-width: 66%; font-family: var(--fc); font-weight: 900; font-size: 30px; line-height: 0.95; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom; }
+.season-card .blurb { position: relative; max-width: 66%; font-size: 13px; color: var(--fg-2); }
+.chip { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.chip i { width: 7px; height: 7px; }
+
+/* ---------- Nadpis sekcie ---------- */
+.sec { padding-top: 72px; }
+.sec-head { display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px; }
+.sec-head h2 { margin: 0; font-family: var(--fc); font-weight: 900; font-size: clamp(44px, 6cqi, 80px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg); }
+.sec-head h2.small { font-size: 40px; line-height: 0.9; }
+.sec-hint { margin-left: auto; font-size: 13px; color: var(--fg-3); }
+.legend { margin-left: auto; display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--fg-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; }
+.empty { padding: 18px 20px; background: var(--card); border: 1px solid var(--line); color: var(--fg-2); font-size: 15px; }
+
+/* ---------- Banner ---------- */
+.hero { position: relative; overflow: hidden; background: var(--bg); }
+.hero-in { position: relative; padding-top: 32px; padding-bottom: 60px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.kicker { background: var(--fg); color: var(--bg); font-family: var(--fc); font-weight: 800; font-size: 20px; letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 18px; transform: skewX(-10deg); }
+.kicker.dark { background: var(--bg); color: var(--fg); }
+.kicker.sm { font-size: 16px; padding: 4px 12px; }
+.hero-day { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px 18px; text-align: center; }
+.hero-day .dn { font-family: var(--fc); font-weight: 800; font-size: clamp(18px, 2cqi, 26px); letter-spacing: 0.2em; text-transform: uppercase; }
+.hero-day .big { font-family: var(--fc); font-weight: 900; font-size: clamp(48px, 7cqi, 96px); line-height: 0.85; transform: skewX(-8deg); }
+.hero-day .note, .hero-c .note { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2); }
+.cards { width: 100%; display: grid; gap: 16px; }
+.mcard { position: relative; overflow: hidden; min-height: clamp(210px, 20cqi, 280px); background: var(--card); border: 1px solid var(--line); }
+.mcard.first { border-color: var(--fg); }
+.mcard .away { --c: var(--ac); --d: var(--ad); clip-path: polygon(60% 0, 100% 0, 100% 100%, 40% 100%, 51% 63%, 45.5% 59%, 55% 28%, 49.5% 24%); }
+.mcard-in { position: relative; height: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 14px 20px; }
+.vs3 { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.side { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+.side img { filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45)); }
+.tname { max-width: 100%; background: var(--bg); padding: 3px 12px; transform: skewX(-10deg); font-family: var(--fc); font-weight: 900; line-height: 1; text-transform: uppercase; overflow-wrap: anywhere; }
+.mid { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; text-shadow: 0 3px 16px rgba(0, 0, 0, 0.55); }
+.mid .time { font-family: var(--fc); font-weight: 900; line-height: 0.9; transform: skewX(-8deg); }
+.mid .sub { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #ededed; }
+.mnote { padding: 2px 10px; background: var(--bg); font-size: 12px; color: var(--moved); text-align: center; }
+.hero-c { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; text-shadow: 0 3px 18px rgba(0, 0, 0, 0.5); }
+
+/* ---------- Výsledky ---------- */
+.results { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; align-items: start; }
+.res { background: var(--card); border: 1px solid var(--line); display: flex; flex-direction: column; }
+.res.open { border-color: var(--fg); }
+.res-btn { position: relative; overflow: hidden; display: flex; flex-direction: column; width: 100%; padding: 0; background: transparent; border: 0; text-align: inherit; cursor: pointer; }
+.res-btn .shard { position: absolute; inset: 0; background: linear-gradient(160deg, var(--c), var(--d)); }
+.res-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px; padding: 20px 14px 16px; }
+.res-side { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.res-side img { width: 76px; height: 76px; }
+.res-side span { font-family: var(--fc); font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+.res-score { display: flex; align-items: center; gap: 6px; font-family: var(--fc); font-weight: 900; font-size: 54px; line-height: 1; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55); }
+.res-score .colon { color: #8a8a8a; font-size: 36px; }
+.res-foot { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px; background: var(--card-2);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-2); }
+.res-foot .tg { display: inline-flex; align-items: center; gap: 6px; }
+.open .res-foot .tg { color: var(--fg); }
+.lose { opacity: 0.4; }
+.lose-ink { color: #8a8a8a; }
+
+/* časová os gólov */
+.goals { display: flex; flex-direction: column; gap: 7px; padding: 12px 14px 16px; border-top: 1px solid var(--line); }
+.goal { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.goal .sc { flex: none; min-width: 42px; padding: 1px 0; text-align: center; background: var(--c); color: var(--ink); font-family: var(--fc); font-weight: 900; font-size: 18px; line-height: 1.25; }
+.goal img { width: 24px; height: 24px; flex: none; }
+.goal .who { min-width: 0; line-height: 1.25; }
+.goal .who b { font-weight: 600; }
+.goal .who span { color: var(--fg-3); }
+.goals.none { color: var(--fg-3); font-size: 14px; }
+
+/* ---------- Rozpis ---------- */
+.rounds { display: flex; flex-direction: column; }
+.round { display: grid; grid-template-columns: clamp(50px, 10cqi, 132px) minmax(0, 1fr); column-gap: clamp(8px, 2.4cqi, 32px); }
+.round-date { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.round-date .d { font-family: var(--fc); font-weight: 900; font-size: clamp(20px, 4.4cqi, 54px); line-height: 0.9; transform: skewX(-8deg); }
+.round-date .w { font-size: clamp(9px, 0.9cqi, 12px); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); margin-top: 4px; }
+.round-date svg { flex: 1; width: 20px; min-height: 40px; margin: 10px 0 6px; }
+.round.past .round-date .d { color: #6a6a6a; }
+.round-body { padding-bottom: 28px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.round-title { display: flex; align-items: center; gap: 10px; }
+.round-title b { font-family: var(--fc); font-weight: 800; font-size: 24px; letter-spacing: 0.06em; text-transform: uppercase; }
+.badge { background: var(--fg); color: var(--bg); font-weight: 700; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 10px; transform: skewX(-10deg); }
+.row { display: flex; background: var(--card); border: 1px solid var(--line); }
+.row .rail { width: 6px; flex: none; align-self: stretch; background: linear-gradient(180deg, var(--hc) 50%, var(--ac) 50%); }
+.row-in { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 12px clamp(8px, 1.4cqi, 16px); }
+.row-teams { flex: 1 1 360px; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.row-team { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.row-team.h { justify-content: flex-end; }
+.row-team span { font-family: var(--fc); font-weight: 800; font-size: clamp(14px, 1.7cqi, 24px); letter-spacing: 0.02em; text-transform: uppercase; }
+.row-team img { width: clamp(26px, 3.2cqi, 44px); height: clamp(26px, 3.2cqi, 44px); flex: none; }
+.row-mid { min-width: clamp(40px, 5cqi, 70px); text-align: center; font-family: var(--fc); font-weight: 900; font-size: clamp(24px, 2.4cqi, 32px); line-height: 1; color: #6a6a6a; }
+.row-mid.done { color: var(--fg); }
+.row-when { flex: 0 1 230px; min-width: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-left: auto; text-align: right; }
+.row-when .t { font-weight: 600; font-size: 14px; }
+.row-when .t.warn { color: var(--moved); }
+.row-when small { font-size: 12px; color: var(--fg-3); }
+.row-when small.note { color: var(--fg-2); }
+.tag { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; border: 1px solid var(--line-3); }
+.tag.done { color: var(--fg); }
+.tag.plan { color: var(--fg-2); }
+.tag.next { color: var(--bg); background: var(--fg); border-color: var(--fg); }
+.tag.moved { color: var(--bg); background: var(--moved); border-color: var(--moved); }
+.tag.tbd { color: var(--fg); border: 1px dashed var(--fg); }
+/* archív: riadok je tlačidlo, rozbalí góly */
+.arow { background: var(--card); border: 1px solid var(--line); }
+.arow.open { border-color: var(--fg); }
+.arow-btn { display: flex; width: 100%; padding: 0; background: transparent; border: 0; text-align: inherit; cursor: pointer; }
+.arow-btn .rail { width: 6px; flex: none; align-self: stretch; background: linear-gradient(180deg, var(--hc) 50%, var(--ac) 50%); }
+.arow-in { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 28px; align-items: center; gap: 8px; padding: 10px clamp(8px, 1.4cqi, 16px); }
+.arow-in .tg { width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid var(--line); color: var(--fg-2); }
+.arow.open .tg { border-color: var(--fg); color: var(--fg); }
+
+/* ---------- Tabuľka ---------- */
+.tbl-scroll { overflow-x: auto; }
+.tbl { min-width: 680px; display: flex; flex-direction: column; gap: 6px; }
+.tbl-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) 48px 48px 48px 48px 80px 56px 72px; align-items: center; padding: 0 16px 0 0; }
+.tbl-row > span { text-align: center; }
+.tbl-head { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
+.tbl-head .b { color: var(--fg); }
+.tbl-body { background: var(--card); border: 1px solid var(--line); font-size: 17px; }
+.tbl-body .pos { align-self: stretch; display: grid; place-items: center; background: var(--c); color: var(--ink); font-family: var(--fc); font-weight: 900; font-size: 36px; line-height: 1;
+  clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%); padding-right: 12px; }
+.tbl-team { display: flex !important; align-items: center; gap: 14px; padding: 10px 0 10px 16px; min-width: 0; text-align: left !important; }
+.tbl-team img { width: 46px; height: 46px; flex: none; }
+.tbl-team b { display: block; font-family: var(--fc); font-weight: 900; font-size: 28px; line-height: 1; text-transform: uppercase; }
+.tbl-team small { display: block; font-size: 12px; color: var(--fg-3); margin-top: 3px; line-height: 1; }
+.tbl-body .soft { color: #cfcfcf; }
+.tbl-body .pts { font-family: var(--fc); font-weight: 900; font-size: 34px; line-height: 1; }
+.foot-note { margin: 12px 0 0; font-size: 13px; color: var(--fg-3); }
+
+/* ---------- Hráči ---------- */
+.podium { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.pod { position: relative; overflow: hidden; background: var(--card); border: 1px solid var(--line); padding: 20px; display: flex; flex-direction: column; gap: 12px; min-height: 280px; }
+.pod .shard { position: absolute; top: 0; right: 0; width: 58%; height: 100%; clip-path: polygon(38% 0, 100% 0, 100% 100%, 0 100%, 22% 52%, 10% 48%); }
+.pod .photo { position: absolute; right: 0; bottom: 0; height: 100%; width: auto; max-width: 64%; object-fit: cover; object-position: center top; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.5)); }
+.ghost { position: absolute; bottom: 0; height: auto; color: rgba(255, 255, 255, 0.2); }
+.soon { position: absolute; right: 12px; top: 12px; padding: 2px 8px; background: var(--bg); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-2); }
+.outline-num { position: relative; font-family: var(--fc); font-weight: 900; line-height: 0.8; color: rgba(255, 255, 255, 0); -webkit-text-stroke: 2px var(--fg); }
+.pod-info { position: relative; margin-top: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: 54%; }
+.pod-team { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-2); }
+.pod-team img { width: 22px; height: 22px; }
+.pod-name { font-family: var(--fc); font-weight: 800; font-size: 28px; line-height: 1; text-transform: uppercase; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); }
+.pod-stat { font-size: 13px; color: var(--fg-2); }
+.pod-pts { margin-top: 4px; padding: 0 10px; background: var(--fg); color: var(--bg); font-family: var(--fc); font-weight: 900; font-size: 36px; line-height: 1.1; transform: skewX(-10deg); }
+.pod-pts small { font-size: 16px; margin-left: 4px; }
+.ptbl { margin-top: 16px; background: var(--card); border: 1px solid var(--line); }
+.ptbl-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) 28px 28px 28px 38px; gap: 6px; align-items: center; padding: 9px 16px; border-top: 1px solid var(--line-soft); font-size: 15px; }
+.ptbl.nz .ptbl-row { grid-template-columns: 28px minmax(0, 1fr) 28px 28px 38px; }
+.ptbl-row > span:nth-child(n + 3) { text-align: center; }
+.ptbl-head { padding: 10px 16px; border-top: 0; border-bottom: 1px solid var(--line); font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
+.ptbl-head > span:last-child { color: var(--fg); }
+.ptbl-row .n { color: var(--fg-3); font-weight: 700; }
+.ptbl-row .pl { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ptbl-row .pl b { font-weight: 600; min-width: 0; }
+.ptbl-row .pl > img { width: 20px; height: 20px; flex: none; opacity: 0.85; }
+.ptbl-row .soft { color: #cfcfcf; }
+.ptbl-row .pts { font-family: var(--fc); font-weight: 900; font-size: 24px; line-height: 1; }
+
+/* avatar: fotka alebo iniciály v tímovej farbe */
+.av { position: relative; flex: none; width: 32px; height: 32px; overflow: hidden; background: var(--c); clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%); }
+.av.sm { width: 26px; height: 26px; }
+.av img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+.av span { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--fc); font-weight: 900; font-size: 14px; color: var(--ink); }
+.av.sm span { font-size: 12px; }
+
+/* ---------- Playoff ---------- */
+.bracket { display: flex; flex-wrap: wrap; align-items: center; gap: 24px 0; }
+.semis { flex: 1 1 340px; min-width: 0; position: relative; padding-right: 36px; display: flex; flex-direction: column; gap: 28px; }
+.semis .join { position: absolute; right: 8px; top: 25%; bottom: 25%; width: 28px; border: 3px solid var(--fg); border-left: 0; }
+.box { background: var(--card); border: 1px solid var(--line); }
+.box-head { display: flex; justify-content: space-between; gap: 8px; padding: 8px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-2); border-bottom: 1px solid var(--line); }
+.seed { display: flex; align-items: center; gap: 12px; padding: 0 14px 0 0; border-top: 1px solid var(--line-soft); min-height: 56px; }
+.seed .n { align-self: stretch; width: 46px; flex: none; display: grid; place-items: center; background: var(--c); color: var(--ink); font-family: var(--fc); font-weight: 900; font-size: 24px;
+  clip-path: polygon(0 0, 100% 0, 76% 100%, 0 100%); padding-right: 8px; }
+.seed img { width: 40px; height: 40px; margin: 8px 0; flex: none; }
+.seed .nm { flex: 1; min-width: 0; font-family: var(--fc); font-weight: 800; font-size: 26px; text-transform: uppercase; line-height: 1.1; }
+.seed .nm small { display: block; font-family: "Saira", sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.08em; color: var(--fg-3); }
+.seed .sc { font-family: var(--fc); font-weight: 900; font-size: 34px; line-height: 1; }
+.seed.lost { opacity: 0.45; }
+.seed.tbd .n { --c: var(--line-2); --ink: var(--fg); }
+.finals { flex: 1 1 340px; min-width: 0; display: flex; align-items: center; }
+.finals > i { width: 28px; height: 3px; background: var(--fg); flex: none; }
+.finals-in { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.final { position: relative; overflow: hidden; background: var(--fg); color: var(--bg); padding: 18px 20px; }
+.fin-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.fin-head b { font-family: var(--fc); font-weight: 900; font-size: 44px; line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg); }
+.fin-head span { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.fin-sides { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; font-weight: 600; }
+.fin-sides > span { display: flex; align-items: center; gap: 10px; }
+.fin-sides .ph { width: 30px; height: 30px; border: 2px dashed currentColor; flex: none; }
+.fin-sides img { width: 30px; height: 30px; flex: none; }
+.fin-sides .nm { flex: 1; font-family: var(--fc); font-weight: 800; font-size: 24px; text-transform: uppercase; line-height: 1; }
+.fin-sides .sc { font-family: var(--fc); font-weight: 900; font-size: 30px; line-height: 1; }
+.fin-sides .lost { opacity: 0.45; }
+.bronze { padding: 14px 20px; }
+.bronze .fin-head b { font-weight: 800; font-size: 26px; transform: none; }
+.bronze .fin-head span { font-size: 12px; color: var(--fg-2); }
+.bronze .fin-sides { margin-top: 8px; font-size: 15px; color: var(--fg-2); }
+.bronze .fin-sides .nm { color: var(--fg); }
+/* archív: karty playoff */
+.po-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
+.po { background: var(--card); color: var(--fg); border: 1px solid var(--line); --pl: var(--line-soft); --ps: var(--fg-3); }
+.po.f { background: var(--fg); color: var(--bg); border-color: var(--fg); --pl: #e6e6e6; --ps: var(--fg-4); }
+.po.open { border-color: var(--fg); }
+.po-btn { display: flex; flex-direction: column; width: 100%; padding: 0; background: transparent; border: 0; text-align: inherit; cursor: pointer; }
+.po-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--pl); }
+.po-head b { font-family: var(--fc); font-weight: 900; font-size: 26px; line-height: 1; text-transform: uppercase; transform: skewX(-8deg); }
+.po-head span { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
+.po-side { display: flex; align-items: center; gap: 12px; padding: 0 14px 0 0; border-top: 1px solid var(--pl); }
+.po-side.lost { opacity: 0.45; }
+.po-side i { align-self: stretch; width: 18px; background: var(--c); clip-path: polygon(0 0, 100% 0, 50% 100%, 0 100%); }
+.po-side img { width: 40px; height: 40px; margin: 8px 0; flex: none; }
+.po-side .nm { flex: 1; min-width: 0; font-family: var(--fc); font-weight: 800; font-size: 24px; text-transform: uppercase; }
+.po-side .sc { font-family: var(--fc); font-weight: 900; font-size: 34px; line-height: 1; }
+.po-foot { display: flex; justify-content: flex-end; align-items: center; gap: 6px; padding: 8px 14px; border-top: 1px solid var(--pl); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--ps); }
+.po .goals { border-top-color: var(--pl); }
+.po .goal .who span { color: var(--ps); }
+
+/* ---------- Tímy ---------- */
+.teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.team { position: relative; overflow: hidden; background: var(--card); border: 1px solid var(--line); display: flex; flex-direction: column; }
+.team-top { position: relative; overflow: hidden; height: 300px; background: var(--card-2); }
+.team-top .shard { clip-path: polygon(42% 0, 100% 0, 100% 100%, 24% 100%, 36% 54%, 28% 50%); background: linear-gradient(160deg, var(--c), var(--d)); }
+.team-top .logo { position: absolute; left: 16px; top: 16px; width: 64px; height: 64px; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5)); }
+.team-top .capt { position: absolute; right: -4px; bottom: 0; height: 286px; max-width: 76%; object-fit: contain; object-position: right bottom; filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.55)); }
+.team-top .shade { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; background: linear-gradient(180deg, rgba(5, 5, 5, 0), rgba(5, 5, 5, 0.8)); }
+.team-title { position: absolute; left: 16px; bottom: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: calc(100% - 32px); }
+.team-title small { padding: 1px 8px; background: var(--bg); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-2); }
+.team-title b { padding: 2px 12px; background: var(--bg); font-family: var(--fc); font-weight: 900; font-size: 38px; line-height: 1; text-transform: uppercase; transform: skewX(-10deg); }
+.team-body { padding: 14px 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.team-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; font-size: 13px; color: var(--fg-3); }
+.team-meta strong { color: var(--fg); }
+.roster { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; font-size: 14px; color: #e6e6e6; }
+.roster li { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.roster li > span:not(.av) { min-width: 0; line-height: 1.2; }
+.cap { flex: none; padding: 0 5px; background: var(--fg); color: var(--bg); font-family: "Saira", sans-serif; font-weight: 800; font-size: 12px; line-height: 1.4; }
+
+/* ---------- Archív ---------- */
+.champ-in { position: relative; padding-top: 44px; padding-bottom: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px clamp(16px, 3cqi, 40px); }
+.champ-logo { width: clamp(150px, 24cqi, 300px); height: clamp(150px, 24cqi, 300px); flex: none; filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.5)); }
+.champ-txt { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.champ-name { font-family: var(--fc); font-weight: 900; font-size: clamp(60px, 11cqi, 150px); line-height: 0.82; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left bottom; overflow-wrap: anywhere; }
+.champ-sub { font-size: 15px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.champ-final { flex: 0 1 340px; min-width: 0; background: var(--bg); border: 1px solid var(--line-2); }
+.champ-final .row2 { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-top: 1px solid var(--line-soft); }
+.champ-final .row2.lost { opacity: 0.5; }
+.champ-final img { width: 44px; height: 44px; flex: none; }
+.champ-final .nm { flex: 1; min-width: 0; font-family: var(--fc); font-weight: 800; font-size: 26px; text-transform: uppercase; }
+.champ-final .sc { font-family: var(--fc); font-weight: 900; font-size: 40px; line-height: 1; }
+.archive-bar { margin-top: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 16px; background: var(--card); border: 1px solid var(--line); font-size: 14px; color: var(--fg-2); }
+.archive-bar span { flex: 1 1 260px; }
+.btn-white { min-height: 40px; padding: 0 24px 0 18px; background: var(--fg); color: var(--bg); border: 0; font-family: var(--fc); font-weight: 800; font-size: 18px; letter-spacing: 0.04em;
+  text-transform: uppercase; cursor: pointer; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+.btn-white.big { margin-top: 14px; min-height: 56px; padding: 0 40px 0 26px; font-weight: 900; font-size: 24px; clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%); }
+.places { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.place { position: relative; overflow: hidden; background: var(--card); border: 1px solid var(--line); padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; min-height: 190px; }
+.place.first { border: 2px solid var(--fg); }
+.place .shard { position: absolute; top: 0; right: 0; width: 50%; height: 100%; clip-path: polygon(38% 0, 100% 0, 100% 100%, 0 100%, 22% 52%, 10% 48%); opacity: 0.75; }
+.place.first .shard { opacity: 1; }
+.place .logo { position: absolute; right: 14px; top: 16px; width: 96px; height: 96px; }
+.place.first .outline-num { color: var(--fg); }
+.place-txt { position: relative; margin-top: auto; display: flex; flex-direction: column; gap: 2px; }
+.place-txt b { font-family: var(--fc); font-weight: 900; font-size: 32px; line-height: 1; text-transform: uppercase; }
+.place-txt small { font-size: 13px; color: var(--fg-2); }
+
+/* ---------- Pripravujeme ---------- */
+.future-in { position: relative; max-width: 1080px; margin: 0 auto; padding: 56px var(--pad) 88px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
+.future-logo { display: block; padding: 6px; background: var(--fg); clip-path: polygon(9% 0, 100% 0, 91% 100%, 0 100%); filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.6)); }
+.future-logo img { width: clamp(170px, 24cqi, 250px); height: clamp(170px, 24cqi, 250px); clip-path: polygon(9% 0, 100% 0, 91% 100%, 0 100%); }
+.future-chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px; border: 1px dashed var(--fg); transform: skewX(-10deg); font-family: var(--fc); font-weight: 800; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; }
+.future-in h1 { margin: 0; font-family: var(--fc); font-weight: 900; font-size: clamp(52px, 10cqi, 130px); line-height: 0.84; text-transform: uppercase; transform: skewX(-8deg); }
+.future-in p { margin: 0; max-width: 560px; font-size: 17px; color: var(--fg-2); }
+.steps { width: 100%; margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.step { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--card); border: 1px solid var(--line-2); text-align: left; }
+.step b { display: block; font-family: var(--fc); font-weight: 800; font-size: 24px; line-height: 1; text-transform: uppercase; }
+.step small { display: block; margin-top: 2px; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
+
+/* ---------- Päta ---------- */
+.foot { position: relative; background: #111111; }
+.foot::before { content: ""; position: absolute; left: 0; right: 0; top: -14px; height: 14px; transform: rotate(180deg);
+  background: linear-gradient(135deg, #111111 50%, rgba(17, 17, 17, 0) 50%) 0 0 / 28px 14px repeat-x, linear-gradient(225deg, #111111 50%, rgba(17, 17, 17, 0) 50%) 0 0 / 28px 14px repeat-x; }
+.foot-in { padding-top: 28px; padding-bottom: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; font-size: 13px; color: var(--fg-2); }
+.foot-in img { width: 36px; height: 36px; }
+.foot-in .t { font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.foot-in .admin { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--fg); font-weight: 700; text-decoration: none; }
+.main { padding-bottom: 72px; }
+.msg { padding: 80px var(--pad); text-align: center; color: var(--fg-2); }
