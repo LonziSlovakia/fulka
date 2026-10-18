@@ -161,12 +161,12 @@ insert into public.fulka_seasons (id, name, short, state, seed_mode, sort) value
   ('z26', 'Zimná sezóna 2026', 'Zima 2026', 'live', 'auto', 10)
 on conflict (id) do nothing;
 
--- oficiálne farby z plagátov kapitánov (hlavná / tmavá / text na hlavnej farbe)
+-- farby podľa schváleného návrhu webu (hlavná / tmavá / text na hlavnej farbe)
 insert into public.fulka_teams (id, name, venue, abbr, color, color_dark, ink, logo, logo_anim) values
-  ('gia', 'Giants', 'Veľká sála', 'GIA', '#B27F34', '#261C0D', '#261C0D', 'assets/logos/giants.svg', 'assets/anim/giants.webp'),
+  ('gia', 'Giants', 'Veľká sála', 'GIA', '#D9A252', '#6E4518', '#111111', 'assets/logos/giants.svg', 'assets/anim/giants.webp'),
   ('bre', 'Brewers', 'Libresso', 'BRE', '#D2AA79', '#3F2010', '#3F2010', 'assets/logos/brewers.svg', 'assets/anim/brewers.webp'),
-  ('ran', 'Rangers', 'Recepcia', 'RAN', '#008599', '#002C33', '#FFFFFF', 'assets/logos/rangers.svg', 'assets/anim/rangers.webp'),
-  ('sai', 'Saints', 'Kaplnka', 'SAI', '#B3001E', '#330009', '#FFFFFF', 'assets/logos/saints.svg', 'assets/anim/saints.webp')
+  ('ran', 'Rangers', 'Recepcia', 'RAN', '#41CFDD', '#024F57', '#111111', 'assets/logos/rangers.svg', 'assets/anim/rangers.webp'),
+  ('sai', 'Saints', 'Kaplnka', 'SAI', '#E0262F', '#5E0710', '#FFFFFF', 'assets/logos/saints.svg', 'assets/anim/saints.webp')
 on conflict (id) do nothing;
 
 insert into public.fulka_season_teams (season_id, team_id) values
