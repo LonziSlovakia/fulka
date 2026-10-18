@@ -803,7 +803,7 @@
 
   /* ---------- Nastavenia ---------- */
   // rozpracované nastavenia (banner, fotky, písmo); null = také, aké sú uložené
-  const savedSet = (c) => ({ bannerCount: c.settings.bannerCount, photos: c.settings.photos !== false, headFont: c.settings.headFont === "monument" ? "monument" : "saira", layout: c.settings.layout === "narrow" ? "narrow" : "wide" });
+  const savedSet = (c) => ({ bannerCount: c.settings.bannerCount, photos: c.settings.photos !== false, headFont: "saira" /* Monument zatiaľ nie (licencia), prepínač je skrytý */, layout: c.settings.layout === "narrow" ? "narrow" : "wide" });
   const setDraftOf = (c) => S.setDraft || savedSet(c);
 
   function settingsPanel(c) {
@@ -835,10 +835,6 @@
           <span class="muted" style="font-size:14px">Bez fotiek ukáže web iniciály a siluety. Nahraté fotky ostanú uložené, dajú sa kedykoľvek znova zapnúť.</span>
           ${seg("sphotos", [["true", "Ukazovať fotky"], ["false", "Bez fotiek"]], sd.photos)}
           <div class="a-actions">${look("fotky=ano", "Pozrieť s fotkami")}${look("fotky=nie", "Pozrieť bez fotiek")}</div></fieldset>
-        <fieldset class="a-fs" style="gap:12px"><legend>Písmo nadpisov</legend>
-          <span class="muted" style="font-size:14px">Nadpisy a mená tímov a hráčov. Čísla (skóre, časy, body) ostávajú v úzkom písme.</span>
-          ${seg("sfont", [["saira", '<span style="font-family:var(--fc);font-weight:900;font-size:18px;text-transform:uppercase">Saira (návrh)</span>'], ["monument", '<span style="font-family:\'PP Monument Extended\', var(--fc);font-weight:900;font-size:14px;text-transform:uppercase">Monument</span>']], sd.headFont)}
-          <div class="a-actions">${look("pismo=saira", "Pozrieť so Saira")}${look("pismo=monument", "Pozrieť s Monument")}</div></fieldset>
         <fieldset class="a-fs" style="gap:12px"><legend>Rozloženie</legend>
           <span class="muted" style="font-size:14px">Úzke: užšia stránka, štatistiky v tabuľkách hneď pri menách a v rozpise termín pod zápasom v strede.</span>
           ${seg("slayout", [["wide", "Široké (ako návrh)"], ["narrow", "Úzke"]], sd.layout)}
@@ -935,12 +931,11 @@
     count: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { bannerCount: Number(el.dataset.id) }); S.toast = ""; render(); },
     sphotos: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { photos: el.dataset.id === "true" }); S.toast = ""; render(); },
     slayout: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { layout: el.dataset.id }); S.toast = ""; render(); },
-    sfont: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { headFont: el.dataset.id }); S.toast = ""; render(); },
     resetSettings: () => { S.setDraft = null; render(); },
     saveSettings: () => {
       const sd = setDraftOf(ctx());
       run(() => DB.saveSettings(Object.assign({}, S.data.settings, sd)),
-        `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, písmo ${sd.headFont === "monument" ? "Monument" : "Saira"}, rozloženie ${sd.layout === "narrow" ? "úzke" : "široké"}.`,
+        `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, rozloženie ${sd.layout === "narrow" ? "úzke" : "široké"}.`,
         () => { S.setDraft = null; });
     },
   };

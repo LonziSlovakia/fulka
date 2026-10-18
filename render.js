@@ -83,7 +83,7 @@
     const font = URLP.get("pismo");
     const lay = URLP.get("rozlozenie");
     state.photos = f === "ano" ? true : f === "nie" ? false : settings.photos !== false;
-    state.font = font === "monument" || font === "saira" ? font : settings.headFont === "monument" ? "monument" : "saira";
+    state.font = font === "monument" ? "monument" : "saira"; // Monument iba na skúšku cez ?pismo=monument (bez licencie nie je na webe)
     state.layout = lay === "uzke" ? "narrow" : lay === "siroke" ? "wide" : settings.layout === "narrow" ? "narrow" : "wide";
     document.documentElement.dataset.layout = state.layout;
     applyFont(state.font);
