@@ -344,3 +344,59 @@ test("iniciály a nastavenia", () => {
   assert.deepEqual(L.settingsOf({ bannerCount: 3 }), { bannerCount: 3, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, defaultTime: "21:15" });
   assert.deepEqual(L.settingsOf(null), L.DEFAULTS);
 });
+
+/* ---------- Admin ---------- */
+test("admin: zápas → draft → riadok (bez zmeny termínu sa nič nepresúva)", () => {
+  const m = { id: "z26-05", season_id: "z26", stage: "R", round: 3, home_id: "gia", away_id: "bre", starts_at: "2026-10-20T19:15:00+00:00", orig_starts_at: null, moved: false, status: "plan", note: "", window_from: "2026-10-19", window_to: "2026-10-25" };
+  const d = L.draftOf(m, [{ side: "h", scorer_id: null, assist_id: null }, { side: "a", scorer_id: "b1", assist_id: "b2" }]);
+  assert.deepEqual([d.date, d.time, d.tbd], ["2026-10-20", "21:15", false]);
+  assert.deepEqual(d.goals, [{ side: "h", scorer: L.UNKNOWN, assist: "" }, { side: "a", scorer: "b1", assist: "b2" }]);
+  const r = L.rowOf(d, m, "auto");
+  assert.equal(r.starts_at, "2026-10-20T19:15:00.000Z");
+  assert.deepEqual([r.moved, r.orig_starts_at, r.round, r.home_id], [false, null, 3, "gia"]);
+  assert.deepEqual(L.goalRowsOf(d, m.id).map((g) => [g.id, g.seq, g.scorer_id, g.assist_id]), [["z26-05-g1", 1, null, null], ["z26-05-g2", 2, "b1", "b2"]]);
+});
+
+test("admin: bez termínu → predvolený čas 21:15", () => {
+  const d = L.draftOf({ id: "x", stage: "R", starts_at: null, status: "plan" }, []);
+  assert.deepEqual([d.tbd, d.date, d.time], [true, "", "21:15"]);
+});
+
+test("admin: presun termínu si zapamätá pôvodný, bez prepínača nie", () => {
+  const saved = { starts_at: "2026-10-27T20:00:00+00:00", orig_starts_at: null, moved: false };
+  const d = { id: "x", stage: "R", round: 4, status: "plan", tbd: false, date: "2026-10-29", time: "19:00", markMoved: true, goals: [] };
+  const r = L.rowOf(d, saved, "auto");
+  assert.deepEqual([r.moved, r.orig_starts_at, r.starts_at], [true, saved.starts_at, "2026-10-29T18:00:00.000Z"]);
+  const r2 = L.rowOf({ ...d, markMoved: false }, saved, "auto");
+  assert.deepEqual([r2.moved, r2.orig_starts_at], [false, null], "iba oprava času, nie presun");
+  // druhý presun: pôvodný termín ostáva ten úplne prvý
+  const r3 = L.rowOf({ ...d, date: "2026-10-30" }, { starts_at: r.starts_at, orig_starts_at: r.orig_starts_at, moved: true }, "auto");
+  assert.equal(r3.orig_starts_at, saved.starts_at);
+});
+
+test("admin: zrušenie termínu → bez termínu, pôvodný sa ukáže prečiarknutý", () => {
+  const saved = { starts_at: "2026-11-17T20:00:00+00:00", orig_starts_at: null, moved: false };
+  const r = L.rowOf({ id: "x", stage: "R", round: 6, status: "plan", tbd: true, date: "", time: "21:15", markMoved: true, goals: [] }, saved, "auto");
+  assert.deepEqual([r.starts_at, r.moved, r.orig_starts_at], [null, false, saved.starts_at]);
+});
+
+test("admin: tímy playoff sa ukladajú iba pri ručnom nasadení semifinále", () => {
+  const d = { id: "sf", stage: "SF1", status: "plan", tbd: true, home_id: "gia", away_id: "sai", goals: [] };
+  assert.deepEqual([L.rowOf(d, null, "auto").home_id, L.rowOf(d, null, "manual").home_id], [null, "gia"]);
+  assert.equal(L.rowOf({ ...d, stage: "F" }, null, "manual").home_id, null);
+  assert.equal(L.rowOf(d, null, "manual").round, null);
+});
+
+test("admin: id hráča, krátky názov sezóny, čas po 15 min, kalendár", () => {
+  assert.equal(L.playerId("Jakub Štefaňák"), "p-stefanak-jakub");
+  assert.equal(L.playerId("  Damián   Štieber "), "p-stieber-damian");
+  assert.equal(L.playerId("Ema"), "p-ema");
+  assert.equal(L.shortName("Jarná sezóna 2027"), "Jar 2027");
+  assert.equal(L.shortName("Zimná sezóna 2026"), "Zima 2026");
+  assert.equal(L.shiftTime("21:15", 15), "21:30");
+  assert.equal(L.shiftTime("00:00", -15), "23:45");
+  assert.equal(L.longDate("2026-10-20"), "Utorok 20. 10. 2026");
+  const days = L.monthDays(2026, 9); // október 2026 začína vo štvrtok
+  assert.equal(days.length, 35);
+  assert.deepEqual([days[0], days[3], days[34]], ["2026-09-28", "2026-10-01", "2026-11-01"]);
+});

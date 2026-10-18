@@ -255,6 +255,69 @@
     return "";
   }
 
+  /* ---------- Admin: zápas ↔ rozpracovaná úprava ---------- */
+  // zápas z databázy → draft pre editor (dátum a čas v Bratislave, góly so strelcom/asistenciou)
+  function draftOf(m, goals, defaultTime) {
+    return {
+      id: m.id, season_id: m.season_id, stage: m.stage, round: m.round, home_id: m.home_id || null, away_id: m.away_id || null,
+      tbd: !m.starts_at, date: m.starts_at ? matchDate(m) : "", time: m.starts_at ? matchTime(m) : defaultTime || DEFAULTS.defaultTime,
+      status: m.status, note: m.note || "", moved: !!m.moved, orig_starts_at: m.orig_starts_at || null,
+      window_from: m.window_from || null, window_to: m.window_to || null, markMoved: true,
+      goals: (goals || []).map((g) => ({ side: g.side, scorer: g.scorer_id || UNKNOWN, assist: g.assist_id || "" })),
+    };
+  }
+
+  /* draft → riadok do databázy. Keď sa mení už zadaný termín a je zapnuté „Presunutý“
+     (alebo sa termín zruší), pôvodný termín sa zapamätá do orig_starts_at.
+     Tímy playoff, ktoré sa dopĺňajú samé (SF podľa tabuľky, B3, F), sa neukladajú. */
+  function rowOf(d, saved, seedMode) {
+    const starts = d.tbd ? null : toUtc(d.date, d.time);
+    let orig = d.orig_starts_at || null;
+    let moved = !!d.moved;
+    if (saved && saved.starts_at) {
+      const changed = d.tbd || new Date(starts).getTime() !== new Date(saved.starts_at).getTime();
+      if (changed && (d.markMoved || d.tbd)) { orig = saved.orig_starts_at || saved.starts_at; moved = !d.tbd; }
+    }
+    if (d.tbd) moved = false;
+    const own = d.stage === "R" || (seedMode === "manual" && (d.stage === "SF1" || d.stage === "SF2"));
+    return {
+      id: d.id, season_id: d.season_id, stage: d.stage, round: d.stage === "R" ? d.round : null,
+      home_id: own ? d.home_id : null, away_id: own ? d.away_id : null,
+      window_from: d.window_from || null, window_to: d.window_to || null,
+      starts_at: starts, orig_starts_at: orig, moved, status: d.status, note: (d.note || "").trim(),
+    };
+  }
+
+  const goalRowsOf = (d, matchId) => d.goals.map((g, i) => ({
+    id: `${matchId}-g${i + 1}`, match_id: matchId, seq: i + 1, side: g.side,
+    scorer_id: g.scorer && g.scorer !== UNKNOWN ? g.scorer : null, assist_id: g.assist || null,
+  }));
+
+  /* ---------- Admin: drobnosti ---------- */
+  const slug = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  // „Jakub Štefaňák“ → „p-stefanak-jakub“ (priezvisko prvé, ako v štartovacích dátach)
+  function playerId(name) {
+    const parts = name.trim().split(/\s+/);
+    const last = parts.pop();
+    return `p-${slug([last].concat(parts).join(" "))}`;
+  }
+  // „Jarná sezóna 2027“ → „Jar 2027“
+  const shortName = (name) => name.replace(/sez[oó]na\s*/i, "").replace("Jarná", "Jar").replace("Zimná", "Zima").replace("Letná", "Leto").replace("Jesenná", "Jeseň").replace(/\s+/g, " ").trim() || name;
+  function shiftTime(t, delta) {
+    const [h, m] = (t || DEFAULTS.defaultTime).split(":").map(Number);
+    const total = (((h * 60 + m + delta) % 1440) + 1440) % 1440;
+    return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+  }
+  const longDate = (date) => { const [y, m, d] = date.split("-").map(Number); return `${dayName(date)} ${d}. ${m}. ${y}`; };
+  // dni do kalendára na mesiac (od pondelka, celé týždne) ako "YYYY-MM-DD"
+  function monthDays(y, m0) {
+    const first = new Date(Date.UTC(y, m0, 1));
+    const start = (first.getUTCDay() + 6) % 7;
+    const dim = new Date(Date.UTC(y, m0 + 1, 0)).getUTCDate();
+    const cells = Math.ceil((start + dim) / 7) * 7;
+    return Array.from({ length: cells }, (_, i) => new Date(Date.UTC(y, m0, i - start + 1)).toISOString().slice(0, 10));
+  }
+
   /* ---------- Drobnosti ---------- */
   const initials = (name) => name.split(" ").filter(Boolean).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
   const settingsOf = (data) => Object.assign({}, DEFAULTS, data || {});
@@ -267,6 +330,7 @@
     playoff, resolveMatches, champion, places, regularDone,
     rounds, byTime, nextMatches, matchState,
     validateMatch, initials, settingsOf,
+    draftOf, rowOf, goalRowsOf, slug, playerId, shortName, shiftTime, longDate, monthDays,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Logic;
   else window.Logic = Logic;

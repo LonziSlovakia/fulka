@@ -616,7 +616,13 @@
   });
 
   /* ---------- Štart ---------- */
-  function setData(d) { state.data = d; render(); }
+  // s ?edit v adrese stránku prevezme admin (admin.js), verejný web sa nevykresľuje
+  const EDIT = new URLSearchParams(location.search).has("edit");
+  function setData(d) {
+    state.data = d;
+    if (!EDIT) render();
+    else if (window.Admin) window.Admin.setData(d);
+  }
   const DB = window.DB;
   if (DB.cached) {
     setData(DB.cached);
@@ -626,7 +632,11 @@
   }
 
   // admin (editor) sa načíta iba s ?edit v adrese
-  if (new URLSearchParams(location.search).has("edit")) {
+  if (EDIT) {
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "admin.css";
+    document.head.appendChild(css);
     const s = document.createElement("script");
     s.src = "admin.js";
     document.body.appendChild(s);
