@@ -21,7 +21,7 @@ README.md             verejný popis repozitára
 .gitignore
 supabase/1-fulka.sql  tabuľky, pravidlá (RLS), bucket na fotky a štartovacie dáta (Lonzi spúšťa ručne)
 assets/logos/         statické logá tímov (SVG), logo FUL (SVG s pozadím / bez pozadia, biela PNG značka)
-assets/gif/           animované logá tímov a FUL (víťaz zápasu / šampión)
+assets/anim/          animované logá tímov a FUL vo WebP (víťaz zápasu / šampión); assets/gif/ = pôvodné GIF
 design/               zdrojové súbory návrhu (.dc.html) + design/screens/*.jpg (screenshoty všetkých obrazoviek)
 ```
 
@@ -134,8 +134,9 @@ Každá zmena sa uloží hneď a ukáže krátku hlášku („Uložené…“). 
   Znak kapitána „C“ písať v Saira 800 (v Condensed vyzerá ako „(“).
 - Pozadie `#050505`, karty `#0E0E0E`, rámiky `#1E1E1E` / `#2A2A2A` / `#3A3A3A`, text `#FFFFFF` / `#BDBDBD` / `#9A9A9A` / `#5A5A5A`.
   Presunutý `#FFB020`, „prebieha“ bodka `#3DDC84`.
-- Tímy (`color` / `color_dark` / `ink`): Giants `#D9A252 / #6E4518 / #111111`, Brewers `#D2AA79 / #3F2010 / #3F2010`,
-  Rangers `#41CFDD / #024F57 / #111111`, Saints `#E0262F / #5E0710 / #FFFFFF`.
+- Tímy (`color` / `color_dark` / `ink`), oficiálne z plagátov kapitánov: Giants `#B27F34 / #261C0D / #261C0D`, Brewers `#D2AA79 / #3F2010 / #3F2010`,
+  Rangers `#008599 / #002C33 / #FFFFFF`, Saints `#B3001E / #330009 / #FFFFFF` (návrh v `design/` má ešte pôvodné odtiene;
+  zmena v databáze: `supabase/2-farby-a-loga.sql`).
 - „Shard“ = farebný prechod `linear-gradient(150–160deg, color, color_dark)` orezaný `clip-path` polygónom so zlomom, napr.
   - banner: `polygon(58% 0, 100% 0, 100% 100%, 42% 100%, 51% 63%, 45.5% 59%, 55% 28%, 49.5% 24%)`
   - karta tímu: `polygon(42% 0, 100% 0, 100% 100%, 24% 100%, 36% 54%, 28% 50%)`
@@ -190,7 +191,7 @@ admin.js       editor (načíta sa iba pri ?edit)
 
 1. Presné dni a časy zápasov – oficiálny rozpis má iba týždne (návrh počítal s utorkom 20:15 a 21:00 „po sv. omši“).
 2. Výsledky už odohraných zápasov (týždeň 1 a 2) – zadá ich Lonzi v admine, alebo ich pošle.
-3. Farby tímov: zatiaľ podľa návrhu; na plagátoch kapitánov sú oficiálne odtiene – zjednotiť?
+3. ~~Farby tímov~~ – zjednotené podľa plagátov (`supabase/2-farby-a-loga.sql`).
 4. Body 3 / 1 / 0 a poradie v tabuľke (body → rozdiel → góly) – potvrdiť. Playoff: predĺženie/nájazdy stačí zapísať ako gól?
 5. Staršie sezóny (návrh má ukážkovú „Jarnú sezónu 2026“) – existovali naozaj? Ak nie, výber sezón ukáže iba Zimnú 2026.
-6. GIF logá majú spolu ~1,3 MB (Brewers 525 kB) – zmenšiť pre mobil?
+6. ~~GIF logá~~ – prevedené bezstratovo do WebP v `assets/anim/` (1,3 MB → 0,5 MB, obraz zhodný na pixel).

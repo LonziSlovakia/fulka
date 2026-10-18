@@ -549,7 +549,7 @@
       <div class="fill" aria-hidden="true" style="background:linear-gradient(150deg, #2A2A2A 0%, #0E0E0E 70%);clip-path:polygon(0 0, 46% 0, 34% 48%, 40% 52%, 26% 100%, 0 100%)"></div>
       <div class="fill" aria-hidden="true" style="background:linear-gradient(210deg, #2A2A2A 0%, #0E0E0E 70%);clip-path:polygon(70% 0, 100% 0, 100% 100%, 82% 100%, 90% 54%, 84% 50%)"></div>
       <div class="fill" aria-hidden="true" style="background:repeating-linear-gradient(-62deg, rgba(255,255,255,0.03) 0 2px, rgba(0,0,0,0) 2px 16px)"></div>
-      <div class="future-in"><span class="future-logo"><img src="assets/gif/ful.gif" alt="FULka"></span>
+      <div class="future-in"><span class="future-logo"><img src="assets/anim/ful.webp" alt="FULka"></span>
         <span class="future-chip">Pripravujeme</span><h1>${esc(c.cur.name)}</h1>
         <p>Sezóna ešte nezačala. Keď bude draft a rozpis, nájdeš tu výsledky, tabuľku aj playoff.</p>
         <div class="steps">${steps}</div>

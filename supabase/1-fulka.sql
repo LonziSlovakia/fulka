@@ -49,7 +49,7 @@ create table if not exists public.fulka_teams (
   color_dark text not null default '#333333',            -- tmavší odtieň do prechodu
   ink text not null default '#FFFFFF',                   -- farba textu na hlavnej farbe
   logo text not null default '',                         -- statické logo (cesta v repozitári alebo URL)
-  logo_anim text not null default '',                    -- animované logo (GIF) pre víťaza
+  logo_anim text not null default '',                    -- animované logo (WebP) pre víťaza
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -161,12 +161,12 @@ insert into public.fulka_seasons (id, name, short, state, seed_mode, sort) value
   ('z26', 'Zimná sezóna 2026', 'Zima 2026', 'live', 'auto', 10)
 on conflict (id) do nothing;
 
--- farby sú zatiaľ podľa návrhu webu; oficiálne farby z plagátov kapitánov sa dajú doplniť neskôr
+-- oficiálne farby z plagátov kapitánov (hlavná / tmavá / text na hlavnej farbe)
 insert into public.fulka_teams (id, name, venue, abbr, color, color_dark, ink, logo, logo_anim) values
-  ('gia', 'Giants', 'Veľká sála', 'GIA', '#D9A252', '#6E4518', '#111111', 'assets/logos/giants.svg', 'assets/gif/giants.gif'),
-  ('bre', 'Brewers', 'Libresso', 'BRE', '#D2AA79', '#3F2010', '#3F2010', 'assets/logos/brewers.svg', 'assets/gif/brewers.gif'),
-  ('ran', 'Rangers', 'Recepcia', 'RAN', '#41CFDD', '#024F57', '#111111', 'assets/logos/rangers.svg', 'assets/gif/rangers.gif'),
-  ('sai', 'Saints', 'Kaplnka', 'SAI', '#E0262F', '#5E0710', '#FFFFFF', 'assets/logos/saints.svg', 'assets/gif/saints.gif')
+  ('gia', 'Giants', 'Veľká sála', 'GIA', '#B27F34', '#261C0D', '#261C0D', 'assets/logos/giants.svg', 'assets/anim/giants.webp'),
+  ('bre', 'Brewers', 'Libresso', 'BRE', '#D2AA79', '#3F2010', '#3F2010', 'assets/logos/brewers.svg', 'assets/anim/brewers.webp'),
+  ('ran', 'Rangers', 'Recepcia', 'RAN', '#008599', '#002C33', '#FFFFFF', 'assets/logos/rangers.svg', 'assets/anim/rangers.webp'),
+  ('sai', 'Saints', 'Kaplnka', 'SAI', '#B3001E', '#330009', '#FFFFFF', 'assets/logos/saints.svg', 'assets/anim/saints.webp')
 on conflict (id) do nothing;
 
 insert into public.fulka_season_teams (season_id, team_id) values
