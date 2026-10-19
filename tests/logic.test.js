@@ -369,9 +369,12 @@ test("admin: presun termínu si zapamätá pôvodný, bez prepínača nie", () =
   assert.deepEqual([r.moved, r.orig_starts_at, r.starts_at], [true, saved.starts_at, "2026-10-29T18:00:00.000Z"]);
   const r2 = L.rowOf({ ...d, markMoved: false }, saved, "auto");
   assert.deepEqual([r2.moved, r2.orig_starts_at], [false, null], "iba oprava času, nie presun");
-  // druhý presun: pôvodný termín ostáva ten úplne prvý
-  const r3 = L.rowOf({ ...d, date: "2026-10-30" }, { starts_at: r.starts_at, orig_starts_at: r.orig_starts_at, moved: true }, "auto");
-  assert.equal(r3.orig_starts_at, saved.starts_at);
+  // druhý presun: predvolene termín, z ktorého sa presúva; na výber aj úplne prvý; alebo bez pôvodného
+  const again = { starts_at: r.starts_at, orig_starts_at: r.orig_starts_at, moved: true };
+  assert.equal(L.rowOf({ ...d, date: "2026-10-30" }, again, "auto").orig_starts_at, r.starts_at);
+  assert.equal(L.rowOf({ ...d, date: "2026-10-30", origPick: "first" }, again, "auto").orig_starts_at, saved.starts_at);
+  const r4 = L.rowOf({ ...d, date: "2026-10-30", showOrig: false }, again, "auto");
+  assert.deepEqual([r4.moved, r4.orig_starts_at], [true, null]);
 });
 
 test("admin: zrušenie termínu → bez termínu, pôvodný sa ukáže prečiarknutý", () => {
@@ -399,4 +402,21 @@ test("admin: id hráča, krátky názov sezóny, čas po 15 min, kalendár", () 
   const days = L.monthDays(2026, 9); // október 2026 začína vo štvrtok
   assert.equal(days.length, 35);
   assert.deepEqual([days[0], days[3], days[34]], ["2026-09-28", "2026-10-01", "2026-11-01"]);
+});
+
+test("tabuľka: pri rovnosti bodov rozhoduje vzájomný zápas pred celkovým skóre", () => {
+  // bre a ran majú po 3 b; bre má lepší celkový rozdiel, ale ran vyhral vzájomný zápas → ran pred bre
+  const ms = [match("m1", 1, "ran", "bre", "done"), match("m2", 2, "bre", "sai", "done"), match("m3", 2, "gia", "ran", "done")];
+  const gm = L.goalsByMatch([...goals("m1", "h"), ...goals("m2", "hhhhhh"), ...goals("m3", "hhh")]);
+  const t = L.standings(TEAMS, ms, gm, {});
+  const pos = Object.fromEntries(t.map((x) => [x.id, x.pos]));
+  assert.ok(pos.ran < pos.bre, "ran vyhral vzájomný zápas");
+  assert.ok(t.find((x) => x.id === "bre").diff > t.find((x) => x.id === "ran").diff, "hoci bre má lepší rozdiel");
+});
+
+test("tabuľka: vzájomná remíza → rozhoduje celkový rozdiel", () => {
+  const ms = [match("m1", 1, "ran", "bre", "done"), match("m2", 2, "bre", "sai", "done"), match("m3", 2, "ran", "gia", "done")];
+  const gm = L.goalsByMatch([...goals("m1", "ha"), ...goals("m2", "hhh"), ...goals("m3", "h")]);
+  const pos = Object.fromEntries(L.standings(TEAMS, ms, gm, {}).map((x) => [x.id, x.pos]));
+  assert.ok(pos.bre < pos.ran, "bre +3 vs ran +1");
 });

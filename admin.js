@@ -703,7 +703,11 @@
           <span class="small">Tlačidlá posúvajú čas po 15 minútach.</span>
           <div class="a-sum"><span class="lbl">Na webe sa zobrazí</span><b${d.date ? "" : ' class="warn"'}>${d.date ? `${L.longDate(d.date)} · ${esc(d.time)}` : "Vyber dátum v kalendári"}</b></div></div></div>
         ${changed ? `<div class="a-changed"><span>Termín sa mení z <s>${esc(L.slot(saved.starts_at))}</s> na <strong>${esc(`${L.shortDate(d.date)} · ${d.time}`)}</strong>.</span>
-          <button type="button" class="a-switch" data-a="markMoved" ${pressed(d.markMoved)}><i aria-hidden="true"></i>Ukázať na webe ako „Presunutý“</button></div>` : ""}`;
+          <span class="a-switches"><button type="button" class="a-switch" data-a="markMoved" ${pressed(d.markMoved)}><i aria-hidden="true"></i>Ukázať na webe ako „Presunutý“</button>
+          ${d.markMoved ? `<button type="button" class="a-switch" data-a="showOrig" ${pressed(d.showOrig !== false)}><i aria-hidden="true"></i>Ukázať pôvodný termín prečiarknutý</button>` : ""}</span>
+          ${d.markMoved && d.showOrig !== false && saved.orig_starts_at && saved.orig_starts_at !== saved.starts_at ? `<span class="a-origpick"><span>Ako pôvodný ukázať:</span>
+            <span class="a-seg" role="group">${[["last", `posledný · ${L.slot(saved.starts_at)}`], ["first", `prvý · ${L.slot(saved.orig_starts_at)}`]].map(([v, label]) => `<button type="button" data-a="origPick" data-id="${v}" ${pressed((d.origPick || "last") === v)}>${esc(label)}</button>`).join("")}</span></span>` : ""}
+          <span class="a-origprev">Na webe: ${d.markMoved ? `<b>Presunutý</b>${d.showOrig !== false ? ` · pôvodne <s>${esc(L.slot(d.origPick === "first" && saved.orig_starts_at ? saved.orig_starts_at : saved.starts_at))}</s>` : ""}` : "iba nový termín, bez označenia presunu"}</span></div>` : ""}`;
     } else {
       const orig = saved && saved.starts_at ? L.slot(saved.starts_at) : d.orig_starts_at ? L.slot(d.orig_starts_at) : "";
       const week = d.window_from && d.window_to >= today() ? ` Kým nie je termín, web ukazuje týždeň ${L.weekLabel(d.window_from, d.window_to)}.` : "";
@@ -782,7 +786,7 @@
     const vs = `${teamName(c, t[0], d.stage, 0)} vs ${teamName(c, t[1], d.stage, 1)}`;
     const title = isNew ? (t[0] && t[1] ? vs : "Vyber tímy") : d.stage === "R" ? vs : STAGE[d.stage];
     const kicker = isNew ? "Nový zápas" : d.stage === "R" ? `Kolo ${d.round}` : `Playoff · ${STAGE[d.stage]}`;
-    const clean = (x) => JSON.stringify(Object.assign({}, x, { markMoved: undefined }));
+    const clean = (x) => JSON.stringify(Object.assign({}, x, { markMoved: undefined, showOrig: undefined, origPick: undefined }));
     const dirty = isNew || !saved || clean(d) !== clean(L.draftOf(saved, c.gm[d.id], c.settings.defaultTime));
     const note = d.stage === "SF1" || d.stage === "SF2"
       ? (c.s.seed_mode === "manual" ? "" : "Dvojica sa berie z tabuľky (1.–4., 2.–3.), keď je odohraná celá základná časť. Ak ju chceš určiť sám, prepni vľavo na „Ručne“.")
@@ -1020,6 +1024,8 @@
     time: (el) => patch({ time: el.dataset.id }),
     shift: (el) => patch({ time: L.shiftTime(S.draft.time, Number(el.dataset.id)) }),
     markMoved: () => patch({ markMoved: !S.draft.markMoved }),
+    showOrig: () => patch({ showOrig: S.draft.showOrig === false }),
+    origPick: (el) => patch({ origPick: el.dataset.id }),
     status: (el) => patch({ status: el.dataset.id }),
     goalPlus: (el) => addGoal(el.dataset.id),
     goalMinus: (el) => dropGoal(el.dataset.id),

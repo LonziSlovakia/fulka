@@ -356,7 +356,7 @@
   function liveTableNote(c) {
     const s = c.v.settings;
     const four = c.v.teamIds.length === 4 ? " · do playoff idú všetky štyri tímy, poradie určí dvojice semifinále" : "";
-    return `Výhra ${s.pointsWin} b · remíza ${s.pointsDraw} b${four}.`;
+    return `Výhra ${s.pointsWin} b · remíza ${s.pointsDraw} b · pri rovnosti bodov rozhoduje vzájomný zápas${four}.`;
   }
 
   /* ---------- Hráči ---------- */

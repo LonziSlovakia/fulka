@@ -92,12 +92,14 @@
   }
 
   /* ---------- Tabuľka ---------- */
-  // teamIds = tímy sezóny (ich poradie rozhoduje, keď je všetko ostatné rovnaké)
+  /* teamIds = tímy sezóny (ich poradie rozhoduje, keď je všetko ostatné rovnaké).
+     Poradie: body → pri rovnosti vzájomné zápasy (body, potom rozdiel skóre) → celkový rozdiel → strelené góly. */
   function standings(teamIds, matches, gm, settings) {
     const pts = Object.assign({}, DEFAULTS, settings);
     const st = {};
     teamIds.forEach((id) => { st[id] = { id, z: 0, v: 0, r: 0, p: 0, gf: 0, ga: 0 }; });
-    matches.filter((m) => m.stage === "R" && isPlayed(m) && st[m.home_id] && st[m.away_id]).forEach((m) => {
+    const played = matches.filter((m) => m.stage === "R" && isPlayed(m) && st[m.home_id] && st[m.away_id]);
+    played.forEach((m) => {
       const s = score(gm[m.id]);
       const h = st[m.home_id];
       const a = st[m.away_id];
@@ -110,8 +112,25 @@
         const t = st[id];
         return Object.assign(t, { order: i, diff: t.gf - t.ga, b: t.v * pts.pointsWin + t.r * pts.pointsDraw + t.p * pts.pointsLoss });
       })
-      .sort((x, y) => y.b - x.b || y.diff - x.diff || y.gf - x.gf || x.order - y.order)
+      .sort((x, y) => y.b - x.b || x.order - y.order)
+      .reduce((groups, t) => { const g = groups[groups.length - 1]; if (g && g[0].b === t.b) g.push(t); else groups.push([t]); return groups; }, [])
+      .flatMap((g) => (g.length > 1 ? tieBreak(g, played, gm, pts) : g))
       .map((t, i) => Object.assign(t, { pos: i + 1 }));
+  }
+
+  // tímy s rovnakým počtom bodov: mini-tabuľka iba zo zápasov medzi nimi
+  function tieBreak(group, played, gm, pts) {
+    const ids = new Set(group.map((t) => t.id));
+    const h = {};
+    group.forEach((t) => { h[t.id] = { b: 0, diff: 0 }; });
+    played.filter((m) => ids.has(m.home_id) && ids.has(m.away_id)).forEach((m) => {
+      const s = score(gm[m.id]);
+      h[m.home_id].diff += s.h - s.a;
+      h[m.away_id].diff += s.a - s.h;
+      h[m.home_id].b += s.h > s.a ? pts.pointsWin : s.h === s.a ? pts.pointsDraw : pts.pointsLoss;
+      h[m.away_id].b += s.a > s.h ? pts.pointsWin : s.h === s.a ? pts.pointsDraw : pts.pointsLoss;
+    });
+    return group.sort((x, y) => h[y.id].b - h[x.id].b || h[y.id].diff - h[x.id].diff || y.diff - x.diff || y.gf - x.gf || x.order - y.order);
   }
 
   /* ---------- Kanadské bodovanie ---------- */
@@ -264,13 +283,15 @@
       id: m.id, season_id: m.season_id, stage: m.stage, round: m.round, home_id: m.home_id || null, away_id: m.away_id || null,
       tbd: !m.starts_at, date: m.starts_at ? matchDate(m) : "", time: m.starts_at ? matchTime(m) : defaultTime || DEFAULTS.defaultTime,
       status: m.status, note: m.note || "", moved: !!m.moved, orig_starts_at: m.orig_starts_at || null,
-      window_from: m.window_from || null, window_to: m.window_to || null, markMoved: true,
+      window_from: m.window_from || null, window_to: m.window_to || null, markMoved: true, showOrig: true, origPick: "last",
       goals: (goals || []).map((g) => ({ side: g.side, scorer: g.scorer_id || UNKNOWN, assist: g.assist_id || "" })),
     };
   }
 
   /* draft → riadok do databázy. Keď sa mení už zadaný termín a je zapnuté „Presunutý“
-     (alebo sa termín zruší), pôvodný termín sa zapamätá do orig_starts_at.
+     (alebo sa termín zruší), pôvodný termín sa zapamätá do orig_starts_at:
+     origPick "last" = termín, z ktorého sa práve presúva; "first" = úplne prvý termín;
+     showOrig false = presunutý bez prečiarknutého pôvodného termínu.
      Tímy playoff, ktoré sa dopĺňajú samé (SF podľa tabuľky, B3, F), sa neukladajú. */
   function rowOf(d, saved, seedMode) {
     const starts = d.tbd ? null : toUtc(d.date, d.time);
@@ -278,7 +299,11 @@
     let moved = !!d.moved;
     if (saved && saved.starts_at) {
       const changed = d.tbd || new Date(starts).getTime() !== new Date(saved.starts_at).getTime();
-      if (changed && (d.markMoved || d.tbd)) { orig = saved.orig_starts_at || saved.starts_at; moved = !d.tbd; }
+      if (changed && (d.markMoved || d.tbd)) {
+        const first = saved.orig_starts_at || saved.starts_at;
+        orig = d.showOrig === false && !d.tbd ? null : d.origPick === "first" ? first : saved.starts_at;
+        moved = !d.tbd;
+      }
     }
     if (d.tbd) moved = false;
     const own = d.stage === "R" || (seedMode === "manual" && (d.stage === "SF1" || d.stage === "SF2"));

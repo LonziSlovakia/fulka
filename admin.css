@@ -317,3 +317,9 @@
 .a-filebtn { position: relative; overflow: hidden; min-height: 44px; font-size: 14px; }
 .a-filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .a-edteam { position: relative; min-height: 40px; font-size: 13px; align-self: flex-start; background: var(--bg); }
+.a-switches { display: flex; flex-wrap: wrap; gap: 8px; }
+.a-origpick { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: #ffe2ad; }
+.a-origpick .a-seg { flex: 1 1 320px; }
+.a-origpick .a-seg button { min-height: 40px; font-size: 13px; }
+.a-origprev { flex: 1 1 100%; font-size: 13px; color: var(--fg-2); }
+.a-origprev b { color: var(--moved); }
