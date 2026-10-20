@@ -71,8 +71,8 @@ anonym aj Laura majú zápis zakázaný, Lonzi (admin `fulka`) môže zapisovať
 
 **Nič sa neukladá dvakrát** – všetko ostatné sa počíta v JS:
 - skóre zápasu = počet gólov `h` / `a`;
-- tabuľka: body podľa `fulka_settings` (výhra 3, remíza 1), poradie: body → vzájomné zápasy (body, rozdiel) → rozdiel skóre → strelené góly;
-- kanadské bodovanie: gól + asistencia, poradie: body → góly → meno (top 10); tím hráča = strana gólu v zápase
+- tabuľka: body podľa `fulka_settings` (výhra 3, remíza 1), poradie: body → kritériá z `tableOrder` (predvolene vzájomné zápasy – body, – rozdiel, rozdiel skóre, strelené góly; nastaviteľné v admine);
+- kanadské bodovanie: gól + asistencia, poradie: body → kritériá z `scorerOrder` (predvolene góly) → pri úplnej zhode `scorerTies` (predvolene rovnaká priečka); do 10. priečky; tím hráča = strana gólu v zápase
   (nie aktuálna súpiska – vyradený hráč si góly necháva);
 - playoff pri `seed_mode = 'auto'`: SF1 = 1. vs 4., SF2 = 2. vs 3. z tabuľky; B3 = porazení SF, F = víťazi SF;
   pri `manual` sú tímy SF uložené v `home_id`/`away_id`;

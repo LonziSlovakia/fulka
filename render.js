@@ -52,7 +52,7 @@
     return {
       s, teamIds, matches, gm, settings, table, rounds,
       po: L.playoff(s, raw, gm, table),
-      top: L.scorers(matches, gm, P, table, 10),
+      top: L.scorers(matches, gm, P, table, 10, settings),
       roster: d.roster.filter((r) => r.season_id === s.id),
       doneRounds: rounds.filter((r) => r.matches.every((m) => m.status === "done")).length,
       champ: L.champion(matches, gm),
@@ -356,7 +356,9 @@
   function liveTableNote(c) {
     const s = c.v.settings;
     const four = c.v.teamIds.length === 4 ? " · do playoff idú všetky štyri tímy, poradie určí dvojice semifinále" : "";
-    return `Výhra ${s.pointsWin} b · remíza ${s.pointsDraw} b · pri rovnosti bodov rozhoduje vzájomný zápas${four}.`;
+    const order = L.validOrder(s.tableOrder, L.TABLE_CRITERIA, L.DEFAULTS.tableOrder).map((k) => L.TABLE_CRITERIA[k].toLowerCase());
+    const tie = order.length ? ` · pri rovnosti bodov: ${order.join(" → ")}` : "";
+    return `Výhra ${s.pointsWin} b · remíza ${s.pointsDraw} b${tie}${four}.`;
   }
 
   /* ---------- Hráči ---------- */
@@ -585,6 +587,8 @@
     return `<footer class="foot"><div class="wrap foot-in">
       <a href="#top" data-act="home" aria-label="Späť hore" style="line-height:0"><img src="assets/logos/ful-mark-white.png" alt=""></a>
       <span class="t">FULka · Florbalová Upece Liga · ${esc(c.cur.name)}</span>
+      <a class="upece" href="https://www.upcba.sk/" target="_blank" rel="noopener"><img src="assets/logos/upece.png" alt="UPeCe Bratislava">
+        <span><b>UPeCe Bratislava</b>Vybudované s pomocou Univerzitného pastoračného centra sv. Jozefa Freinademetza v Bratislave</span></a>
       <a class="admin" href="?edit"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="1"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Admin</a>
     </div></footer>`;
   }

@@ -124,7 +124,7 @@ test("kanadské bodovanie: max. 10 hráčov, neodohrané zápasy sa nepočítaj�
   for (let i = 0; i < 12; i++) { pl[`p${i}`] = { name: `Hráč ${String(i).padStart(2, "0")}` }; gs.push({ match_id: "m1", seq: i + 1, side: "h", scorer_id: `p${i}` }); }
   gs.push({ match_id: "m2", seq: 1, side: "h", scorer_id: "p0" });
   const ms = [match("m1", 1, "gia", "bre", "done"), match("m2", 1, "ran", "sai", "plan")];
-  const s = L.scorers(ms, L.goalsByMatch(gs), pl, []);
+  const s = L.scorers(ms, L.goalsByMatch(gs), pl, [], 10, { scorerTies: "alpha" });
   assert.equal(s.length, 10);
   assert.equal(s[0].g, 1, "gól z neodohraného zápasu sa nepočíta");
 });
@@ -341,7 +341,9 @@ test("kontrola zápasu: playoff", () => {
 test("iniciály a nastavenia", () => {
   assert.equal(L.initials("Jakub Štefaňák"), "JŠ");
   assert.equal(L.initials("Ema"), "E");
-  assert.deepEqual(L.settingsOf({ bannerCount: 3 }), { bannerCount: 3, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, defaultTime: "21:15", photos: true, headFont: "saira", layout: "wide" });
+  assert.equal(L.settingsOf({ bannerCount: 3 }).bannerCount, 3);
+  assert.equal(L.settingsOf({ bannerCount: 3 }).pointsWin, 3);
+  assert.deepEqual(L.settingsOf({}).tableOrder, ["h2hPoints", "h2hDiff", "diff", "gf"]);
   assert.deepEqual(L.settingsOf(null), L.DEFAULTS);
 });
 
@@ -419,4 +421,39 @@ test("tabuľka: vzájomná remíza → rozhoduje celkový rozdiel", () => {
   const gm = L.goalsByMatch([...goals("m1", "ha"), ...goals("m2", "hhh"), ...goals("m3", "h")]);
   const pos = Object.fromEntries(L.standings(TEAMS, ms, gm, {}).map((x) => [x.id, x.pos]));
   assert.ok(pos.bre < pos.ran, "bre +3 vs ran +1");
+});
+
+test("kanadské bodovanie: rovnaké góly aj asistencie → rovnaká priečka (predvolené)", () => {
+  const ms = [match("m1", 1, "gia", "bre", "done")];
+  const gm = L.goalsByMatch([
+    { match_id: "m1", seq: 1, side: "h", scorer_id: "a2", assist_id: "b1" },
+    { match_id: "m1", seq: 2, side: "h", scorer_id: "a1", assist_id: "r1" },
+    { match_id: "m1", seq: 3, side: "h", scorer_id: "s1" },
+  ]);
+  const s = L.scorers(ms, gm, PLAYERS, []);
+  assert.deepEqual(s.map((x) => [x.player_id, x.pos]), [["a1", 1], ["a2", 1], ["s1", 1], ["b1", 4], ["r1", 4]]);
+  assert.deepEqual(L.scorers(ms, gm, PLAYERS, [], 10, { scorerTies: "alpha" }).map((x) => x.pos), [1, 2, 3, 4, 5]);
+});
+
+test("kanadské bodovanie: pri zhode podľa tímu, potom abecedy; vlastné poradie kritérií", () => {
+  const ms = [match("m1", 1, "gia", "bre", "done")];
+  const gm = L.goalsByMatch([
+    { match_id: "m1", seq: 1, side: "h", scorer_id: "a2" },          // a2 za gia
+    { match_id: "m1", seq: 2, side: "a", scorer_id: "a1" },          // a1 za bre
+    { match_id: "m1", seq: 3, side: "a", scorer_id: "b1", assist_id: "r1" },
+  ]);
+  const table = [{ id: "bre", pos: 1, z: 1 }, { id: "gia", pos: 2, z: 1 }];
+  assert.deepEqual(L.scorers(ms, gm, PLAYERS, table, 10, { scorerTies: "team" }).map((x) => x.player_id).slice(0, 3), ["a1", "b1", "a2"]);
+  // „viac asistencií“ pred gólmi: r1 (0 G, 1 A) má 1 bod ako ostatní, ale asistenciu → prvý
+  assert.equal(L.scorers(ms, gm, PLAYERS, table, 10, { scorerOrder: ["assists"], scorerTies: "alpha" })[0].player_id, "r1");
+});
+
+test("tabuľka: vlastné poradie kritérií (rozdiel skóre pred vzájomným zápasom)", () => {
+  // ran vyhral vzájomný zápas, bre má lepší rozdiel
+  const ms = [match("m1", 1, "ran", "bre", "done"), match("m2", 2, "bre", "sai", "done"), match("m3", 2, "gia", "ran", "done")];
+  const gm = L.goalsByMatch([...goals("m1", "h"), ...goals("m2", "hhhhhh"), ...goals("m3", "hhh")]);
+  const pos = (o) => Object.fromEntries(L.standings(TEAMS, ms, gm, o).map((x) => [x.id, x.pos]));
+  assert.ok(pos({}).ran < pos({}).bre, "predvolene vzájomný zápas");
+  assert.ok(pos({ tableOrder: ["diff", "h2hPoints"] }).bre < pos({ tableOrder: ["diff", "h2hPoints"] }).ran, "rozdiel skóre prvý");
+  assert.ok(L.standings(TEAMS, ms, gm, { tableOrder: ["neznáme"] }).length === 4, "neznáme kritérium sa ignoruje");
 });

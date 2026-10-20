@@ -323,3 +323,18 @@
 .a-origpick .a-seg button { min-height: 40px; font-size: 13px; }
 .a-origprev { flex: 1 1 100%; font-size: 13px; color: var(--fg-2); }
 .a-origprev b { color: var(--moved); }
+
+/* ---------- Poradie kritérií ---------- */
+.a-crit { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.a-crit-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 4px 4px 4px 10px; background: var(--bg); border: 1px solid var(--line-2); cursor: grab; }
+.a-crit-row b { flex: 1; min-width: 0; font-weight: 700; }
+.a-crit-row .grip { width: 14px; color: var(--fg-3); font-size: 18px; line-height: 1; }
+.a-crit-row .n { width: 22px; font-family: var(--fc); font-weight: 900; font-size: 20px; color: var(--fg-3); }
+.a-crit-row .a-x { width: 40px; height: 40px; font-size: 18px; font-weight: 700; color: var(--fg); }
+.a-crit-row .a-x:disabled { opacity: 0.25; cursor: default; }
+.a-crit-row.locked { cursor: default; background: var(--card); border-style: dashed; }
+.a-crit-row.locked b { color: var(--fg-2); }
+.a-crit-row.last { min-height: 40px; }
+.a-crit-row.dragging { opacity: 0.4; }
+.a-crit-add { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.a-crit-add .a-ghost { min-height: 40px; font-size: 13px; }

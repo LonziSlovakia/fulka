@@ -926,7 +926,32 @@
 
   /* ---------- Nastavenia ---------- */
   // rozpracované nastavenia (banner, fotky, písmo); null = také, aké sú uložené
-  const savedSet = (c) => ({ bannerCount: c.settings.bannerCount, photos: c.settings.photos !== false, headFont: "saira" /* Monument zatiaľ nie (licencia), prepínač je skrytý */, layout: c.settings.layout === "narrow" ? "narrow" : "wide" });
+  const savedSet = (c) => ({ bannerCount: c.settings.bannerCount, photos: c.settings.photos !== false, headFont: "saira" /* Monument zatiaľ nie (licencia), prepínač je skrytý */, layout: c.settings.layout === "narrow" ? "narrow" : "wide",
+    tableOrder: L.validOrder(c.settings.tableOrder, L.TABLE_CRITERIA, L.DEFAULTS.tableOrder),
+    scorerOrder: L.validOrder(c.settings.scorerOrder, L.SCORER_CRITERIA, L.DEFAULTS.scorerOrder),
+    scorerTies: L.SCORER_TIES[c.settings.scorerTies] ? c.settings.scorerTies : "shared" });
+
+  /* zoznam kritérií poradia: body zamknuté hore, ostatné ťahaním alebo šípkami, × odoberie, dole pridať nepoužité */
+  function critList(list, order, known, lastNote) {
+    const rows = order.map((k, i) => `<li class="a-crit-row" draggable="true" data-crit-list="${list}" data-crit-i="${i}">
+        <span class="grip" aria-hidden="true">⠿</span><span class="n">${i + 2}.</span><b>${esc(known[k])}</b>
+        <button type="button" class="a-x" data-a="critMove" data-list="${list}" data-i="${i}" data-id="-1" aria-label="Posunúť vyššie"${i === 0 ? " disabled" : ""}>↑</button>
+        <button type="button" class="a-x" data-a="critMove" data-list="${list}" data-i="${i}" data-id="1" aria-label="Posunúť nižšie"${i === order.length - 1 ? " disabled" : ""}>↓</button>
+        <button type="button" class="a-x" data-a="critDel" data-list="${list}" data-i="${i}" aria-label="Odobrať: ${esc(known[k])}">${icon.x}</button></li>`).join("");
+    const unused = Object.keys(known).filter((k) => !order.includes(k));
+    return `<ol class="a-crit"><li class="a-crit-row locked"><span class="grip" aria-hidden="true"></span><span class="n">1.</span><b>Body</b><span class="small">vždy prvé</span></li>${rows}
+        <li class="a-crit-row locked last"><span class="grip" aria-hidden="true"></span><span class="n"></span><span class="small">${lastNote}</span></li></ol>
+      ${unused.length ? `<div class="a-crit-add"><span class="small">Pridať:</span>${unused.map((k) => `<button type="button" class="a-ghost w" data-a="critAdd" data-list="${list}" data-id="${k}">${icon.plus}${esc(known[k])}</button>`).join("")}</div>` : ""}`;
+  }
+  // úprava zoznamu v rozpracovaných nastaveniach (kópia poľa, nech sa nemení uložené)
+  function editCrit(list, fn) {
+    const sd = setDraftOf(ctx());
+    const arr = sd[list].slice();
+    fn(arr);
+    S.setDraft = Object.assign({}, sd, { [list]: arr });
+    S.toast = "";
+    render();
+  }
   const setDraftOf = (c) => S.setDraft || savedSet(c);
 
   function settingsPanel(c) {
@@ -965,6 +990,15 @@
           <span class="muted" style="font-size:14px">Úzke: užšia stránka, štatistiky v tabuľkách hneď pri menách a v rozpise termín pod zápasom v strede.</span>
           ${seg("slayout", [["wide", "Široké (ako návrh)"], ["narrow", "Úzke"]], sd.layout)}
           <div class="a-actions">${look("rozlozenie=siroke", "Pozrieť široké")}${look("rozlozenie=uzke", "Pozrieť úzke")}</div></fieldset>
+        <fieldset class="a-fs" style="gap:12px"><legend>Poradie v tabuľke tímov</legend>
+          <span class="muted" style="font-size:14px">Pri rovnosti bodov rozhodujú kritériá v tomto poradí. Ťahaj ich myšou alebo použi šípky. Vzájomné zápasy sa rátajú iba medzi tímami, ktoré sú dovtedy úplne rovnaké.</span>
+          ${critList("tableOrder", sd.tableOrder, L.TABLE_CRITERIA, "Keď je všetko rovnaké: abecedne podľa názvu tímu")}</fieldset>
+        <fieldset class="a-fs" style="gap:12px"><legend>Poradie v kanadskom bodovaní</legend>
+          <span class="muted" style="font-size:14px">Body = góly + asistencie. Pri rovnosti bodov rozhodujú kritériá v tomto poradí.</span>
+          ${critList("scorerOrder", sd.scorerOrder, L.SCORER_CRITERIA, "Keď je všetko rovnaké: podľa voľby nižšie")}
+          <span class="lbl">Hráči s úplne rovnakými číslami</span>
+          ${seg("sties", Object.entries(L.SCORER_TIES), sd.scorerTies)}</fieldset>
+        <span class="a-warn" style="font-size:13px;font-weight:500">Pozor: zmena pravidiel poradia počas sezóny prepočíta tabuľku aj bodovanie spätne pre všetky odohrané zápasy.</span>
         <div class="a-actions"><button type="button" class="a-save" data-a="saveSettings"${S.busy ? " disabled" : ""}>${S.busy ? "Ukladám…" : "Uložiť nastavenia"}</button>
           <button type="button" class="a-ghost" data-a="resetSettings">Zahodiť zmeny</button></div></div></div>`;
   }
@@ -1059,12 +1093,16 @@
     openSeason: (el) => { S.season = el.dataset.id; S.tab = "matches"; S.sel = null; S.draft = null; S.toast = ""; S.error = ""; render(); },
     count: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { bannerCount: Number(el.dataset.id) }); S.toast = ""; render(); },
     sphotos: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { photos: el.dataset.id === "true" }); S.toast = ""; render(); },
+    sties: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { scorerTies: el.dataset.id }); S.toast = ""; render(); },
+    critMove: (el) => editCrit(el.dataset.list, (a) => { const i = Number(el.dataset.i); const j = i + Number(el.dataset.id); if (j >= 0 && j < a.length) [a[i], a[j]] = [a[j], a[i]]; }),
+    critDel: (el) => editCrit(el.dataset.list, (a) => { a.splice(Number(el.dataset.i), 1); }),
+    critAdd: (el) => editCrit(el.dataset.list, (a) => { a.push(el.dataset.id); }),
     slayout: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { layout: el.dataset.id }); S.toast = ""; render(); },
     resetSettings: () => { S.setDraft = null; render(); },
     saveSettings: () => {
       const sd = setDraftOf(ctx());
       run(() => DB.saveSettings(Object.assign({}, S.data.settings, sd)),
-        `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, rozloženie ${sd.layout === "narrow" ? "úzke" : "široké"}.`,
+        `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, rozloženie ${sd.layout === "narrow" ? "úzke" : "široké"}, poradie tabuľky aj bodovania.`,
         () => { S.setDraft = null; });
     },
   };
@@ -1117,6 +1155,31 @@
     S.busy = false;
     render();
   });
+  // ťahanie kritérií poradia (na mobile slúžia šípky)
+  let dragCrit = null;
+  app.addEventListener("dragstart", (e) => {
+    const li = e.target.closest && e.target.closest("[data-crit-list]");
+    if (!li) return;
+    dragCrit = { list: li.dataset.critList, i: Number(li.dataset.critI) };
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", "");
+    li.classList.add("dragging");
+  });
+  app.addEventListener("dragover", (e) => {
+    const li = e.target.closest && e.target.closest("[data-crit-list]");
+    if (dragCrit && li && li.dataset.critList === dragCrit.list) e.preventDefault();
+  });
+  app.addEventListener("drop", (e) => {
+    const li = e.target.closest && e.target.closest("[data-crit-list]");
+    if (!dragCrit || !li || li.dataset.critList !== dragCrit.list) return;
+    e.preventDefault();
+    const from = dragCrit.i;
+    const to = Number(li.dataset.critI);
+    dragCrit = null;
+    if (from !== to) editCrit(li.dataset.critList, (a) => { a.splice(to, 0, a.splice(from, 1)[0]); });
+  });
+  app.addEventListener("dragend", () => { dragCrit = null; app.querySelectorAll(".dragging").forEach((x) => x.classList.remove("dragging")); });
+
   let wasMobile = mobile();
   window.addEventListener("resize", () => { if (mobile() !== wasMobile) { wasMobile = mobile(); render(); } });
 

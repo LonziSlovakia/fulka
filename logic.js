@@ -9,7 +9,16 @@
   const STAGES = ["SF1", "SF2", "B3", "F"];
   // defaultTime = predvolený čas zápasu v admine (po sv. omši); photos = ukazovať fotky hráčov; headFont = písmo nadpisov;
   // layout = "wide" (ako návrh) alebo "narrow" (užšia stránka, štatistiky bližšie pri menách)
-  const DEFAULTS = { bannerCount: 2, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, defaultTime: "21:15", photos: true, headFont: "saira", layout: "wide" };
+  const DEFAULTS = { bannerCount: 2, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, defaultTime: "21:15", photos: true, headFont: "saira", layout: "wide",
+    tableOrder: ["h2hPoints", "h2hDiff", "diff", "gf"], scorerOrder: ["goals"], scorerTies: "shared" };
+  // kritériá poradia (body sú vždy prvé); poradie sa nastavuje v admine → Nastavenia
+  const TABLE_CRITERIA = {
+    h2hPoints: "Vzájomné zápasy – body", h2hDiff: "Vzájomné zápasy – rozdiel skóre", diff: "Rozdiel skóre",
+    gf: "Strelené góly", wins: "Počet výhier", ga: "Menej inkasovaných gólov",
+  };
+  const SCORER_CRITERIA = { goals: "Viac gólov", assists: "Viac asistencií", fewerMatches: "Menej odohraných zápasov", team: "Lepšie umiestnenie tímu" };
+  // hráči rovnakí vo všetkých kritériách: shared = rovnaká priečka, alpha = podľa abecedy, team = podľa tímu, potom abecedy
+  const SCORER_TIES = { shared: "Na rovnakej priečke", alpha: "Podľa abecedy", team: "Podľa tímu, potom abecedy" };
 
   /* ---------- Dátumy a časy (vždy v čase Bratislavy) ---------- */
   const DAYS = ["Nedeľa", "Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok", "Sobota"];
@@ -93,7 +102,8 @@
 
   /* ---------- Tabuľka ---------- */
   /* teamIds = tímy sezóny (ich poradie rozhoduje, keď je všetko ostatné rovnaké).
-     Poradie: body → pri rovnosti vzájomné zápasy (body, potom rozdiel skóre) → celkový rozdiel → strelené góly. */
+     Poradie: body → kritériá z nastavení (settings.tableOrder) v poradí, ako sú zoradené.
+     Vzájomné zápasy sa vždy počítajú iba medzi tímami, ktoré sú dovtedy úplne rovnaké. */
   function standings(teamIds, matches, gm, settings) {
     const pts = Object.assign({}, DEFAULTS, settings);
     const st = {};
@@ -107,35 +117,55 @@
       h.gf += s.h; h.ga += s.a; a.gf += s.a; a.ga += s.h;
       if (s.h > s.a) { h.v++; a.p++; } else if (s.h < s.a) { a.v++; h.p++; } else { h.r++; a.r++; }
     });
-    return teamIds
-      .map((id, i) => {
-        const t = st[id];
-        return Object.assign(t, { order: i, diff: t.gf - t.ga, b: t.v * pts.pointsWin + t.r * pts.pointsDraw + t.p * pts.pointsLoss });
-      })
-      .sort((x, y) => y.b - x.b || x.order - y.order)
-      .reduce((groups, t) => { const g = groups[groups.length - 1]; if (g && g[0].b === t.b) g.push(t); else groups.push([t]); return groups; }, [])
-      .flatMap((g) => (g.length > 1 ? tieBreak(g, played, gm, pts) : g))
+    const rows = teamIds.map((id, i) => {
+      const t = st[id];
+      return Object.assign(t, { order: i, diff: t.gf - t.ga, b: t.v * pts.pointsWin + t.r * pts.pointsDraw + t.p * pts.pointsLoss });
+    });
+    const order = ["points"].concat(validOrder(pts.tableOrder, TABLE_CRITERIA, DEFAULTS.tableOrder));
+    return rankBy(rows, order, (crit, group) => teamValues(crit, group, played, gm, pts))
       .map((t, i) => Object.assign(t, { pos: i + 1 }));
   }
 
-  // tímy s rovnakým počtom bodov: mini-tabuľka iba zo zápasov medzi nimi
-  function tieBreak(group, played, gm, pts) {
-    const ids = new Set(group.map((t) => t.id));
-    const h = {};
-    group.forEach((t) => { h[t.id] = { b: 0, diff: 0 }; });
-    played.filter((m) => ids.has(m.home_id) && ids.has(m.away_id)).forEach((m) => {
-      const s = score(gm[m.id]);
-      h[m.home_id].diff += s.h - s.a;
-      h[m.away_id].diff += s.a - s.h;
-      h[m.home_id].b += s.h > s.a ? pts.pointsWin : s.h === s.a ? pts.pointsDraw : pts.pointsLoss;
-      h[m.away_id].b += s.a > s.h ? pts.pointsWin : s.h === s.a ? pts.pointsDraw : pts.pointsLoss;
-    });
-    return group.sort((x, y) => h[y.id].b - h[x.id].b || h[y.id].diff - h[x.id].diff || y.diff - x.diff || y.gf - x.gf || x.order - y.order);
+  // zoznam kritérií z nastavení: iba známe, bez opakovania (prázdny je v poriadku)
+  function validOrder(list, known, fallback) {
+    if (!Array.isArray(list)) return fallback.slice();
+    return list.filter((k, i) => known[k] && list.indexOf(k) === i);
+  }
+
+  // zoradí podľa prvého kritéria, rovnakých delí ďalším kritériom; nakoniec pôvodné poradie
+  function rankBy(group, crits, valuesOf) {
+    if (group.length < 2 || !crits.length) return group.slice().sort((x, y) => x.order - y.order);
+    const v = valuesOf(crits[0], group);
+    const sorted = group.slice().sort((x, y) => v[y.id] - v[x.id] || x.order - y.order);
+    const parts = [];
+    sorted.forEach((t) => { const g = parts[parts.length - 1]; if (g && v[g[0].id] === v[t.id]) g.push(t); else parts.push([t]); });
+    return parts.flatMap((g) => rankBy(g, crits.slice(1), valuesOf));
+  }
+
+  // hodnota kritéria pre každý tím skupiny (väčšie = lepšie)
+  function teamValues(crit, group, played, gm, pts) {
+    const out = {};
+    if (crit === "h2hPoints" || crit === "h2hDiff") {
+      const ids = new Set(group.map((t) => t.id));
+      group.forEach((t) => { out[t.id] = 0; });
+      played.filter((m) => ids.has(m.home_id) && ids.has(m.away_id)).forEach((m) => {
+        const s = score(gm[m.id]);
+        if (crit === "h2hDiff") { out[m.home_id] += s.h - s.a; out[m.away_id] += s.a - s.h; return; }
+        out[m.home_id] += s.h > s.a ? pts.pointsWin : s.h === s.a ? pts.pointsDraw : pts.pointsLoss;
+        out[m.away_id] += s.a > s.h ? pts.pointsWin : s.h === s.a ? pts.pointsDraw : pts.pointsLoss;
+      });
+      return out;
+    }
+    const pick = { points: (t) => t.b, diff: (t) => t.diff, gf: (t) => t.gf, wins: (t) => t.v, ga: (t) => -t.ga }[crit];
+    group.forEach((t) => { out[t.id] = pick(t); });
+    return out;
   }
 
   /* ---------- Kanadské bodovanie ---------- */
   // tím hráča = strana jeho posledného gólu/asistencie (nie aktuálna súpiska – vyradený hráč si body necháva)
-  function scorers(matches, gm, players, table, limit) {
+  /* Poradie: body → kritériá z nastavení (settings.scorerOrder) → pri úplnej zhode podľa scorerTies
+     (rovnaká priečka / abeceda / tím a abeceda). Vráti hráčov s priečkou do `limit` (pri zhode aj viac). */
+  function scorers(matches, gm, players, table, limit, settings) {
     const played = {};
     (table || []).forEach((t) => { played[t.id] = t.z; });
     const p = {};
@@ -152,11 +182,22 @@
         add(g.assist_id, "a", teamId);
       });
     });
-    return Object.values(p)
+    const opts = Object.assign({}, DEFAULTS, settings);
+    const teamPos = {};
+    (table || []).forEach((t) => { teamPos[t.id] = t.pos; });
+    const VAL = { points: (x) => x.b, goals: (x) => x.g, assists: (x) => x.a, fewerMatches: (x) => -x.z, team: (x) => -(teamPos[x.team_id] || 99) };
+    const keys = ["points"].concat(validOrder(opts.scorerOrder, SCORER_CRITERIA, DEFAULTS.scorerOrder)).map((k) => VAL[k]);
+    const ties = SCORER_TIES[opts.scorerTies] ? opts.scorerTies : "shared";
+    const same = (x, y) => keys.every((f) => f(x) === f(y));
+    const byName = (x, y) => x.name.localeCompare(y.name, "sk");
+    const list = Object.values(p)
       .map((x) => Object.assign(x, { b: x.g + x.a, z: played[x.team_id] || 0 }))
-      .sort((x, y) => y.b - x.b || y.g - x.g || x.name.localeCompare(y.name, "sk"))
-      .slice(0, limit || 10)
-      .map((x, i) => Object.assign(x, { pos: i + 1 }));
+      .sort((x, y) => {
+        for (const f of keys) if (f(y) !== f(x)) return f(y) - f(x);
+        return (ties === "team" ? VAL.team(y) - VAL.team(x) : 0) || byName(x, y);
+      });
+    list.forEach((x, i) => { x.pos = ties === "shared" && i > 0 && same(x, list[i - 1]) ? list[i - 1].pos : i + 1; });
+    return list.filter((x) => x.pos <= (limit || 10));
   }
 
   /* ---------- Playoff ---------- */
@@ -350,7 +391,7 @@
   const settingsOf = (data) => Object.assign({}, DEFAULTS, data || {});
 
   const Logic = {
-    TZ, UNKNOWN, STAGES, DEFAULTS,
+    TZ, UNKNOWN, STAGES, DEFAULTS, TABLE_CRITERIA, SCORER_CRITERIA, SCORER_TIES, validOrder,
     localParts, toUtc, dayName, dShort, shortDate, slot, weekLabel, matchDate, matchTime,
     goalsByMatch, score, isPlayed, winner, loser, goalTimeline,
     standings, scorers,
