@@ -587,8 +587,10 @@
     return `<footer class="foot"><div class="wrap foot-in">
       <a href="#top" data-act="home" aria-label="Späť hore" style="line-height:0"><img src="assets/logos/ful-mark-white.png" alt=""></a>
       <span class="t">FULka · Florbalová Upece Liga · ${esc(c.cur.name)}</span>
-      <a class="upece" href="https://www.upcba.sk/" target="_blank" rel="noopener"><img src="assets/logos/upece.png" alt="UPeCe Bratislava">
+      <span class="credits"><a class="credit upece" href="https://www.upcba.sk/" target="_blank" rel="noopener"><img src="assets/logos/upece.png" alt="UPeCe Bratislava">
         <span><b>UPeCe Bratislava</b>Vybudované s pomocou Univerzitného pastoračného centra sv. Jozefa Freinademetza v Bratislave</span></a>
+      <a class="credit" href="https://supabase.com/" target="_blank" rel="noopener"><img src="assets/logos/supabase.svg" alt="Supabase">
+        <span><b>Supabase</b>Dáta, fotky a prihlásenie bežia na Supabase</span></a></span>
       <a class="admin" href="?edit"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="1"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Admin</a>
     </div></footer>`;
   }

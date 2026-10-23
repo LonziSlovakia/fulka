@@ -419,7 +419,9 @@ a { color: inherit; }
 }
 
 /* päta: odkaz na UPeCe (logo z upcba.sk je tmavomodré, v tmavej päte ho zobrazíme bielou) */
-.foot-in .upece { flex: 1 1 320px; display: flex; align-items: center; gap: 12px; min-height: 44px; color: var(--fg-2); text-decoration: none; line-height: 1.35; }
-.foot-in .upece img { width: 34px; height: auto; flex: none; filter: brightness(0) invert(1); opacity: 0.85; }
-.foot-in .upece b { display: block; color: var(--fg); font-weight: 700; letter-spacing: 0.04em; font-size: 13px; }
-.foot-in .upece:hover b { text-decoration: underline; }
+.foot-in .credits { order: 3; flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 10px 32px; padding-top: 16px; border-top: 1px solid var(--line-2); }
+.foot-in .credit { flex: 1 1 260px; display: flex; align-items: center; gap: 12px; min-height: 44px; color: var(--fg-2); text-decoration: none; line-height: 1.35; }
+.foot-in .credit img { width: 30px; height: auto; flex: none; }
+.foot-in .upece img { width: 34px; filter: brightness(0) invert(1); opacity: 0.85; }
+.foot-in .credit b { display: block; color: var(--fg); font-weight: 700; letter-spacing: 0.04em; font-size: 13px; }
+.foot-in .credit:hover b { text-decoration: underline; }

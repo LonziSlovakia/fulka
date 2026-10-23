@@ -9,3 +9,6 @@ node_modules/
 photos/
 # písmo Monument je platené (Pangram Pangram) – do verejného repozitára iba s webovou licenciou
 assets/fonts/
+
+# lokálne testovacie knižnice (tools/setup.sh)
+tools/.cache/
