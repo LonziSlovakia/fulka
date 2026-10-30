@@ -929,7 +929,29 @@
   const savedSet = (c) => ({ bannerCount: c.settings.bannerCount, photos: c.settings.photos !== false, headFont: "saira" /* Monument zatiaľ nie (licencia), prepínač je skrytý */, layout: c.settings.layout === "narrow" ? "narrow" : "wide",
     tableOrder: L.validOrder(c.settings.tableOrder, L.TABLE_CRITERIA, L.DEFAULTS.tableOrder),
     scorerOrder: L.validOrder(c.settings.scorerOrder, L.SCORER_CRITERIA, L.DEFAULTS.scorerOrder),
-    scorerTies: L.SCORER_TIES[c.settings.scorerTies] ? c.settings.scorerTies : "shared" });
+    scorerTies: L.SCORER_TIES[c.settings.scorerTies] ? c.settings.scorerTies : "shared",
+    upece: c.settings.upece !== false, upeceHours: String(c.settings.upeceHours ?? ""),
+    upeceOffer: (Array.isArray(c.settings.upeceOffer) ? c.settings.upeceOffer : L.DEFAULTS.upeceOffer).map((o) => ({ t: String(o.t || ""), d: String(o.d || "") })) });
+
+  /* zoznam „Čo ponúka UPeCe“: názov + popis, šípky na poradie, × odoberie, dole pridať riadok */
+  function offerList(offer) {
+    const rows = offer.map((o, i) => `<li class="a-offer-row">
+        <input type="text" class="a-input" data-in="upT" data-i="${i}" value="${esc(o.t)}" placeholder="Názov, napr. Bedminton" aria-label="Názov ${i + 1}">
+        <input type="text" class="a-input" data-in="upD" data-i="${i}" value="${esc(o.d)}" placeholder="Popis, napr. Dve ihriská vo Veľkej sále" aria-label="Popis ${i + 1}">
+        <span class="a-offer-btns"><button type="button" class="a-x" data-a="offerMove" data-i="${i}" data-id="-1" aria-label="Posunúť vyššie"${i === 0 ? " disabled" : ""}>↑</button>
+        <button type="button" class="a-x" data-a="offerMove" data-i="${i}" data-id="1" aria-label="Posunúť nižšie"${i === offer.length - 1 ? " disabled" : ""}>↓</button>
+        <button type="button" class="a-x" data-a="offerDel" data-i="${i}" aria-label="Odobrať riadok ${i + 1}">${icon.x}</button></span></li>`).join("");
+    return `<ol class="a-offer">${rows}</ol><div class="a-actions"><button type="button" class="a-ghost w" data-a="offerAdd">${icon.plus}Pridať riadok</button></div>`;
+  }
+  // úprava rozpracovaných nastavení bez straty kurzora (polia) alebo s prekreslením (tlačidlá)
+  function editSet(fn, redraw) {
+    const sd = setDraftOf(ctx());
+    const next = Object.assign({}, sd, { upeceOffer: sd.upeceOffer.map((o) => Object.assign({}, o)) });
+    fn(next);
+    S.setDraft = next;
+    S.toast = "";
+    if (redraw) render();
+  }
 
   /* zoznam kritérií poradia: body zamknuté hore, ostatné ťahaním alebo šípkami, × odoberie, dole pridať nepoužité */
   function critList(list, order, known, lastNote) {
@@ -990,6 +1012,14 @@
           <span class="muted" style="font-size:14px">Úzke: užšia stránka, štatistiky v tabuľkách hneď pri menách a v rozpise termín pod zápasom v strede.</span>
           ${seg("slayout", [["wide", "Široké (ako návrh)"], ["narrow", "Úzke"]], sd.layout)}
           <div class="a-actions">${look("rozlozenie=siroke", "Pozrieť široké")}${look("rozlozenie=uzke", "Pozrieť úzke")}</div></fieldset>
+        <fieldset class="a-fs" style="gap:12px"><legend>Sekcia „Z UPeCe“ dole na stránke</legend>
+          <span class="muted" style="font-size:14px">Podpora UPeCe, program týždňa a novinky naživo z upcba.sk (výnimočné akcie sú zvýraznené) a zoznam, čo UPeCe ponúka.</span>
+          ${seg("supece", [["true", "Ukazovať"], ["false", "Skryť"]], sd.upece)}
+          <label class="a-field"><span class="lbl">Otváracie hodiny (pod názvom UPeCe, prázdne = nič)</span>
+            <input type="text" class="a-input" data-in="upHours" value="${esc(sd.upeceHours)}" placeholder="Otvorené denne 13:00 – 24:00"></label>
+          <span class="lbl">Čo ponúka UPeCe („Viac než florbal“)</span>
+          ${offerList(sd.upeceOffer)}
+          <div class="a-actions">${look("upece=ano", "Pozrieť na webe")}</div></fieldset>
         <fieldset class="a-fs" style="gap:12px"><legend>Poradie v tabuľke tímov</legend>
           <span class="muted" style="font-size:14px">Pri rovnosti bodov rozhodujú kritériá v tomto poradí. Ťahaj ich myšou alebo použi šípky. Vzájomné zápasy sa rátajú iba medzi tímami, ktoré sú dovtedy úplne rovnaké.</span>
           ${critList("tableOrder", sd.tableOrder, L.TABLE_CRITERIA, "Keď je všetko rovnaké: abecedne podľa názvu tímu")}</fieldset>
@@ -1097,12 +1127,16 @@
     critMove: (el) => editCrit(el.dataset.list, (a) => { const i = Number(el.dataset.i); const j = i + Number(el.dataset.id); if (j >= 0 && j < a.length) [a[i], a[j]] = [a[j], a[i]]; }),
     critDel: (el) => editCrit(el.dataset.list, (a) => { a.splice(Number(el.dataset.i), 1); }),
     critAdd: (el) => editCrit(el.dataset.list, (a) => { a.push(el.dataset.id); }),
+    supece: (el) => editSet((sd) => { sd.upece = el.dataset.id === "true"; }, true),
+    offerMove: (el) => editSet((sd) => { const a = sd.upeceOffer; const i = Number(el.dataset.i); const j = i + Number(el.dataset.id); if (j >= 0 && j < a.length) [a[i], a[j]] = [a[j], a[i]]; }, true),
+    offerDel: (el) => editSet((sd) => { sd.upeceOffer.splice(Number(el.dataset.i), 1); }, true),
+    offerAdd: () => editSet((sd) => { sd.upeceOffer.push({ t: "", d: "" }); }, true),
     slayout: (el) => { S.setDraft = Object.assign(setDraftOf(ctx()), { layout: el.dataset.id }); S.toast = ""; render(); },
     resetSettings: () => { S.setDraft = null; render(); },
     saveSettings: () => {
       const sd = setDraftOf(ctx());
       run(() => DB.saveSettings(Object.assign({}, S.data.settings, sd)),
-        `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, rozloženie ${sd.layout === "narrow" ? "úzke" : "široké"}, poradie tabuľky aj bodovania.`,
+        `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, rozloženie ${sd.layout === "narrow" ? "úzke" : "široké"}, sekcia Z UPeCe ${sd.upece ? "zapnutá" : "skrytá"}, poradie tabuľky aj bodovania.`,
         () => { S.setDraft = null; });
     },
   };
@@ -1118,6 +1152,8 @@
     const k = e.target.dataset && e.target.dataset.in;
     if (k === "note" && S.draft) S.draft.note = e.target.value;
     if (k === "newName") S.newName = e.target.value;
+    if (k === "upHours") editSet((sd) => { sd.upeceHours = e.target.value; });
+    if (k === "upT" || k === "upD") editSet((sd) => { sd.upeceOffer[Number(e.target.dataset.i)][k === "upT" ? "t" : "d"] = e.target.value; });
     if (k === "seasonName" && S.seasonDraft) S.seasonDraft.name = e.target.value;
     if (S.teamDraft && k === "tname") S.teamDraft.name = e.target.value;
     if (S.teamDraft && k === "tvenue") S.teamDraft.venue = e.target.value;

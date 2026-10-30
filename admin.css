@@ -338,3 +338,10 @@
 .a-crit-row.dragging { opacity: 0.4; }
 .a-crit-add { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .a-crit-add .a-ghost { min-height: 40px; font-size: 13px; }
+
+/* Nastavenia → „Čo ponúka UPeCe“: riadok = názov + popis + šípky a × */
+.a-offer { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.a-offer-row { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(180px, 2fr) auto; gap: 8px; align-items: center; }
+.a-offer-btns { display: flex; gap: 4px; }
+@media (max-width: 640px) { .a-offer-row { grid-template-columns: 1fr auto; padding-bottom: 8px; border-bottom: 1px solid var(--line-2); }
+  .a-offer-row input:nth-child(2) { grid-column: 1; grid-row: 2; } .a-offer-btns { grid-column: 2; grid-row: 1 / span 2; flex-direction: column; } }

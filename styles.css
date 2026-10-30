@@ -435,3 +435,67 @@ a { color: inherit; }
 .to-top:hover { background: var(--fg-2); }
 .to-top:focus-visible { outline: 2px solid var(--bg); outline-offset: -6px; }
 @media (prefers-reduced-motion: reduce) { .to-top { transition: none; } }
+
+/* ---------- Z UPeCe (podpora, program týždňa, čo UPeCe ponúka) ----------
+   Tri stĺpce; keď nie je miesto, idú pod seba v poradí podpora → kalendár → ponuka. */
+:root { --teal: #00a8b5; --teal-d: #006870; --teal-bg: #0a1718; }
+.up { padding: 64px 0 88px; border-top: 1px dashed var(--line-2); }
+.up-kick { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; font-size: 13px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fg-4); }
+.up-kick::before { content: ""; width: 28px; height: 2px; background: var(--teal); }
+.up-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 20px; align-items: start; }
+.up-card { position: relative; overflow: hidden; background: var(--card); border: 1px solid var(--line); }
+.up-chip { position: relative; display: inline-block; margin: 18px 18px 0; padding: 3px 12px; background: var(--teal); color: var(--bg); font-family: var(--fc); font-weight: 800;
+  font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; transform: skewX(-10deg); }
+.up-h { position: relative; margin: 6px 18px 14px; font-family: var(--fc); font-weight: 900; font-size: 34px; line-height: 0.95; text-transform: uppercase; transform: skewX(-8deg); transform-origin: left; }
+.up-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0 18px; border-top: 1px solid var(--line);
+  color: var(--fg); font-family: var(--fc); font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; text-decoration: none; }
+.up-link svg { color: var(--teal); transition: transform 0.15s; }
+.up-link:hover svg { transform: translateX(4px); }
+
+/* podpora */
+.up-support .up-art { position: relative; height: 165px; margin-bottom: -150px; }
+.up-support .up-art::before { content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(-62deg, rgba(0, 0, 0, 0.12) 0 2px, rgba(0, 0, 0, 0) 2px 16px), linear-gradient(150deg, var(--teal), var(--teal-d));
+  clip-path: polygon(40% 0, 100% 0, 100% 100%, 0 100%, 26% 58%, 34% 55%); }
+.up-support .up-art img { position: absolute; right: 22px; top: 14px; width: 138px; height: 138px; filter: invert(1); mix-blend-mode: screen; }
+.up-support .up-pad { position: relative; padding: 150px 18px 22px; display: flex; flex-direction: column; align-items: flex-start; }
+.up-support .up-h { margin: 4px 0 2px; font-size: clamp(32px, 3cqi, 40px); }
+.up-pre { font-size: 14px; color: var(--fg-2); }
+.up-hours { margin-top: 14px; color: var(--teal); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; }
+.up-btn { margin-top: 18px; display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
+
+/* kalendár */
+.up-rows { list-style: none; margin: 0; padding: 0; }
+.up-row { display: grid; grid-template-columns: 46px 1fr; gap: 16px; align-items: center; padding: 11px 18px; border-top: 1px solid var(--line); }
+.up-day { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 48px; background: #1a1a1a; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+.up-day small { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.up-day b { font-family: var(--fc); font-weight: 900; font-size: 24px; line-height: 0.9; }
+.up-ev { display: flex; flex-direction: column; min-width: 0; }
+.up-ev small { font-size: 13px; font-weight: 600; color: var(--fg-3); }
+.up-ev b { font-family: var(--fc); font-weight: 800; font-size: 22px; line-height: 1.05; text-transform: uppercase; }
+.up-ev span { font-size: 13px; color: var(--fg-3); }
+.up-row.special { background: var(--teal-bg); }
+.up-row.special .up-day { background: var(--teal); color: var(--bg); }
+.up-row.special .up-ev small { color: var(--teal); }
+.up-row.closed { opacity: 0.6; }
+.up-empty { margin: 0; padding: 16px 18px 20px; border-top: 1px solid var(--line); font-size: 14px; color: var(--fg-3); }
+.up-news { padding: 16px 18px 8px; border-top: 1px solid var(--line); }
+.up-lbl { display: block; margin-bottom: 4px; font-size: 12px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-3); }
+.up-news-it { display: flex; flex-direction: column; padding: 10px 0 12px; color: var(--fg); text-decoration: none; }
+.up-news-it small { color: var(--teal); font-size: 13px; font-weight: 700; }
+.up-news-it b { font-size: 16px; }
+.up-news-it span { font-size: 13px; color: var(--fg-3); }
+.up-news-it:hover b { text-decoration: underline; }
+
+/* čo ponúka UPeCe */
+.up-offer .up-art2 { position: absolute; top: 0; right: 0; width: 46%; height: 106px;
+  background: linear-gradient(150deg, var(--teal), var(--teal-d)); clip-path: polygon(30% 0, 100% 0, 100% 100%, 0 100%, 22% 58%, 14% 55%); }
+.up-list { list-style: none; margin: 0; padding: 0 18px 4px; display: flex; flex-direction: column; gap: 12px; }
+.up-list li { position: relative; display: flex; flex-direction: column; padding-left: 20px; }
+.up-list li::before { content: ""; position: absolute; left: 0; top: 3px; width: 7px; height: 18px; background: var(--teal); transform: skewX(-14deg); }
+.up-list b { font-size: 16px; line-height: 1.25; }
+.up-list span { font-size: 13px; color: var(--fg-3); }
+.up-teams { display: flex; flex-direction: column; gap: 10px; margin: 16px 18px 18px; padding: 14px 16px; background: #141414; border-left: 3px solid var(--teal); font-size: 13px; color: var(--fg-2); }
+.up-tlist { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+.up-team { display: inline-flex; align-items: center; gap: 7px; color: var(--fg); font-weight: 700; }
+.up-team img { width: 22px; height: 22px; object-fit: contain; }

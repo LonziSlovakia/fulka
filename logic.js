@@ -10,7 +10,17 @@
   // defaultTime = predvolený čas zápasu v admine (po sv. omši); photos = ukazovať fotky hráčov; headFont = písmo nadpisov;
   // layout = "wide" (ako návrh) alebo "narrow" (užšia stránka, štatistiky bližšie pri menách)
   const DEFAULTS = { bannerCount: 2, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, defaultTime: "21:15", photos: true, headFont: "saira", layout: "wide",
-    tableOrder: ["h2hPoints", "h2hDiff", "diff", "gf"], scorerOrder: ["goals"], scorerTies: "shared" };
+    tableOrder: ["h2hPoints", "h2hDiff", "diff", "gf"], scorerOrder: ["goals"], scorerTies: "shared",
+    // sekcia „Z UPeCe“ dole na stránke: zapnutá, otváracie hodiny a zoznam „Čo ponúka UPeCe“ (t = názov, d = popis)
+    upece: true, upeceHours: "Otvorené denne 13:00 – 24:00",
+    upeceOffer: [
+      { t: "Sv. omše a spoveď", d: "Denne v kaplnke, spoveď cez online rezerváciu" },
+      { t: "Florbal a športy", d: "Utorok a piatok po omši, telocvičňa na Šturáku" },
+      { t: "Bedminton", d: "Dve ihriská vo Veľkej sále" },
+      { t: "Libresso", d: "Káva, čaj či kofola za symbolický príspevok" },
+      { t: "Študovňa a klavíry", d: "Wifi, tri naladené klavíry" },
+      { t: "Pingpong, kalčeto, hry", d: "Požičiaš si na recepcii za ISIC" },
+    ] };
   // kritériá poradia (body sú vždy prvé); poradie sa nastavuje v admine → Nastavenia
   const TABLE_CRITERIA = {
     h2hPoints: "Vzájomné zápasy – body", h2hDiff: "Vzájomné zápasy – rozdiel skóre", diff: "Rozdiel skóre",

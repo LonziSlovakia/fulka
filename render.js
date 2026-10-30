@@ -4,6 +4,7 @@
 (() => {
   "use strict";
   const L = window.Logic;
+  const U = window.Upece;
   const app = document.getElementById("app");
   const state = { data: null, season: null, open: undefined, menu: false, photos: true, font: "saira", layout: "wide" };
 
@@ -85,6 +86,8 @@
     state.photos = f === "ano" ? true : f === "nie" ? false : settings.photos !== false;
     state.font = font === "monument" ? "monument" : "saira"; // Monument iba na skúšku cez ?pismo=monument (bez licencie nie je na webe)
     state.layout = lay === "uzke" ? "narrow" : lay === "siroke" ? "wide" : settings.layout === "narrow" ? "narrow" : "wide";
+    const up = URLP.get("upece");
+    state.upece = up === "ano" ? true : up === "nie" ? false : settings.upece !== false;
     document.documentElement.dataset.layout = state.layout;
     applyFont(state.font);
   }
@@ -582,6 +585,52 @@
       </div><div class="teeth" aria-hidden="true"></div></section>`;
   }
 
+  /* ---------- Z UPeCe (podpora, program týždňa naživo z upcba.sk, čo UPeCe ponúka) ---------- */
+  const arrow = '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h17M14 6l6 6-6 6"></path></svg>';
+  const upChip = (t) => `<span class="up-chip">${t}</span>`;
+  function upSupport(s) {
+    return `<div class="up-card up-support"><div class="up-art" aria-hidden="true"><img src="assets/logos/upece-512.png" alt=""></div>${upChip("S podporou")}
+      <div class="up-pad"><span class="up-pre">FULka vzniká s podporou</span><h3 class="up-h">Univerzitného pastoračného centra</h3>
+        <span class="up-pre">sv. Jozefa Freinademetza v Bratislave</span>${s.upeceHours ? `<b class="up-hours">${esc(s.upeceHours)}</b>` : ""}
+        <a class="btn-white up-btn" href="${U.SITE}/" target="_blank" rel="noopener">Zisti viac ${arrow}</a></div></div>`;
+  }
+  function upRow(r) {
+    const meta = [r.time, r.place].filter(Boolean).join(" · ");
+    return `<li class="up-row ${r.kind}"><span class="up-day"><small>${esc(r.dn)}</small><b>${r.dd}</b></span>
+      <span class="up-ev">${meta ? `<small>${esc(meta)}</small>` : ""}<b>${esc(r.title)}</b>${r.sub ? `<span>${esc(r.sub)}</span>` : ""}</span></li>`;
+  }
+  function upCalendar() {
+    const raw = state.up;
+    const rows = raw ? U.program(raw.week, L.localParts(Date.now()).date) : [];
+    const news = raw ? U.news(raw.news, 2) : [];
+    const list = rows.length ? `<ul class="up-rows">${rows.map(upRow).join("")}</ul>`
+      : `<p class="up-empty">${raw ? "Program na tento týždeň ešte nie je zverejnený." : state.upFail ? "Program sa teraz nepodarilo načítať." : "Načítavam program…"}</p>`;
+    const items = news.map((n) => `<a class="up-news-it" href="${esc(n.link)}" target="_blank" rel="noopener"><small>${esc(n.date)}</small><b>${esc(n.title)}</b><span>${esc(n.sub)}</span></a>`).join("");
+    return `<div class="up-card up-cal">${upChip("Kalendár UPeCe")}<h3 class="up-h">Čo sa deje tento týždeň</h3>${list}
+      <a class="up-link" href="${U.CALENDAR}" target="_blank" rel="noopener">Celý kalendár ${arrow}</a>
+      ${items ? `<div class="up-news"><span class="up-lbl">Novinky z UPeCe</span>${items}</div>` : ""}</div>`;
+  }
+  // všetky tímy, ktoré kedy hrali (v akejkoľvek sezóne), s menom miesta v UPeCe
+  function upTeams(c) {
+    const ids = [...new Set(c.v.teamIds.concat(c.d.season_teams.map((x) => x.team_id)))];
+    const list = ids.map((id) => c.T[id]).filter(Boolean);
+    if (!list.length) return "";
+    return `<div class="up-teams"><span>Tímy FULky nesú mená miest v UPeCe:</span><span class="up-tlist">${list.map((t) =>
+      `<span class="up-team"><img src="${esc(t.svg)}" alt="">${esc(t.pre || t.name)}</span>`).join("")}</span></div>`;
+  }
+  function upOffer(c, s) {
+    const offer = Array.isArray(s.upeceOffer) ? s.upeceOffer.filter((o) => o && o.t) : [];
+    return `<div class="up-card up-offer"><div class="up-art2" aria-hidden="true"></div>${upChip("Čo ponúka UPeCe")}<h3 class="up-h">Viac než florbal</h3>
+      <ul class="up-list">${offer.map((o) => `<li><b>${esc(o.t)}</b>${o.d ? `<span>${esc(o.d)}</span>` : ""}</li>`).join("")}</ul>
+      ${upTeams(c)}<a class="up-link" href="${U.OFFER}" target="_blank" rel="noopener">Všetko, čo ponúkame ${arrow}</a></div>`;
+  }
+  function upeceSec(c) {
+    if (!state.upece) return "";
+    const s = c.v.settings;
+    return `<section class="up" aria-label="Z UPeCe"><div class="wrap"><span class="up-kick">Z UPeCe</span>
+      <div class="up-grid">${upSupport(s)}${upCalendar()}${upOffer(c, s)}</div></div></section>`;
+  }
+
   /* ---------- Päta ---------- */
   function footer(c) {
     return `<footer class="foot"><div class="wrap foot-in">
@@ -615,7 +664,7 @@
     const body = c.cur.state === "live" ? liveBody(c, open) : c.cur.state === "done" ? pastBody(c, open) : futureBody(c);
     const focus = document.activeElement && document.activeElement.closest && document.activeElement.closest("[data-act]");
     const key = focus ? `[data-act="${focus.dataset.act}"]${focus.dataset.id ? `[data-id="${CSS.escape(focus.dataset.id)}"]` : ""}` : null;
-    app.innerHTML = header(c) + (state.menu ? seasonMenu(c) : "") + body + footer(c);
+    app.innerHTML = header(c) + (state.menu ? seasonMenu(c) : "") + body + upeceSec(c) + footer(c);
     document.title = `FULka – ${c.cur.name}`;
     if (key) { const el = app.querySelector(key); if (el) el.focus({ preventScroll: true }); }
   }
@@ -682,6 +731,12 @@
     update();
   }
   if (!EDIT) watchScroll(toTopButton());
+
+  // program a novinky UPeCe: hneď z cache, potom čerstvé z upcba.sk (ak nejdú, ostane cache)
+  if (!EDIT) {
+    state.up = U.readCache();
+    U.load().then((v) => { state.up = v; render(); }, () => { state.upFail = true; render(); });
+  }
 
   // admin (editor) sa načíta iba s ?edit v adrese
   if (EDIT) {

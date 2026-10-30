@@ -29,14 +29,15 @@ Stav k 23. 10. 2026.
 
 | Súbor | Čo robí |
 |---|---|
-| `index.html` | kostra; načíta `config.js`, `db.js`, `logic.js`, `render.js` |
+| `index.html` | kostra; načíta `config.js`, `db.js`, `logic.js`, `upece.js`, `render.js` |
 | `config.js` | URL + publishable key (verejné) |
 | `db.js` | fetch klient: načítanie všetkých 8 tabuliek + cache v `localStorage` (`fulka-data-v1`), prihlásenie s obnovou tokenu (`fulka-session-v1`), `upsert(kind, rows, key)`, `remove(kind, where)`, `upload`, `photoUrl` |
 | `logic.js` | čisté výpočty (testované): skóre, tabuľka, bodovanie, playoff, dátumy v čase Bratislavy, draft zápasu ↔ riadok DB (`draftOf`/`rowOf`), `DEFAULTS` nastavení |
+| `upece.js` | sekcia „Z UPeCe“: načítanie a čítanie týždenných oznamov a noviniek z upcba.sk (čisté funkcie + `load()` s cache `fulka-upece-v1`) |
 | `render.js` | verejný web; s `?edit` sa nevykresľuje a načíta `admin.js` + `admin.css` |
 | `admin.js` / `admin.css` | admin podľa `design/Admin.dc.html`; triedy admina majú predponu `a-` (napr. `.a-mid`), aby sa nebili so `styles.css` |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
-| `tests/logic.test.js` | `node --test tests/*.test.js` (39 testov; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (46 testov: `logic` 39, `upece` 7; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF |
@@ -45,9 +46,10 @@ Stav k 23. 10. 2026.
 
 `bannerCount` 1–4 · `pointsWin/Draw/Loss` 3/1/0 · `defaultTime` "21:15" (po sv. omši) · `photos` true/false ·
 `layout` "wide"/"narrow" (Lonzi má úzke) · `tableOrder` (predvolene `h2hPoints, h2hDiff, diff, gf`) ·
-`scorerOrder` (predvolene `goals`) · `scorerTies` "shared"/"alpha"/"team" (predvolene shared) · `headFont` sa ignoruje.
+`scorerOrder` (predvolene `goals`) · `scorerTies` "shared"/"alpha"/"team" (predvolene shared) · `headFont` sa ignoruje ·
+`upece` true/false (sekcia Z UPeCe) · `upeceHours` text pod názvom UPeCe · `upeceOffer` zoznam `{t, d}` pre „Viac než florbal“.
 
-Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|siroke`, `?pismo=monument` (iba lokálne).
+Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|siroke`, `?upece=ano|nie`, `?pismo=monument` (iba lokálne).
 
 ## Rozhodnutia (dohodnuté s Lonzim)
 
@@ -68,10 +70,20 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   Jedna fotka → výrez hlavy a avatar sa vyrobia samé. Fotky kapitánov sú nahraté. Ukazujú sa pri kapitánoch v Tímoch a v bodovaní.
 - Nové tímy: logo do bucketu `timy/<id>/logo.*` (bucket berie iba PNG/JPG/WebP, nie SVG).
 - Admin: zápas, sezóna a nastavenia sa ukladajú tlačidlom; súpiska hneď. Po uložení sa všetko znova načíta z DB. Mazanie (zápas, hráč, tím zo sezóny)
-  potvrdí vlastný dialóg s rozmazaným pozadím. Poradie v Nastaveniach: banner → náhľad banneru → fotky → rozloženie → kritériá → Uložiť dole.
+  potvrdí vlastný dialóg s rozmazaným pozadím. Poradie v Nastaveniach: banner → náhľad banneru → fotky → rozloženie → Z UPeCe → kritériá → Uložiť dole.
 - Časy v admine: rýchle voľby 19:00 / 20:15 / 21:00 / 21:15 a ±15 min.
 - Tlačidlo „hore“: plávajúce vpravo dole (biely štvorec so šípkou, zrezaný roh), ukáže sa po odscrollovaní o 400 px, iba na verejnom webe (nie v `?edit`).
   Je mimo `.page`, lebo `container-type` by inak bral `position: fixed` voči kontajneru.
+- **Sekcia „Z UPeCe“** (nad pätou, podľa návrhu z Claude Design, ktorý Lonzi poslal iba ako screenshot): tri stĺpce podpora → kalendár → ponuka, na úzkej obrazovke pod sebou.
+  - Podpora: logo `assets/logos/upece-512.png` (z upcba.sk, čierne na bielom → na webe `invert` + `mix-blend-mode: screen`), „Zisti viac“ → upcba.sk.
+  - Kalendár naživo z WordPress REST API upcba.sk (CORS povolený): posledné 2 príspevky kategórie **Oznamy (174)**, z tabuľky
+    `td.day/.liturgy/.mass/.events` sa skladá program na 7 dní od dnes (max 7 riadkov). iCal export kalendára CORS nemá, preto sa nepoužíva.
+  - **Výnimočná akcia** (zvýraznená tyrkysovou) = má v tom týždni vlastný oznam s dátumom (`notice-title` „Názov D. M.“). Oznam s dátumom a časom,
+    ktorý nie je v tabuľke, sa doplní ako riadok. „… do D. M.“ je uzávierka, nie akcia.
+  - Novinky: 2 posledné príspevky z **Aktuality (165)** bez Oznamov. Odkazy iba na `https://www.upcba.sk/…`, texty sa escapujú.
+  - „Celý kalendár“ → upcba.sk/kalendar/ (curl dostane 403 od Cloudflare, prehliadač je OK) · „Všetko, čo ponúkame“ → upcba.sk/o-upece/.
+  - Ponuka: zoznam z nastavení (`upeceOffer`) + všetky tímy, ktoré kedy hrali, s menom miesta (`venue`).
+  - Ak sa zmení šablóna oznamov na upcba.sk, program sa ukáže prázdny („ešte nie je zverejnený“) – oprava v `upece.js` + test.
 - Päta: odkaz na UPeCe Bratislava (upcba.sk, biele logo) a Supabase (supabase.com, „Dáta, fotky a prihlásenie bežia na Supabase“).
 
 ## Ako testovať (bez zápisu do databázy)
