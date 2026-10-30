@@ -425,3 +425,13 @@ a { color: inherit; }
 .foot-in .upece img { width: 34px; filter: brightness(0) invert(1); opacity: 0.85; }
 .foot-in .credit b { display: block; color: var(--fg); font-weight: 700; letter-spacing: 0.04em; font-size: 13px; }
 .foot-in .credit:hover b { text-decoration: underline; }
+
+/* ---------- Tlačidlo „hore“ (plávajúce vpravo dole) ---------- */
+.to-top { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 50;
+  width: 52px; height: 52px; display: grid; place-items: center; padding: 0; border: 0; cursor: pointer;
+  background: var(--fg); color: var(--bg); clip-path: polygon(0 0, 100% 0, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  opacity: 0; visibility: hidden; transform: translateY(12px); transition: opacity 0.2s, transform 0.2s, visibility 0.2s; }
+.to-top.show { opacity: 1; visibility: visible; transform: none; }
+.to-top:hover { background: var(--fg-2); }
+.to-top:focus-visible { outline: 2px solid var(--bg); outline-offset: -6px; }
+@media (prefers-reduced-motion: reduce) { .to-top { transition: none; } }

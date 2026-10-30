@@ -661,6 +661,28 @@
     DB.fresh.then(setData, () => { app.innerHTML = '<p class="msg">FULku sa nepodarilo načítať. Skontroluj internet a obnov stránku.</p>'; });
   }
 
+  /* ---------- Tlačidlo „hore“ ---------- */
+  // plávajúce vpravo dole, ukáže sa až po odscrollovaní; mimo .page, aby fixed nebral kontajner ako rámec
+  function toTopButton() {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "to-top";
+    btn.setAttribute("aria-label", "Späť hore");
+    btn.innerHTML = '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>';
+    btn.addEventListener("click", () => {
+      const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" });
+    });
+    document.body.appendChild(btn);
+    return btn;
+  }
+  function watchScroll(btn) {
+    const update = () => btn.classList.toggle("show", window.scrollY > 400);
+    window.addEventListener("scroll", update, { passive: true });
+    update();
+  }
+  if (!EDIT) watchScroll(toTopButton());
+
   // admin (editor) sa načíta iba s ?edit v adrese
   if (EDIT) {
     const css = document.createElement("link");
