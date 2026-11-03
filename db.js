@@ -119,17 +119,27 @@
   }
   const saveSettings = (data) => upsert("settings", { id: 1, data });
 
-  /* ---------- Zálohy (supabase/3-zalohy.sql): vidí a vytvára iba admin, zmazať ich cez web nejde ---------- */
-  const rpc = (name, args) => write(`rpc/${name}`, { method: "POST", body: args || {} });
-  const backups = () => write(`${CFG.site}_backups?select=id,created_at,kind,label,summary&order=id.desc&limit=200`, {});
+  /* ---------- Zálohy (supabase/3-zalohy.sql): iba ručné, vidí, vytvára a maže ich iba admin ---------- */
+  const B = `${CFG.site}_backups`;
+  const rpc = (name, args) => write(`rpc/${CFG.site}_${name}`, { method: "POST", body: args || {} });
+  const LIST = "select=id,created_at,kind,label,summary";
+  const backups = () => write(`${B}?${LIST}&kind=eq.manual&order=id.desc&limit=200`, {});
+  // poistka = stav pred posledným návratom (najviac jedna), null ak ešte nie je
+  const undoInfo = () => write(`${B}?${LIST}&kind=eq.undo`, {}).then((r) => (r && r[0]) || null);
   async function backupData(id) {
-    const r = await write(`${CFG.site}_backups?select=data&id=eq.${encodeURIComponent(id)}`, {});
+    const r = await write(`${B}?select=data&id=eq.${encodeURIComponent(id)}`, {});
     if (!r || !r.length) throw Object.assign(new Error("Záloha sa nenašla"), { status: 404 });
     return r[0].data;
   }
-  const backup = (label) => rpc(`${CFG.site}_backup`, { p_label: label || "" });
-  const restore = (id) => rpc(`${CFG.site}_restore`, { p_id: Number(id) });
-  const restoreFile = (data) => rpc(`${CFG.site}_restore_file`, { p_data: data });
+  const backup = (label) => rpc("backup", { p_label: label || "" });
+  async function deleteBackup(id) {
+    const r = await write(`${B}?id=eq.${encodeURIComponent(id)}&kind=eq.manual`, { method: "DELETE", prefer: "return=representation" });
+    if (!r || !r.length) throw noRights();
+    return r;
+  }
+  const restore = (id) => rpc("restore", { p_id: Number(id) });
+  const restoreFile = (data) => rpc("restore_file", { p_data: data });
+  const undo = () => rpc("undo");
 
   /* ---------- Fotky ---------- */
   async function upload(path, blob) {
@@ -156,10 +166,13 @@
     remove,
     saveSettings,
     backups,
+    undoInfo,
     backupData,
     backup,
+    deleteBackup,
     restore,
     restoreFile,
+    undo,
     upload,
     photoUrl,
   };

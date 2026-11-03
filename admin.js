@@ -13,7 +13,7 @@
     teamSel: null, moving: null, newName: "",
     seasonSel: null, seasonDraft: null, setDraft: null,
     toast: "", error: "", busy: false, uploading: null, loginError: "",
-    bk: null, bkLabel: "", bkAll: false, // zálohy: { list, loading, missing, error }
+    bk: null, bkLabel: "", bkAll: false, // zálohy: { list, undo, loading, missing, error }
   };
 
   /* ---------- Drobnosti ---------- */
@@ -125,7 +125,7 @@
   }
   const fail = (msg) => { S.error = msg; S.toast = ""; render(); };
 
-  /* ---------- Potvrdenie pred každou zmenou (vlastný dialóg v štýle webu, nie window.confirm) ----------
+  /* ---------- Potvrdzovací dialóg (vlastný, v štýle webu, nie window.confirm) ----------
      o = { title, text, lines: [čo sa zmení], warn: [upozornenia], ok, danger, word }
      word = slovo, ktoré treba napísať, aby sa dalo potvrdiť (návrat k zálohe). Vráti true / false. */
   const MAX_LINES = 14;
@@ -177,10 +177,8 @@
       (input || box.querySelector(o.danger ? '[data-m="no"]' : '[data-m="ok"]')).focus();
     });
   }
-  const confirmDialog = (title, text, ok = "Vymazať", lines) => ask({ title, text, ok, lines, danger: true });
-  // mená tímov a hráčov pre popis zmien
-  const namesOf = (c) => ({ teams: Object.fromEntries(Object.values(c.T).map((t) => [t.id, t.name])), players: Object.fromEntries(Object.values(c.P).map((p) => [p.id, p.name])) });
-  const noChange = () => { S.error = ""; S.toast = "Nič sa nezmenilo, nie je čo uložiť."; render(); };
+  // potvrdenie pred mazaním (zápas, hráč zo súpisky, tímy zo sezóny)
+  const confirmDialog = (title, text, ok = "Vymazať") => ask({ title, text, ok, danger: true });
 
   /* ---------- Zápasy: výber a draft ---------- */
   function select(id) {
@@ -211,40 +209,29 @@
     return `${c.s.id}-${String(n).padStart(2, "0")}`;
   }
 
-  async function saveMatch() {
+  function saveMatch() {
     const c = ctx();
     const d = S.draft;
     const [h, a] = teamsFor(d, c);
-    const full = Object.assign({}, d, { home_id: h, away_id: a });
-    const err = L.validateMatch(full, c.s.seed_mode);
+    const err = L.validateMatch(Object.assign({}, d, { home_id: h, away_id: a }), c.s.seed_mode);
     if (err) return fail(err);
     const saved = d.id === "new" ? null : savedOf(c, d.id);
     const id = d.id === "new" ? newMatchId(c) : d.id;
     const row = L.rowOf(Object.assign({}, d, { id, season_id: c.s.id }), saved, c.s.seed_mode);
     const goals = L.goalRowsOf(d, id);
-    const old = c.gm[id] || [];
-    const lines = L.describeMatch(saved, row, old, goals, namesOf(c));
-    if (!lines.length) return noChange();
-    const rosterTeam = Object.fromEntries(c.roster.map((r) => [r.player_id, r.team_id]));
-    const title = d.stage === "R" ? `${teamName(c, h, d.stage, 0)} vs ${teamName(c, a, d.stage, 1)}` : STAGE[d.stage];
-    if (!(await ask({ title, lines, warn: L.matchWarnings(full, saved, rosterTeam, today()), ok: saved ? "Uložiť zmeny" : "Pridať zápas" }))) return;
+    const had = (c.gm[id] || []).length;
     run(async () => {
       await DB.upsert("matches", row);
       // góly sa prepíšu na mieste podľa poradia (seq) a až potom sa zmažú tie navyše –
       // keby zápis spadol v polovici, staré góly nezmiznú
       if (goals.length) await DB.upsert("goals", goals, "match_id,seq");
-      if (old.length > goals.length) await DB.remove("goals", { match_id: id, seq: { gt: goals.length } });
+      if (had > goals.length) await DB.remove("goals", { match_id: id, seq: { gt: goals.length } });
     }, "Uložené. Web sa hneď aktualizuje — tabuľka aj štatistiky sa prepočítali.", () => select(id));
   }
 
   async function removeMatch() {
-    const c = ctx();
     const id = S.sel;
-    const m = savedOf(c, id);
-    const sc = L.score(c.gm[id]);
-    const what = m ? [`${teamName(c, m.home_id, m.stage, 0)} vs ${teamName(c, m.away_id, m.stage, 1)}, ${m.starts_at ? L.slot(m.starts_at) : "termín neznámy"}`,
-      m.status === "done" ? `Odohraný ${sc.h}:${sc.a} — výsledok zmizne z tabuľky aj bodovania` : "Neodohraný"] : [];
-    if (!(await confirmDialog("Vymazať zápas?", "Zápas aj všetky jeho góly sa natrvalo vymažú z webu.", "Vymazať", what))) return;
+    if (!(await confirmDialog("Vymazať zápas?", "Zápas aj všetky jeho góly sa natrvalo vymažú z webu."))) return;
     run(() => DB.remove("matches", { id }), "Zápas je vymazaný.", () => { S.sel = null; S.draft = null; });
   }
 
@@ -271,29 +258,21 @@
   const rosterRow = (c, playerId) => c.roster.find((r) => r.player_id === playerId);
   const KEY = "season_id,player_id";
 
-  async function toggleCaptain(playerId) {
+  function toggleCaptain(playerId) {
     const c = ctx();
     const r = rosterRow(c, playerId);
     const name = c.P[playerId].name;
     const on = !r.captain;
     const old = c.roster.find((x) => x.team_id === r.team_id && x.captain && x.player_id !== playerId);
-    const team = (c.T[r.team_id] || NOTEAM).name;
-    const lines = on ? [`Kapitán tímu ${team}: ${old ? c.P[old.player_id].name : "žiadny"} → ${name}`] : [`${name} už nebude kapitán tímu ${team}`, "Tím bude bez kapitána"];
-    if (!(await ask({ title: on ? `${name} kapitánom?` : "Zrušiť kapitána?", lines, ok: on ? "Áno, kapitán" : "Zrušiť kapitána" }))) return;
     run(async () => {
       if (old) await DB.upsert("roster", Object.assign({}, old, { captain: false }), KEY); // naraz iba jeden kapitán v tíme
       await DB.upsert("roster", Object.assign({}, r, { captain: on }), KEY);
     }, on ? `${name} je kapitán.` : "Tím je zatiaľ bez kapitána.");
   }
 
-  async function movePlayer(playerId, to) {
+  function movePlayer(playerId, to) {
     const c = ctx();
     const r = rosterRow(c, playerId);
-    const name = c.P[playerId].name;
-    const lines = [`${name}: ${(c.T[r.team_id] || NOTEAM).name} → ${(c.T[to] || NOTEAM).name} (${c.s.name})`];
-    if (r.captain) lines.push(`Prestane byť kapitánom tímu ${(c.T[r.team_id] || NOTEAM).name}`);
-    lines.push("Góly a asistencie, ktoré už dal, ostávajú v štatistikách");
-    if (!(await ask({ title: `Presunúť ${name}?`, lines, ok: "Presunúť" }))) return;
     S.moving = null;
     run(() => DB.upsert("roster", Object.assign({}, r, { team_id: to, captain: false }), KEY),
       `${c.P[playerId].name} hrá odteraz za ${(c.T[to] || NOTEAM).name}.`);
@@ -306,7 +285,7 @@
     run(() => DB.remove("roster", { season_id: c.s.id, player_id: playerId }), `${name} je odstránený zo súpisky. Jeho góly ostávajú v štatistikách.`);
   }
 
-  async function addPlayer() {
+  function addPlayer() {
     const c = ctx();
     const name = (S.newName || "").trim().replace(/\s+/g, " ");
     if (!name) return fail("Napíš meno a priezvisko hráča.");
@@ -316,8 +295,6 @@
     let id = same ? same.id : L.playerId(name);
     for (let n = 2; !same && c.P[id]; n++) id = `${L.playerId(name)}-${n}`; // iný hráč s rovnakým id
     const team = S.teamSel;
-    const lines = [same ? `${same.name} (hráč už je v databáze z inej sezóny, použije sa ten istý)` : `Nový hráč: ${name}`, `Tím: ${(c.T[team] || NOTEAM).name} (${c.s.name})`];
-    if (!(await ask({ title: `Pridať ${name}?`, lines, ok: "Pridať hráča" }))) return;
     run(async () => {
       if (!same) await DB.upsert("players", { id, name });
       await DB.upsert("roster", { season_id: c.s.id, player_id: id, team_id: team, captain: false }, KEY);
@@ -345,8 +322,7 @@
     return id;
   }
 
-  const TEAM_FIELDS = [["name", "Názov"], ["venue", "Miesto"], ["abbr", "Skratka"], ["color", "Hlavná farba"], ["color_dark", "Tmavá farba"], ["ink", "Farba textu"]];
-  async function saveTeam() {
+  function saveTeam() {
     const c = ctx();
     const d = S.teamDraft;
     const name = (d.name || "").trim();
@@ -356,15 +332,6 @@
     if (![d.color, d.color_dark, d.ink].every((x) => HEX.test(x))) return fail("Farby musia byť v tvare #RRGGBB.");
     const isNew = d.id === "new";
     const id = isNew ? newTeamId(abbr, name) : d.id;
-    const before = isNew ? null : c.d.teams.find((t) => t.id === id);
-    const up = (x) => (x || "").toUpperCase();
-    const after = { name, venue: (d.venue || "").trim(), abbr, color: up(d.color), color_dark: up(d.color_dark), ink: up(d.ink) };
-    const lines = L.describeFields(before && Object.assign({}, before, { color: up(before.color), color_dark: up(before.color_dark), ink: up(before.ink) }), after, TEAM_FIELDS);
-    if (d.files.logo) lines.push("Nové logo (nahrá sa súbor)");
-    if (d.files.anim) lines.push("Nové animované logo víťaza (nahrá sa súbor)");
-    if (isNew) lines.push(`Tím sa pridá do sezóny ${c.s.name}`);
-    if (!lines.length) return noChange();
-    if (!(await ask({ title: isNew ? `Nový tím ${name}?` : `Uložiť tím ${name}?`, lines, ok: isNew ? "Pridať tím" : "Uložiť tím" }))) return;
     run(async () => {
       const v = Date.now().toString(36);
       const url = async (kind, file) => {
@@ -503,8 +470,6 @@
     if (!files.length) return;
     if (notImage(files)) return fail("Toto nie je obrázok — vyber PNG, JPG alebo WebP.");
     const p = ctx().P[playerId];
-    const had = p.photo || p.photo_head || p.photo_face;
-    if (!(await ask({ title: `Fotka: ${p.name}`, lines: [had ? `Doterajšia fotka hráča ${p.name} sa nahradí novou (stará sa nedá vrátiť zálohou)` : `Hráč ${p.name} dostane fotku`, `${files.length === 1 ? "Výrez hlavy a avatar sa vyrobia samé" : `Súbory: ${files.map((f) => f.name).join(", ")}`}`], ok: "Nahrať" }))) return;
     S.uploading = playerId;
     await run(() => storePhotos(p, files), `Fotka hráča ${p.name} je nahratá. Na webe sa ukáže pri jeho mene.`);
     S.uploading = null;
@@ -522,9 +487,6 @@
     const ids = Object.keys(groups).filter((id) => c.P[id]);
     const unknown = Object.keys(groups).filter((id) => !c.P[id]);
     if (!ids.length) return fail("Súbory musia mať meno <id_hráča>_full / _head / _face, napr. p-bartos-andrej_full.webp.");
-    const lines = ids.map((id) => `${c.P[id].name}: ${groups[id].map((f) => f.name.replace(/^.+_/, "")).join(", ")}${c.P[id].photo || c.P[id].photo_head ? " (nahradí doterajšiu)" : ""}`);
-    if (unknown.length) lines.push(`Preskočia sa (neznámy hráč): ${unknown.join(", ")}`);
-    if (!(await ask({ title: `Nahrať fotky ${ids.length} ${plural(ids.length, "hráča", "hráčov", "hráčov")}?`, lines, ok: "Nahrať" }))) return;
     S.uploading = "*";
     await run(async () => { for (const id of ids) await storePhotos(c.P[id], groups[id]); },
       `Nahraté fotky: ${ids.map((id) => c.P[id].name).join(", ")}.${unknown.length ? ` Neznámi hráči (preskočené): ${unknown.join(", ")}.` : ""}`);
@@ -564,16 +526,8 @@
     const otherLive = c.d.seasons.filter((x) => x.state === "live" && x.id !== id);
     const had = c.d.season_teams.filter((x) => x.season_id === id).map((x) => x.team_id);
     const dropped = had.filter((t) => !d.teams.includes(t));
-    const STATE_NAME = { soon: "pripravujeme", live: "prebieha", done: "skončená" };
-    const before = isNew ? null : c.d.seasons.find((x) => x.id === id);
-    const lines = L.describeFields(before, row, [["name", "Názov"], ["state", "Stav", (v) => STATE_NAME[v] || v]]);
-    const added = d.teams.filter((t) => !had.includes(t));
-    if (added.length) lines.push(`Pribudnú tímy: ${added.map((t) => (c.T[t] || NOTEAM).name).join(", ")}`);
-    if (dropped.length) lines.push(`Odoberú sa tímy: ${dropped.map((t) => (c.T[t] || NOTEAM).name).join(", ")} (ich zápasy a súpisky ostanú v databáze, ale prestanú sa rátať do tabuľky)`);
-    if (d.state === "live") otherLive.forEach((x) => lines.push(`„${x.name}“ sa ukončí (stav skončená) — naraz môže prebiehať iba jedna sezóna`));
-    if (isNew) lines.push("Vytvoria sa prázdne zápasy playoff (2× semifinále, o 3. miesto, finále)");
-    if (!lines.length) return noChange();
-    if (!(await ask({ title: isNew ? `Nová sezóna „${name}“?` : `Uložiť sezónu „${name}“?`, lines, danger: dropped.length > 0, ok: dropped.length ? "Uložiť a odobrať" : "Uložiť sezónu" }))) return;
+    if (dropped.length && !(await confirmDialog("Odobrať tímy zo sezóny?",
+      `${dropped.map((t) => (c.T[t] || NOTEAM).name).join(", ")} ${dropped.length === 1 ? "zmizne" : "zmiznú"} zo sezóny „${name}“. Zápasy a súpisky ostanú v databáze.`, "Odobrať"))) return;
     let note = isNew ? `Sezóna „${name}“ je vytvorená. Prepni sa na ňu hore a pridaj zápasy aj hráčov.` : "Sezóna je uložená.";
     if (d.state === "live" && otherLive.length) note = `Uložené. „${otherLive[0].name}“ je teraz skončená a web ukazuje „${name}“.`;
     run(async () => {
@@ -1042,11 +996,6 @@
     render();
   }
   const setDraftOf = (c) => S.setDraft || savedSet(c);
-  const onOff = (v) => (v ? "zapnuté" : "vypnuté");
-  const SETTING_FIELDS = [["bannerCount", "Banner: počet zápasov"], ["photos", "Fotky hráčov", onOff], ["layout", "Rozloženie", (v) => (v === "narrow" ? "úzke" : "široké")],
-    ["upece", "Sekcia Z UPeCe", onOff], ["upeceHours", "Otváracie hodiny UPeCe"], ["upeceOffer", "Čo ponúka UPeCe", (v) => v.map((o) => (o.d ? `${o.t} – ${o.d}` : o.t)).filter(Boolean).join("; ") || "prázdne"],
-    ["tableOrder", "Poradie v tabuľke", (v) => ["Body"].concat(v.map((k) => L.TABLE_CRITERIA[k])).join(" → ")],
-    ["scorerOrder", "Poradie v bodovaní", (v) => ["Body"].concat(v.map((k) => L.SCORER_CRITERIA[k])).join(" → ")], ["scorerTies", "Rovnakí hráči", (v) => L.SCORER_TIES[v]]];
 
   function settingsPanel(c) {
     const sd = setDraftOf(c);
@@ -1106,22 +1055,25 @@
   }
 
   /* ---------- Zálohy (supabase/3-zalohy.sql) ----------
-     Zoznam záloh z databázy, ručná záloha, stiahnutie do počítača a strážený návrat k zálohe
-     (popis, čo sa zmení + napísať OBNOVIŤ). Pred návratom databáza sama uloží aktuálny stav. */
-  const BK_KIND = { auto: "Automatická", manual: "Ručná", restore: "Pred návratom", file: "Pred nahratím súboru" };
+     Iba ručné zálohy (tlačidlo, napr. po kole), mazanie, stiahnutie do počítača a návrat k zálohe:
+     1. okno = čo sa zmení (diff po tabuľkách), 2. okno = „Naozaj?“ + napísať OBNOVIŤ, až potom zápis.
+     Stav pred návratom si databáza nechá ako jedinú poistku → „Vrátiť späť“. */
   const BK_TABLES = [["matches", "Zápasy", "zápas", "zápasy", "zápasov"], ["goals", "Góly", "gól", "góly", "gólov"], ["players", "Hráči", "hráč", "hráči", "hráčov"],
     ["roster", "Súpisky", "miesto v súpiske", "miesta v súpiske", "miest v súpiske"], ["teams", "Tímy", "tím", "tímy", "tímov"],
     ["season_teams", "Tímy v sezónach", "priradenie", "priradenia", "priradení"], ["seasons", "Sezóny", "sezóna", "sezóny", "sezón"], ["settings", "Nastavenia", "", "", ""]];
   const RESTORE_WORD = "OBNOVIŤ";
   const bkWhen = (iso) => { const p = L.localParts(iso); return `${L.longDate(p.date)} · ${p.time}`; };
+  const bkWhenIn = (iso) => bkWhen(iso).replace(/^./, (x) => x.toLowerCase()); // v strede vety: „uložená utorok 3. 11. …“
   const bkInfo = (sum) => [["matches", "zápasov"], ["goals", "gólov"], ["players", "hráčov"], ["teams", "tímov"]].filter(([k]) => sum && sum[k] !== undefined).map(([k, w]) => `${sum[k]} ${w}`).join(" · ");
   const bkMissing = (e) => e.status === 404 || e.code === "PGRST205" || e.code === "PGRST202" || e.code === "42P01";
+  const bkFind = (id) => ((S.bk && S.bk.list) || []).find((x) => String(x.id) === String(id));
 
   async function loadBackups() {
     S.bk = Object.assign({}, S.bk, { loading: true });
     render();
     try {
-      S.bk = { list: await DB.backups(), loading: false };
+      const [list, undo] = await Promise.all([DB.backups(), DB.undoInfo()]);
+      S.bk = { list, undo, loading: false };
     } catch (e) {
       S.bk = { list: [], loading: false, missing: bkMissing(e), error: bkMissing(e) ? "" : messageOf(e).replace(/^Uloženie zlyhalo: /, "Zálohy sa nepodarilo načítať: ") };
     }
@@ -1141,25 +1093,40 @@
     }).filter(Boolean);
   }
 
-  async function restoreTo(snap, title, from, call) {
+  // stiahne dáta zálohy (s „Chvíľu…“ na tlačidlách); pri chybe ukáže hlášku a vráti null
+  async function fetchBackup(id) {
+    if (S.busy) return null;
+    S.busy = true; S.toast = ""; S.error = ""; render();
+    let data = null;
+    try { data = await DB.backupData(id); } catch (e) { S.error = messageOf(e); }
+    S.busy = false; render();
+    return data;
+  }
+
+  // dve okná: najprv čo sa zmení, potom „Naozaj?“ s napísaním OBNOVIŤ; až potom sa volá call()
+  async function restoreTo(snap, o) {
     const lines = restoreLines(snap);
     if (!lines.length) { S.error = ""; S.toast = "Táto záloha je rovnaká ako aktuálny stav, nie je čo vracať."; render(); return; }
-    const ok = await ask({ title, danger: true, word: RESTORE_WORD, ok: "Vrátiť sa k zálohe", lines,
-      text: `${from} Všetky dáta FULky (zápasy, góly, hráči, súpisky, tímy, sezóny, nastavenia) sa nahradia stavom zo zálohy. Najprv sa aktuálny stav sám uloží ako nová záloha, takže aj tento krok sa dá vrátiť. Fotky sa nemenia.`,
-      warn: ["Web to uvidí hneď. Rob to, iba keď vieš, že dáta niekto pokazil."] });
-    if (!ok) return;
-    await run(call, (id) => `Hotovo — dáta sú vrátené. Stav pred návratom je uložený ako záloha č. ${id}.`);
+    if (!(await ask({ title: o.title, text: `${o.from} Takto sa zmenia dáta na webe:`, lines, ok: "Pokračovať" }))) return;
+    if (!(await ask({ title: o.sure, danger: true, word: RESTORE_WORD, ok: o.ok,
+      text: "Všetky dáta FULky (zápasy, góly, hráči, súpisky, tímy, sezóny, nastavenia) sa nahradia a web to uvidí hneď. Fotky sa nemenia.",
+      warn: ["Aktuálny stav sa uloží ako poistka — tlačidlom „Vrátiť späť“ sa k nemu vieš vrátiť (poistka je iba jedna, ďalší návrat ju prepíše)."] }))) return;
+    await run(o.call, o.done);
     loadBackups();
   }
 
   async function restoreBackup(id) {
-    const b = (S.bk && S.bk.list || []).find((x) => String(x.id) === String(id));
-    if (!b || S.busy) return;
-    S.busy = true; S.toast = ""; S.error = ""; render();
-    let snap = null;
-    try { snap = await DB.backupData(id); } catch (e) { S.error = messageOf(e); }
-    S.busy = false; render();
-    if (snap) restoreTo(snap, `Vrátiť sa k zálohe č. ${b.id}?`, `Záloha je z: ${bkWhen(b.created_at)}.`, () => DB.restore(id));
+    const b = bkFind(id);
+    const snap = b && (await fetchBackup(id));
+    if (snap) restoreTo(snap, { title: `Záloha č. ${b.id}`, from: `Uložená ${bkWhenIn(b.created_at)}${b.label ? ` („${b.label}“)` : ""}.`, sure: "Vrátiť sa k zálohe?", ok: "Vrátiť sa k zálohe",
+      call: () => DB.restore(id), done: `Hotovo — dáta sú zo zálohy č. ${b.id}. Keby niečo, je tu „Vrátiť späť“.` });
+  }
+
+  async function undoRestore() {
+    const u = S.bk && S.bk.undo;
+    const snap = u && (await fetchBackup(u.id));
+    if (snap) restoreTo(snap, { title: "Vrátiť späť", from: `${u.label} (${bkWhenIn(u.created_at)}).`, sure: "Vrátiť späť?", ok: "Vrátiť späť",
+      call: () => DB.undo(), done: "Hotovo — dáta sú ako pred posledným návratom. „Vrátiť späť“ teraz vráti ten návrat znova." });
   }
 
   async function restoreFromFile(file) {
@@ -1167,31 +1134,36 @@
     let snap = null;
     try { snap = JSON.parse(await file.text()); } catch (e) { return fail("Súbor sa nedá prečítať — vyber .json zálohu stiahnutú z tejto stránky."); }
     if (!snap || snap.format !== "fulka-zaloha-1" || !Array.isArray(snap.seasons) || !snap.seasons.length) return fail("Toto nie je záloha FULky (chýba format „fulka-zaloha-1“ alebo sezóny).");
-    restoreTo(snap, "Nahrať zálohu zo súboru?", `Súbor: ${file.name}.`, () => DB.restoreFile(snap));
+    restoreTo(snap, { title: "Záloha zo súboru", from: `Súbor ${file.name}.`, sure: "Nahrať zálohu zo súboru?", ok: "Nahrať zálohu",
+      call: () => DB.restoreFile(snap), done: "Hotovo — dáta sú zo súboru. Keby niečo, je tu „Vrátiť späť“." });
   }
 
   async function downloadBackup(id) {
-    const b = (S.bk && S.bk.list || []).find((x) => String(x.id) === String(id));
-    if (!b || S.busy) return;
-    S.busy = true; S.toast = ""; S.error = ""; render();
-    try {
-      const data = await DB.backupData(id);
-      const p = L.localParts(b.created_at);
-      const a = Object.assign(document.createElement("a"), {
-        href: URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" })),
-        download: `fulka-zaloha-${p.date}-${p.time.replace(":", "")}-c${b.id}.json`,
-      });
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-      S.toast = `Záloha č. ${b.id} je stiahnutá do počítača. Ulož si ju aj mimo počítača (napr. Google Drive).`;
-    } catch (e) { S.error = messageOf(e); }
-    S.busy = false; render();
+    const b = bkFind(id);
+    const data = b && (await fetchBackup(id));
+    if (!data) return;
+    const p = L.localParts(b.created_at);
+    const a = Object.assign(document.createElement("a"), {
+      href: URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" })),
+      download: `fulka-zaloha-${p.date}-${p.time.replace(":", "")}-c${b.id}.json`,
+    });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    S.toast = `Záloha č. ${b.id} je stiahnutá do počítača.`;
+    render();
+  }
+
+  async function deleteBackup(id) {
+    const b = bkFind(id);
+    if (!b) return;
+    if (!(await confirmDialog(`Vymazať zálohu č. ${b.id}?`, `Záloha z ${bkWhenIn(b.created_at)}${b.label ? ` („${b.label}“)` : ""} sa natrvalo vymaže. Dáta na webe sa nezmenia.`))) return;
+    await run(() => DB.deleteBackup(id), `Záloha č. ${b.id} je vymazaná.`);
+    loadBackups();
   }
 
   async function makeBackup() {
     const label = (S.bkLabel || "").trim();
-    if (!(await ask({ title: "Uložiť zálohu teraz?", lines: [`Uloží sa celý aktuálny stav (${bkInfo({ matches: S.data.matches.length, goals: S.data.goals.length, players: S.data.players.length, teams: S.data.teams.length })})`, label ? `Popis: ${label}` : "Bez popisu"], ok: "Uložiť zálohu" }))) return;
-    await run(() => DB.backup(label), (id) => `Záloha č. ${id} je uložená.`, () => { S.bkLabel = ""; });
+    await run(() => DB.backup(label), (id) => `Záloha č. ${id} je uložená${label ? ` („${label}“)` : ""}.`, () => { S.bkLabel = ""; });
     loadBackups();
   }
 
@@ -1202,26 +1174,30 @@
     if (bk.missing) {
       return `<div class="a-ed">${head}${msgs()}<div class="a-body"><span class="a-warn">Zálohy ešte nie sú zapnuté v databáze. Spusti <code>supabase/3-zalohy.sql</code> v Supabase → SQL Editor a potom túto stránku obnov.</span></div></div>`;
     }
+    const dis = S.busy ? " disabled" : "";
     const list = bk.list || [];
     const shown = S.bkAll ? list : list.slice(0, 30);
     const rows = shown.map((b) => `<li class="a-bk-row"><span class="txt"><b>${esc(bkWhen(b.created_at))}</b>
-        <span class="info"><span class="a-bk-kind ${esc(b.kind)}">${esc(BK_KIND[b.kind] || b.kind)}</span> č. ${esc(b.id)}${b.label ? ` · ${esc(b.label)}` : ""}</span>
-        <span class="small">${esc(bkInfo(b.summary))}</span></span>
-        <span class="a-bk-btns"><button type="button" class="a-ghost w" data-a="bkDown" data-id="${esc(b.id)}"${S.busy ? " disabled" : ""}>Stiahnuť</button>
-        <button type="button" class="a-ghost a-bk-back" data-a="bkRestore" data-id="${esc(b.id)}"${S.busy ? " disabled" : ""}>Vrátiť sa sem</button></span></li>`).join("");
+        <span class="info">Záloha č. ${esc(b.id)}${b.label ? ` · ${esc(b.label)}` : ""}</span><span class="small">${esc(bkInfo(b.summary))}</span></span>
+        <span class="a-bk-btns"><button type="button" class="a-ghost w" data-a="bkDown" data-id="${esc(b.id)}"${dis}>Stiahnuť</button>
+        <button type="button" class="a-ghost a-bk-back" data-a="bkRestore" data-id="${esc(b.id)}"${dis}>Vrátiť sa sem</button>
+        <button type="button" class="a-x" data-a="bkDel" data-id="${esc(b.id)}" aria-label="Vymazať zálohu č. ${esc(b.id)}"${dis}>${icon.trash}</button></span></li>`).join("");
+    const undo = bk.undo ? `<fieldset class="a-fs a-bk-undo" style="gap:12px"><legend>Poistka</legend>
+          <span class="muted" style="font-size:14px">${esc(bk.undo.label)} · ${esc(bkWhenIn(bk.undo.created_at))} · ${esc(bkInfo(bk.undo.summary))}.
+            Keď sa návrat k zálohe nepodaril podľa predstáv, týmto sa vrátiš k dátam spred neho.</span>
+          <div class="a-actions"><button type="button" class="a-ghost w" data-a="bkUndo"${dis}>Vrátiť späť</button></div></fieldset>` : "";
     return `<div class="a-ed">${head}${msgs()}<div class="a-body">
-        <fieldset class="a-fs" style="gap:12px"><legend>Ako to funguje</legend>
-          <span class="muted" style="font-size:14px">Pred prvou zmenou v každých 10 minútach uloží databáza sama celý stav (zápasy, góly, hráčov, súpisky, tímy, sezóny, nastavenia).
-            Zálohy sa cez web nedajú zmazať ani zmeniť — ani s prihlásením admina. Fotky v zálohe nie sú, iba odkazy na ne.</span></fieldset>
         <fieldset class="a-fs" style="gap:12px"><legend>Nová záloha</legend>
-          <label class="a-field"><span class="lbl">Popis (nepovinný), napr. „pred playoff“</span><input type="text" class="a-input" data-in="bkLabel" maxlength="120" value="${esc(S.bkLabel)}"></label>
-          <div class="a-actions"><button type="button" class="a-save" data-a="bkMake"${S.busy ? " disabled" : ""}>${S.busy ? "Chvíľu…" : "Uložiť zálohu"}</button></div></fieldset>
+          <span class="muted" style="font-size:14px">Uloží celý aktuálny stav (zápasy, góly, hráčov, súpisky, tímy, sezóny, nastavenia), napr. po odohranom kole. Fotky sa nezálohujú.</span>
+          <label class="a-field"><span class="lbl">Popis (nepovinný), napr. „po 3. kole“</span><input type="text" class="a-input" data-in="bkLabel" maxlength="120" value="${esc(S.bkLabel)}"></label>
+          <div class="a-actions"><button type="button" class="a-save" data-a="bkMake"${dis}>${S.busy ? "Chvíľu…" : "Uložiť zálohu"}</button></div></fieldset>
+        ${undo}
         <fieldset class="a-fs" style="gap:12px"><legend>Uložené zálohy</legend>
           ${bk.error ? `<span class="a-warn">${esc(bk.error)}</span>` : ""}
           ${bk.loading && !list.length ? '<span class="muted">Načítavam…</span>' : list.length ? `<ol class="a-bk">${rows}</ol>` : '<span class="muted">Zatiaľ žiadna záloha.</span>'}
           ${list.length > shown.length ? `<div class="a-actions"><button type="button" class="a-ghost w" data-a="bkAll">Ukázať všetky (${list.length})</button></div>` : ""}</fieldset>
         <fieldset class="a-fs" style="gap:12px"><legend>Zo súboru</legend>
-          <span class="muted" style="font-size:14px">Keby zálohy v databáze neboli, dá sa vrátiť aj stav zo stiahnutého súboru <code>fulka-zaloha-….json</code>.</span>
+          <span class="muted" style="font-size:14px">Návrat aj zo stiahnutého súboru <code>fulka-zaloha-….json</code> (keby zálohy v databáze neboli).</span>
           <div class="a-actions"><label class="a-ghost w a-filebtn">Vybrať súbor zálohy<input type="file" accept="application/json,.json" data-bk-file="1" hidden></label></div></fieldset>
       </div></div>`;
   }
@@ -1292,11 +1268,9 @@
     delGoal: (el) => { S.draft.goals.splice(Number(el.dataset.i), 1); S.pick = null; render(); },
     saveMatch: () => saveMatch(),
     delMatch: () => removeMatch(),
-    seed: async (el) => {
+    seed: (el) => {
       const c = ctx();
       if (c.s.seed_mode === el.dataset.id) return;
-      const mode = (v) => (v === "auto" ? "podľa tabuľky" : "ručne");
-      if (!(await ask({ title: "Zmeniť nasadenie semifinále?", lines: [`Semifinále: ${mode(c.s.seed_mode)} → ${mode(el.dataset.id)} (${c.s.name})`], ok: "Zmeniť" }))) return;
       run(() => DB.upsert("seasons", Object.assign({}, c.s, { seed_mode: el.dataset.id })),
         el.dataset.id === "auto" ? "Semifinále sa teraz určí podľa tabuľky." : "Semifinále určuješ ručne — klikni na zápas a vyber tímy.", () => { if (S.sel) select(S.sel); });
     },
@@ -1332,13 +1306,11 @@
     bkMake: () => makeBackup(),
     bkDown: (el) => downloadBackup(el.dataset.id),
     bkRestore: (el) => restoreBackup(el.dataset.id),
+    bkDel: (el) => deleteBackup(el.dataset.id),
+    bkUndo: () => undoRestore(),
     bkAll: () => { S.bkAll = true; render(); },
-    saveSettings: async () => {
-      const c = ctx();
-      const sd = setDraftOf(c);
-      const lines = L.describeFields(savedSet(c), sd, SETTING_FIELDS);
-      if (!lines.length) return noChange();
-      if (!(await ask({ title: "Uložiť nastavenia?", lines, ok: "Uložiť nastavenia" }))) return;
+    saveSettings: () => {
+      const sd = setDraftOf(ctx());
       run(() => DB.saveSettings(Object.assign({}, S.data.settings, sd)),
         `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, rozloženie ${sd.layout === "narrow" ? "úzke" : "široké"}, sekcia Z UPeCe ${sd.upece ? "zapnutá" : "skrytá"}, poradie tabuľky aj bodovania.`,
         () => { S.setDraft = null; });
@@ -1373,7 +1345,6 @@
     if (id) uploadPhoto(id, e.target.files);
     if (e.target.dataset && e.target.dataset.photosBulk) uploadMany(e.target.files);
     if (e.target.dataset && e.target.dataset.bkFile) { restoreFromFile(e.target.files[0]); e.target.value = ""; }
-    if (id || (e.target.dataset && e.target.dataset.photosBulk)) e.target.value = ""; // po zrušení sa dá vybrať ten istý súbor znova
     if (S.teamDraft && e.target.dataset && e.target.dataset.tcolor) render(); // farba vybraná → prekresliť náhľad
     const kind = e.target.dataset && e.target.dataset.tfile;
     if (S.teamDraft && kind) {

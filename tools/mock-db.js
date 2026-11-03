@@ -22,20 +22,26 @@
   };
   DB.upload = async (p) => { __writes.push(["upload", p]); return p; };
   DB.load = async () => JSON.parse(JSON.stringify(mem));
-  // zálohy v pamäti (ako supabase/3-zalohy.sql): snímka = riadky tabuliek, settings ako [{ id: 1, data }]
+  // zálohy v pamäti (ako supabase/3-zalohy.sql): iba ručné + jedna poistka „undo“ pred posledným návratom
   const snap = () => Object.assign({ format: "fulka-zaloha-1" }, JSON.parse(JSON.stringify(mem)), { settings: [{ id: 1, data: JSON.parse(JSON.stringify(mem.settings)) }] });
   const sum = (d) => Object.fromEntries(["seasons", "teams", "season_teams", "players", "roster", "matches", "goals"].map((k) => [k, d[k].length]));
-  const backups = [];
-  const take = (kind, label, data) => { const d = data || snap(); const b = { id: backups.length + 1, created_at: new Date(Date.now() - (5 - backups.length) * 3600e3).toISOString(), kind, label, summary: sum(d), data: d }; backups.push(b); return b.id; };
-  take("auto", "Automaticky pred zmenou");
-  take("manual", "pred playoff");
+  let backups = [];
+  let next = 1;
+  const take = (kind, label, data) => { const d = data || snap(); const b = { id: next++, created_at: new Date(Date.now() - (5 - next) * 3600e3).toISOString(), kind, label, summary: sum(d), data: d }; backups.push(b); return b.id; };
+  take("manual", "po 1. kole");
+  take("manual", "po 2. kole");
   const apply = (d) => { mem = JSON.parse(JSON.stringify(d)); mem.settings = d.settings[0].data; delete mem.format; };
-  DB.backups = async () => backups.slice().reverse().map(({ data, ...b }) => b);
+  const keepUndo = (d, label) => { backups = backups.filter((b) => b.kind !== "undo"); take("undo", label, d); };
+  const strip = ({ data, ...b }) => b;
+  DB.backups = async () => backups.filter((b) => b.kind === "manual").reverse().map(strip);
+  DB.undoInfo = async () => { const u = backups.find((b) => b.kind === "undo"); return u ? strip(u) : null; };
   DB.backupData = async (id) => JSON.parse(JSON.stringify(backups.find((b) => String(b.id) === String(id)).data));
   DB.backup = async (label) => { __writes.push(["backup", label]); return take("manual", label); };
-  DB.restore = async (id) => { __writes.push(["restore", id]); const b = take("restore", `Pred návratom k zálohe č. ${id}`); apply(backups.find((x) => String(x.id) === String(id)).data); return b; };
-  DB.restoreFile = async (d) => { __writes.push(["restoreFile"]); const b = take("file", "Pred nahratím zálohy zo súboru"); apply(d); return b; };
-  window.__backups = backups;
+  DB.deleteBackup = async (id) => { __writes.push(["deleteBackup", id]); backups = backups.filter((b) => !(String(b.id) === String(id) && b.kind === "manual")); return [{}]; };
+  DB.restore = async (id) => { __writes.push(["restore", id]); const before = snap(); apply(backups.find((x) => String(x.id) === String(id)).data); keepUndo(before, `Stav pred návratom k zálohe č. ${id}`); };
+  DB.restoreFile = async (d) => { __writes.push(["restoreFile"]); const before = snap(); apply(d); keepUndo(before, "Stav pred nahratím zálohy zo súboru"); };
+  DB.undo = async () => { __writes.push(["undo"]); const u = backups.find((b) => b.kind === "undo"); const before = snap(); apply(u.data); keepUndo(before, "Stav pred „Vrátiť späť“"); };
+  window.__backups = () => backups;
   window.__mem = () => mem;
   return "mock DB zapnutý";
 })()

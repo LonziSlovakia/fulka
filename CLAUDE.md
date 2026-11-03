@@ -38,7 +38,7 @@ Stav k 3. 11. 2026.
 | `render.js` | verejný web; s `?edit` sa nevykresľuje a načíta `admin.js` + `admin.css` |
 | `admin.js` / `admin.css` | admin podľa `design/Admin.dc.html`; triedy admina majú predponu `a-` (napr. `.a-mid`), aby sa nebili so `styles.css` |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
-| `tests/*.test.js` | `node --test tests/*.test.js` (59 testov: `logic` 52, `upece` 7; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (56 testov: `logic` 49, `upece` 7; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF |
@@ -86,15 +86,15 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - „Celý kalendár“ → upcba.sk/kalendar/ (curl dostane 403 od Cloudflare, prehliadač je OK) · „Všetko, čo ponúkame“ → upcba.sk/o-upece/.
   - Ponuka: zoznam z nastavení (`upeceOffer`) + všetky tímy, ktoré kedy hrali, s menom miesta (`venue`).
   - Ak sa zmení šablóna oznamov na upcba.sk, program sa ukáže prázdny („ešte nie je zverejnený“) – oprava v `upece.js` + test.
-- **Potvrdenie pred každým zápisom** (Lonzi chcel): `ask()` v `admin.js` ukáže zoznam „čo → na čo“ (`L.describeMatch`, `L.describeFields`)
-  a upozornenia (`L.matchWarnings`: odohraný v budúcnosti, 0:0, strelec zo súpisky súpera, zmena tímov s gólmi, zrušenie odohrania).
-  Mazanie / odobratie tímov = červené okno. Bez zmeny sa nič neukladá („Nič sa nezmenilo“).
+- Potvrdzovacie okno (`ask()` v `admin.js`) je **iba pri mazaní a pri zálohách**. Potvrdenie pred každou bežnou úpravou Lonzi **nechce**
+  (raz som ho pridal, vrátil som to) – nepridávať.
 - Góly sa ukladajú bez mazania vopred: upsert podľa `match_id,seq`, potom zmazať iba `seq > počet` (predtým sa najprv všetko zmazalo → pri výpadku by góly zmizli).
-- **Zálohy** (`supabase/3-zalohy.sql`, admin → Zálohy): snímka všetkých 8 tabuliek v `fulka_backups` (~25 kB). Automaticky ju robí spúšťač v DB
-  pred prvou zmenou v každom 10-min. okne (nedá sa obísť z prehliadača), ručne tlačidlom (max 1 za 30 s). Cez API ich nikto nezmaže ani nezmení –
-  ani ukradnuté prihlásenie admina; mazať iba Lonzi v SQL Editore (príkaz je na konci skriptu). Návrat k zálohe: popis zmien po tabuľkách
-  (`L.compareData`) + napísať **OBNOVIŤ**; DB najprv sama uloží stav „pred návratom“, potom v jednej transakcii nahradí tabuľky (`fulka_apply`).
-  Stiahnutie zálohy do počítača (JSON `format: fulka-zaloha-1`) a návrat zo súboru (`fulka_restore_file`). Fotky v buckete sa nezálohujú.
+- **Zálohy** (`supabase/3-zalohy.sql`, admin → Zálohy): **iba ručné** tlačidlom „Uložiť zálohu“ (Lonzi si zálohuje po kolách; automatické
+  zálohy nechce – „spam“). Snímka všetkých 8 tabuliek v `fulka_backups` (~25 kB), vidí/vytvára/maže ich iba admin (zmazať sa dá v admine).
+  Fotky sa nezálohujú (Lonzi: netreba).
+  Návrat: okno 1 = diff po tabuľkách (`L.compareData`) → „Pokračovať“ → okno 2 „Naozaj?“ + napísať **OBNOVIŤ** → až potom `fulka_restore`
+  (v jednej transakcii, `fulka_apply`). Stav pred návratom = **jediná poistka** (`kind = 'undo'`, prepíše sa pri ďalšom návrate, nedá sa zmazať),
+  tlačidlo „Vrátiť späť“ (`fulka_undo`) vymení aktuálny stav s poistkou. Stiahnutie do počítača (JSON `format: fulka-zaloha-1`) a návrat zo súboru.
 - Päta: odkaz na UPeCe Bratislava (upcba.sk, biele logo) a Supabase (supabase.com, „Dáta, fotky a prihlásenie bežia na Supabase“).
 
 ## Ako testovať (bez zápisu do databázy)
@@ -106,7 +106,7 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/" 390 /tmp/m.png            # sc
 node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fake-login.js RELOAD @tools/mock-db.js "<JS kroky>"
 ```
 - `shot.js <url> <šírka> <out.png> [kroky]` – krok `RELOAD`, `@súbor.js` alebo JS kód; `CLIP=x,y,w,h` oreže obrázok.
-- Admin: `fake-login.js` podvrhne prihlásenie, `mock-db.js` presmeruje zápisy do pamäte (`__mem()`, `__writes`, zálohy `__backups` s 2 ukážkovými).
+- Admin: `fake-login.js` podvrhne prihlásenie, `mock-db.js` presmeruje zápisy do pamäte (`__mem()`, `__writes`, zálohy `__backups()` s 2 ukážkovými).
   Potvrdzovacie okno je `.a-modal`: potvrdiť `[data-m=ok]`, zrušiť `[data-m=no]`, slovo do `[data-m=word]`.
 - Chromium je Playwright headless shell; chýbajúce knižnice sú v `tools/.cache/libroot` (bez sudo, gitignore).
 - Port 8765 používa iný projekt – nezabíjať.
@@ -127,8 +127,6 @@ ochrana admina pred vložením do cudzej stránky (clickjacking) – zatiaľ ner
 
 ## Otvorené / nápady
 
-- Fotky nie sú v zálohe: nahratie prepíše starú (`x-upsert`) a admin by ich vedel zmazať. Dalo by sa: nové cesty pre každú fotku + zrušiť pravidlá update/delete v buckete (ak Lonzi bude chcieť).
-- Záloha mimo Supabase automaticky (napr. denný GitHub Action → artifact), zatiaľ iba ručné „Stiahnuť“ (ak Lonzi bude chcieť).
 
 - Clickjacking ochrana v `admin.js` (ak Lonzi bude chcieť).
 - Text pri Supabase v päte prípadne zmeniť na „Vybudované s pomocou Supabase“ (ak Lonzi bude chcieť).

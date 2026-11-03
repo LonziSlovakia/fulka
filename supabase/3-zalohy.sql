@@ -1,34 +1,50 @@
--- FULka: zálohy dát (snímky všetkých tabuliek fulka_*) a návrat k zálohe.
+-- FULka: ručné zálohy dát (snímky všetkých tabuliek fulka_*) a návrat k zálohe.
 -- Spustiť raz v Supabase: SQL Editor → New query → vložiť celé → Run. Dá sa spustiť aj opakovane.
 --
--- Prečo takto:
---   * Záloha je jeden riadok v fulka_backups = celý stav všetkých 8 tabuliek ako JSON (dnes ~25 kB).
---   * Admin zálohy vidí a vie vytvoriť, ale NIKTO cez web ich nevie zmeniť ani zmazať (nie je na to pravidlo).
---     Aj keby niekto ukradol prihlásenie admina, staré zálohy ostanú. Zmazať ich vie iba Lonzi tu v SQL Editore.
---   * Automatická záloha: pred prvou zmenou v každom 10-minútovom okne databáza sama uloží stav PRED zmenou
---     (spúšťač v databáze, nedá sa obísť z prehliadača). Takže vždy existuje stav tesne pred útokom / chybou.
---   * Návrat k zálohe (fulka_restore) najprv uloží aktuálny stav ako zálohu „pred obnovou“, potom naraz
---     (v jednej transakcii: buď všetko, alebo nič) nahradí obsah tabuliek. Návrat sa teda dá vrátiť.
---   * Fotky v buckete sa nezálohujú (v zálohe sú iba cesty k nim).
+-- Ako to funguje:
+--   * Záloha = jeden riadok v fulka_backups s celým stavom 8 tabuliek ako JSON (dnes ~25 kB).
+--     Vytvára sa IBA ručne tlačidlom v admine (napr. po odohranom kole), nič automaticky.
+--   * Zálohy vidí, vytvára a maže iba admin FULky (anonym nič). Fotky v buckete sa nezálohujú.
+--   * Návrat k zálohe (fulka_restore) naraz, v jednej transakcii (buď všetko, alebo nič), nahradí obsah tabuliek.
+--     Stav tesne pred návratom sa uloží do jedinej špeciálnej zálohy „poistka“ (kind = 'undo'). Pri ďalšom návrate
+--     sa prepíše, takže je vždy iba jedna. fulka_undo = „Vrátiť späť“: vymení aktuálny stav s poistkou
+--     (aj „vrátiť späť“ sa dá vrátiť). Poistku cez web zmazať nejde.
 
 -- ---------- Tabuľka záloh ----------
 create table if not exists public.fulka_backups (
   id bigint generated always as identity primary key,
   created_at timestamptz not null default now(),
-  kind text not null check (kind in ('auto', 'manual', 'restore', 'file')),  -- automatická / ručná / pred obnovou / pred nahratím zo súboru
+  kind text not null default 'manual',                 -- manual = ručná záloha, undo = poistka pred posledným návratom
   label text not null default '',
   summary jsonb not null default '{}'::jsonb,          -- počty riadkov (na zoznam v admine bez sťahovania celých dát)
   data jsonb not null,                                 -- { "format": "fulka-zaloha-1", "settings": [...], "seasons": [...], ... }
   created_by uuid default auth.uid()
 );
+alter table public.fulka_backups drop constraint if exists fulka_backups_kind_check;
+update public.fulka_backups set kind = 'manual' where kind not in ('manual', 'undo');  -- keby bežala staršia verzia skriptu
+alter table public.fulka_backups add constraint fulka_backups_kind_check check (kind in ('manual', 'undo'));
 create index if not exists fulka_backups_created on public.fulka_backups (created_at desc);
+create unique index if not exists fulka_backups_one_undo on public.fulka_backups (kind) where kind = 'undo';  -- poistka je iba jedna
 
 alter table public.fulka_backups enable row level security;
 revoke all on public.fulka_backups from anon, authenticated;
-grant select on public.fulka_backups to authenticated;
+grant select, delete on public.fulka_backups to authenticated;
 drop policy if exists "zalohy vidi admin" on public.fulka_backups;
 create policy "zalohy vidi admin" on public.fulka_backups for select to authenticated using (public.is_admin('fulka'));
--- zámerne žiadne pravidlo na insert / update / delete: zapisuje iba funkcia nižšie
+drop policy if exists "zalohy maze admin" on public.fulka_backups;
+create policy "zalohy maze admin" on public.fulka_backups for delete to authenticated using (public.is_admin('fulka') and kind = 'manual');
+-- insert / update iba cez funkcie nižšie
+
+-- ---------- Upratanie po staršej verzii (automatické zálohy už nie sú) ----------
+do $$
+declare t text;
+begin
+  foreach t in array array['fulka_settings', 'fulka_seasons', 'fulka_teams', 'fulka_season_teams', 'fulka_players', 'fulka_roster', 'fulka_matches', 'fulka_goals'] loop
+    execute format('drop trigger if exists fulka_zaloha_pred_zmenou on public.%I', t);
+  end loop;
+end $$;
+drop function if exists public.fulka_auto_backup();
+drop function if exists public.fulka_take_backup(text, text);
 
 -- ---------- Aktuálny stav ako JSON ----------
 create or replace function public.fulka_state()
@@ -55,53 +71,34 @@ returns jsonb language sql immutable set search_path = public as $$
   where jsonb_typeof(p_data -> k) = 'array'
 $$;
 
--- uloží zálohu (vnútorná funkcia, priamo ju volať nemožno)
-create or replace function public.fulka_take_backup(p_kind text, p_label text)
-returns bigint language plpgsql security definer set search_path = public as $$
-declare s jsonb := fulka_state(); new_id bigint;
-begin
-  insert into fulka_backups (kind, label, summary, data) values (p_kind, left(coalesce(p_label, ''), 120), fulka_summary(s), s)
-  returning id into new_id;
-  return new_id;
-end $$;
-revoke execute on function public.fulka_take_backup(text, text) from public, anon, authenticated;
-
--- ---------- Ručná záloha (tlačidlo v admine) ----------
+-- ---------- Ručná záloha (tlačidlo „Uložiť zálohu“) ----------
 create or replace function public.fulka_backup(p_label text default '')
 returns bigint language plpgsql security definer set search_path = public as $$
+declare s jsonb; new_id bigint;
 begin
   if not public.is_admin('fulka') then raise exception 'Iba admin FULky' using errcode = '42501'; end if;
-  -- proti zahlteniu: najviac jedna ručná záloha za 30 sekúnd
+  -- proti dvojkliku: najviac jedna záloha za 30 sekúnd
   if exists (select 1 from fulka_backups where kind = 'manual' and created_at > now() - interval '30 seconds') then
     raise exception 'Záloha sa práve uložila, skús o chvíľu' using errcode = 'P0001';
   end if;
-  return fulka_take_backup('manual', p_label);
+  s := fulka_state();
+  insert into fulka_backups (kind, label, summary, data) values ('manual', left(coalesce(p_label, ''), 120), fulka_summary(s), s)
+  returning id into new_id;
+  return new_id;
 end $$;
 revoke execute on function public.fulka_backup(text) from public, anon;
 grant execute on function public.fulka_backup(text) to authenticated;
 
--- ---------- Automatická záloha pred zmenou ----------
-create or replace function public.fulka_auto_backup()
-returns trigger language plpgsql security definer set search_path = public as $$
+-- ---------- Poistka: uloží daný stav ako jedinú zálohu „undo“ (prepíše starú) ----------
+create or replace function public.fulka_keep_undo(p_data jsonb, p_label text)
+returns void language plpgsql security definer set search_path = public as $$
 begin
-  perform pg_advisory_xact_lock(hashtext('fulka_backups'));  -- dva súbežné zápisy neurobia dve zálohy
-  if not exists (select 1 from fulka_backups where created_at > now() - interval '10 minutes') then
-    perform fulka_take_backup('auto', 'Automaticky pred zmenou');
-  end if;
-  return null;
+  delete from fulka_backups where kind = 'undo';
+  insert into fulka_backups (kind, label, summary, data) values ('undo', p_label, fulka_summary(p_data), p_data);
 end $$;
-revoke execute on function public.fulka_auto_backup() from public, anon, authenticated;
+revoke execute on function public.fulka_keep_undo(jsonb, text) from public, anon, authenticated;
 
-do $$
-declare t text;
-begin
-  foreach t in array array['fulka_settings', 'fulka_seasons', 'fulka_teams', 'fulka_season_teams', 'fulka_players', 'fulka_roster', 'fulka_matches', 'fulka_goals'] loop
-    execute format('drop trigger if exists fulka_zaloha_pred_zmenou on public.%I', t);
-    execute format('create trigger fulka_zaloha_pred_zmenou before insert or update or delete on public.%I for each statement execute function public.fulka_auto_backup()', t);
-  end loop;
-end $$;
-
--- ---------- Návrat k stavu (spoločná vnútorná časť) ----------
+-- ---------- Nahradenie všetkých tabuliek daným stavom (vnútorná časť) ----------
 create or replace function public.fulka_apply(p_data jsonb)
 returns void language plpgsql security definer set search_path = public as $$
 begin
@@ -129,43 +126,52 @@ begin
 end $$;
 revoke execute on function public.fulka_apply(jsonb) from public, anon, authenticated;
 
--- návrat k zálohe z databázy (admin → Zálohy → „Vrátiť sa sem“)
+-- ---------- Návrat k zálohe z databázy (admin → Zálohy → „Vrátiť sa sem“) ----------
 create or replace function public.fulka_restore(p_id bigint)
-returns bigint language plpgsql security definer set search_path = public as $$
-declare d jsonb; before_id bigint;
+returns void language plpgsql security definer set search_path = public as $$
+declare d jsonb; before jsonb;
 begin
   if not public.is_admin('fulka') then raise exception 'Iba admin FULky' using errcode = '42501'; end if;
-  select data into d from fulka_backups where id = p_id;
+  select data into d from fulka_backups where id = p_id and kind = 'manual';
   if d is null then raise exception 'Záloha neexistuje' using errcode = 'P0002'; end if;
-  before_id := fulka_take_backup('restore', format('Pred návratom k zálohe č. %s', p_id));
+  before := fulka_state();
   perform fulka_apply(d);
-  return before_id;
+  perform fulka_keep_undo(before, format('Stav pred návratom k zálohe č. %s', p_id));
 end $$;
 revoke execute on function public.fulka_restore(bigint) from public, anon;
 grant execute on function public.fulka_restore(bigint) to authenticated;
 
--- návrat zo súboru stiahnutého do počítača (keby zálohy v databáze neboli)
+-- ---------- Návrat zo súboru stiahnutého do počítača ----------
 create or replace function public.fulka_restore_file(p_data jsonb)
-returns bigint language plpgsql security definer set search_path = public as $$
-declare before_id bigint;
+returns void language plpgsql security definer set search_path = public as $$
+declare before jsonb;
 begin
   if not public.is_admin('fulka') then raise exception 'Iba admin FULky' using errcode = '42501'; end if;
-  before_id := fulka_take_backup('file', 'Pred nahratím zálohy zo súboru');
+  before := fulka_state();
   perform fulka_apply(p_data);
-  return before_id;
+  perform fulka_keep_undo(before, 'Stav pred nahratím zálohy zo súboru');
 end $$;
 revoke execute on function public.fulka_restore_file(jsonb) from public, anon;
 grant execute on function public.fulka_restore_file(jsonb) to authenticated;
 
--- prvá záloha hneď teraz
-select public.fulka_take_backup('manual', 'Prvá záloha (spustenie 3-zalohy.sql)');
+-- ---------- „Vrátiť späť“: vymení aktuálny stav s poistkou ----------
+create or replace function public.fulka_undo()
+returns void language plpgsql security definer set search_path = public as $$
+declare u jsonb; before jsonb;
+begin
+  if not public.is_admin('fulka') then raise exception 'Iba admin FULky' using errcode = '42501'; end if;
+  select data into u from fulka_backups where kind = 'undo';
+  if u is null then raise exception 'Nie je čo vrátiť späť' using errcode = 'P0002'; end if;
+  before := fulka_state();
+  perform fulka_apply(u);
+  perform fulka_keep_undo(before, 'Stav pred „Vrátiť späť“');
+end $$;
+revoke execute on function public.fulka_undo() from public, anon;
+grant execute on function public.fulka_undo() to authenticated;
 
 -- ---------- Kontrola ----------
--- 1) malo by vrátiť aspoň 1 riadok s počtami (seasons 1, teams 4, players 39 …):
---    select id, created_at, kind, label, summary from public.fulka_backups order by id desc limit 5;
--- 2) anonym zálohy nevidí (v termináli; má vrátiť []):
---    curl -s "https://anovkowkucidkutwghzx.supabase.co/rest/v1/fulka_backups?select=id" -H "apikey: <publishable key>"
---
--- ---------- Upratanie (iba ručne, keď bude záloh priveľa) ----------
--- automatické zálohy staršie ako 1 rok:
---    delete from public.fulka_backups where kind = 'auto' and created_at < now() - interval '1 year';
+-- 1) funkcie a tabuľka existujú (má vrátiť 0, žiadna záloha ešte nie je):
+--    select count(*) from public.fulka_backups;
+-- 2) automatické zálohy nie sú (má vrátiť 0 riadkov):
+--    select tgname from pg_trigger where tgname = 'fulka_zaloha_pred_zmenou';
+-- 3) potom v admine → Zálohy → „Uložiť zálohu“ a znova 1) → 1.

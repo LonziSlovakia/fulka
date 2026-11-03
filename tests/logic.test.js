@@ -528,44 +528,6 @@ test("iniciály: viac medzier medzi menami nevadí", () => {
   assert.equal(L.initials("Jakub  Novák"), "JN");
 });
 
-test("upozornenia pred uložením zápasu", () => {
-  const roster = { a1: "gia", b1: "bre" };
-  const d = { stage: "R", home_id: "gia", away_id: "bre", tbd: false, date: "2026-11-20", status: "done", goals: [{ side: "h", scorer: "b1", assist: "" }] };
-  const w = L.matchWarnings(d, { home_id: "gia", away_id: "ran", status: "done" }, roster, "2026-11-03");
-  assert.deepEqual(w, [
-    "Zápas je označený ako odohraný, ale jeho dátum je ešte len v budúcnosti.",
-    "Pri góle č. 1 je strelec zo súpisky súpera.",
-    "Menia sa tímy zápasu, ktorý už má zapísané góly — skontroluj strelcov.",
-  ]);
-  assert.deepEqual(L.matchWarnings(Object.assign({}, d, { date: "2026-11-01", goals: [] }), null, roster, "2026-11-03"), ["Odohraný zápas bez gólov — výsledok bude 0:0."]);
-  assert.deepEqual(L.matchWarnings(Object.assign({}, d, { status: "plan", goals: [{ side: "h", scorer: "a1" }] }), { home_id: "gia", away_id: "bre", status: "done" }, roster, "2026-11-03"),
-    ["Zápas prestane byť odohraný — jeho výsledok 1:0 sa prestane rátať do tabuľky."]);
-});
-
-test("popis zmeny zápasu: nový, termín, skóre, góly, poznámka", () => {
-  const names = { teams: { gia: "Giants", bre: "Brewers" }, players: { a1: "Adam", a2: "Andrej", b1: "Bea" } };
-  const before = match("m1", 1, "gia", "bre", "plan", { starts_at: "2026-11-03T20:15:00+00:00", note: "" });
-  const after = Object.assign({}, before, { starts_at: "2026-11-04T20:15:00.000Z", status: "done", note: "derby" });
-  const g = [{ side: "h", scorer_id: "a1", assist_id: "a2" }];
-  assert.deepEqual(L.describeMatch(null, before, [], [], names), ["Nový zápas: Giants – Brewers, Ut 3. 11. · 21:15"]);
-  assert.deepEqual(L.describeMatch(before, Object.assign({}, before, { starts_at: "2026-11-03T20:15:00.000Z" }), g, g, names), []);
-  assert.deepEqual(L.describeMatch(before, after, [], g.concat([{ side: "a", scorer_id: null, assist_id: null }]), names), [
-    "Termín: Ut 3. 11. · 21:15 → St 4. 11. · 21:15",
-    "Stav: plánovaný → odohraný",
-    "Skóre: 0:0 → 1:1",
-    "Gól č. 1: — → Adam (asist. Andrej) za domácich",
-    "Gól č. 2: — → Neznámy hráč za hostí",
-    "Poznámka: „“ → „derby“",
-  ]);
-  assert.deepEqual(L.describeMatch(after, after, g, [], names), ["Skóre: 1:0 → 0:0", "Gól č. 1: Adam (asist. Andrej) za domácich → zmazaný"]);
-});
-
-test("popis zmeny polí", () => {
-  const f = [["name", "Názov"], ["photos", "Fotky", (v) => (v ? "zapnuté" : "vypnuté")], ["list", "Zoznam", (v) => v.join(", ")]];
-  assert.deepEqual(L.describeFields({ name: "A", photos: true, list: [1, 2] }, { name: "B", photos: true, list: [2, 1] }, f), ["Názov: A → B", "Zoznam: 1, 2 → 2, 1"]);
-  assert.deepEqual(L.describeFields(null, { name: "A", photos: false, list: [] }, f), ["Názov: A", "Fotky: vypnuté", "Zoznam: "]);
-});
-
 test("zálohy: porovnanie aktuálneho stavu so zálohou", () => {
   const cur = { settings: { bannerCount: 2, photos: true }, players: [{ id: "a1", name: "Adam" }, { id: "a2", name: "Andrej" }],
     matches: [{ id: "m1", starts_at: "2026-11-03T20:15:00+00:00", status: "done" }], goals: [{ id: "x", match_id: "m1", seq: 1, side: "h" }] };

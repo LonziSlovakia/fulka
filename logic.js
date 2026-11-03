@@ -374,73 +374,6 @@
     scorer_id: g.scorer && g.scorer !== UNKNOWN ? g.scorer : null, assist_id: g.assist || null,
   }));
 
-  /* ---------- Admin: upozornenia a popis zmeny (do potvrdzovacieho okna pred uložením) ---------- */
-  /* Veci, ktoré nie sú chyba, ale skoro isto preklep. d = draft s doplnenými tímami, saved = zápas v DB (alebo null),
-     rosterTeam = { player_id: team_id } súpiska sezóny, today = "YYYY-MM-DD". Vráti zoznam viet. */
-  function matchWarnings(d, saved, rosterTeam, today) {
-    const out = [];
-    const goals = d.goals || [];
-    const s = score(goals);
-    if (d.status === "done" && !d.tbd && d.date > today) out.push("Zápas je označený ako odohraný, ale jeho dátum je ešte len v budúcnosti.");
-    if (d.status === "done" && !goals.length) out.push("Odohraný zápas bez gólov — výsledok bude 0:0.");
-    const teamOf = { h: d.home_id, a: d.away_id };
-    goals.forEach((g, i) => {
-      [[g.scorer, "strelec"], [g.assist, "asistent"]].forEach(([id, who]) => {
-        const t = id && id !== UNKNOWN ? (rosterTeam || {})[id] : null;
-        if (t && teamOf[g.side] && t !== teamOf[g.side] && (t === d.home_id || t === d.away_id)) out.push(`Pri góle č. ${i + 1} je ${who} zo súpisky súpera.`);
-      });
-    });
-    if (saved && goals.length && (saved.home_id !== d.home_id || saved.away_id !== d.away_id) && saved.home_id && saved.away_id) {
-      out.push("Menia sa tímy zápasu, ktorý už má zapísané góly — skontroluj strelcov.");
-    }
-    if (saved && saved.status === "done" && d.status !== "done") out.push(`Zápas prestane byť odohraný — jeho výsledok ${s.h}:${s.a} sa prestane rátať do tabuľky.`);
-    return out;
-  }
-
-  /* Popis zmeny zápasu ako zoznam riadkov „čo → na čo“.
-     before / after = riadky zápasu (before = null pre nový), og / ng = staré a nové góly (riadky DB),
-     names = { teams: { id: názov }, players: { id: meno } }. */
-  function describeMatch(before, after, og, ng, names) {
-    const team = (id) => (id ? (names.teams[id] || id) : "?");
-    const pl = (id) => (id ? (names.players[id] || id) : "Neznámy hráč");
-    const when = (m) => (m.starts_at ? slot(m.starts_at) : m.window_from ? `termín neznámy (týždeň ${weekLabel(m.window_from, m.window_to)})` : "termín neznámy");
-    const pair = (m) => `${team(m.home_id)} – ${team(m.away_id)}`;
-    const st = (m) => (m.status === "done" ? "odohraný" : "plánovaný");
-    const goal = (g) => (g ? `${pl(g.scorer_id)}${g.assist_id ? ` (asist. ${pl(g.assist_id)})` : ""} za ${g.side === "h" ? "domácich" : "hostí"}` : "—");
-    const sc = (gs) => { const x = score(gs); return `${x.h}:${x.a}`; };
-    const out = [];
-    if (!before) {
-      out.push(`Nový zápas: ${pair(after)}, ${when(after)}`);
-      if (after.status === "done") out.push(`Odohraný, výsledok ${sc(ng)}`);
-      return out;
-    }
-    if (before.home_id !== after.home_id || before.away_id !== after.away_id) out.push(`Tímy: ${pair(before)} → ${pair(after)}`);
-    if (when(before) !== when(after)) out.push(`Termín: ${when(before)} → ${when(after)}`);
-    if (!!before.moved !== !!after.moved) out.push(after.moved ? "Na webe bude označený ako presunutý" : "Už nebude označený ako presunutý");
-    const ms = (iso) => (iso ? new Date(iso).getTime() : 0);
-    if (ms(before.orig_starts_at) !== ms(after.orig_starts_at) && after.orig_starts_at) out.push(`Pôvodný termín (prečiarknutý): ${slot(after.orig_starts_at)}`);
-    if (before.status !== after.status) out.push(`Stav: ${st(before)} → ${st(after)}`);
-    if (sc(og) !== sc(ng)) out.push(`Skóre: ${sc(og)} → ${sc(ng)}`);
-    const n = Math.max(og.length, ng.length);
-    for (let i = 0; i < n; i++) {
-      const a = og[i];
-      const b = ng[i];
-      const same = a && b && a.side === b.side && (a.scorer_id || null) === (b.scorer_id || null) && (a.assist_id || null) === (b.assist_id || null);
-      if (!same) out.push(`Gól č. ${i + 1}: ${goal(a)} → ${b ? goal(b) : "zmazaný"}`);
-    }
-    if ((before.note || "") !== (after.note || "")) out.push(`Poznámka: „${before.note || ""}“ → „${after.note || ""}“`);
-    if ((before.round || null) !== (after.round || null)) out.push(`Kolo: ${before.round} → ${after.round}`);
-    return out;
-  }
-
-  /* Všeobecný popis zmien objektu: fields = [[kľúč, názov, (hodnota) => text]]. Vráti „Názov: staré → nové“. */
-  function describeFields(before, after, fields) {
-    const show = (f, v) => (f ? f(v) : v === undefined || v === null || v === "" ? "—" : String(v));
-    return fields
-      .filter(([k]) => JSON.stringify(before ? before[k] : undefined) !== JSON.stringify(after[k]))
-      .map(([k, label, f]) => (before ? `${label}: ${show(f, before[k])} → ${show(f, after[k])}` : `${label}: ${show(f, after[k])}`));
-  }
-
   /* ---------- Zálohy: porovnanie aktuálneho stavu so zálohou ----------
      cur = dáta z DB.load() (settings je priamo objekt), snap = záloha z fulka_backups.data (settings = [{ id, data }]).
      Porovnávajú sa iba stĺpce, ktoré má aj cur (časy vytvorenia/úpravy nie). Vráti { tabuľka: { added, removed, changed } }
@@ -505,7 +438,7 @@
     standings, scorers,
     playoff, resolveMatches, champion, places, regularDone,
     rounds, byTime, nextMatches, matchState,
-    validateMatch, matchWarnings, describeMatch, describeFields, compareData, initials, settingsOf,
+    validateMatch, compareData, initials, settingsOf,
     draftOf, rowOf, goalRowsOf, slug, playerId, shortName, shiftTime, longDate, monthDays,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Logic;
