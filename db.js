@@ -98,7 +98,11 @@
   const write = async (path, opts) => rest(path, { ...opts, token: await token() });
   const now = () => new Date().toISOString();
   const noRights = () => Object.assign(new Error("Tento účet nemá právo zapisovať"), { status: 403 });
-  const filter = (where) => Object.entries(where).map(([k, v]) => `${k}=eq.${encodeURIComponent(v)}`).join("&");
+  // { id: "x" } → id=eq.x; { seq: { gt: 3 } } → seq=gt.3
+  const filter = (where) => Object.entries(where).map(([k, v]) => {
+    const [op, val] = v && typeof v === "object" ? Object.entries(v)[0] : ["eq", v];
+    return `${k}=${op}.${encodeURIComponent(val)}`;
+  }).join("&");
 
   // jeden riadok alebo pole; key = stĺpce, podľa ktorých sa pozná existujúci riadok
   async function upsert(kind, rows, key = "id") {
@@ -107,13 +111,25 @@
     if (!r || r.length !== list.length) throw noRights(); // prázdna odpoveď = RLS nepovolilo
     return r;
   }
-  // where = { id: "…" } alebo { season_id: "…", player_id: "…" }
-  async function remove(kind, where) {
+  // where = { id: "…" } alebo { season_id: "…", player_id: "…" }; maybe = v poriadku, aj keď nebolo čo zmazať
+  async function remove(kind, where, maybe = false) {
     const r = await write(`${T[kind]}?${filter(where)}`, { method: "DELETE", prefer: "return=representation" });
-    if (!r || !r.length) throw noRights(); // RLS potichu nezmaže nič, ak účet nie je admin
-    return r;
+    if (!maybe && (!r || !r.length)) throw noRights(); // RLS potichu nezmaže nič, ak účet nie je admin
+    return r || [];
   }
   const saveSettings = (data) => upsert("settings", { id: 1, data });
+
+  /* ---------- Zálohy (supabase/3-zalohy.sql): vidí a vytvára iba admin, zmazať ich cez web nejde ---------- */
+  const rpc = (name, args) => write(`rpc/${name}`, { method: "POST", body: args || {} });
+  const backups = () => write(`${CFG.site}_backups?select=id,created_at,kind,label,summary&order=id.desc&limit=200`, {});
+  async function backupData(id) {
+    const r = await write(`${CFG.site}_backups?select=data&id=eq.${encodeURIComponent(id)}`, {});
+    if (!r || !r.length) throw Object.assign(new Error("Záloha sa nenašla"), { status: 404 });
+    return r[0].data;
+  }
+  const backup = (label) => rpc(`${CFG.site}_backup`, { p_label: label || "" });
+  const restore = (id) => rpc(`${CFG.site}_restore`, { p_id: Number(id) });
+  const restoreFile = (data) => rpc(`${CFG.site}_restore_file`, { p_data: data });
 
   /* ---------- Fotky ---------- */
   async function upload(path, blob) {
@@ -139,6 +155,11 @@
     upsert,
     remove,
     saveSettings,
+    backups,
+    backupData,
+    backup,
+    restore,
+    restoreFile,
     upload,
     photoUrl,
   };

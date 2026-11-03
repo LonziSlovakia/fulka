@@ -297,7 +297,12 @@
 /* ---------- Potvrdzovací dialóg ---------- */
 .a-modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(5, 5, 5, 0.55);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: a-fade 0.12s ease-out; }
-.a-modal-card { width: min(100%, 480px); background: var(--card); border: 1px solid var(--line-2); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); font-size: 15px; }
+.a-modal-card { width: min(100%, 560px); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--card); border: 1px solid var(--line-2); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); font-size: 15px; }
+.a-modal-d { display: flex; flex-direction: column; gap: 10px; }
+.a-mlist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.a-mlist li { position: relative; padding: 8px 10px 8px 26px; background: var(--card-2); border-left: 3px solid var(--fg); line-height: 1.35; overflow-wrap: anywhere; }
+.a-mlist li::before { content: "→"; position: absolute; left: 8px; top: 8px; color: var(--fg-3); font-size: 13px; }
+.a-modal .a-warn { font-size: 14px; }
 .a-modal .a-ed-head .tt b { font-size: 30px; }
 .a-save.danger { background: #ff5c5c; color: var(--bg); min-height: 52px; font-size: 22px; }
 .a-modal .a-ghost { min-height: 52px; }
@@ -345,3 +350,17 @@
 .a-offer-btns { display: flex; gap: 4px; }
 @media (max-width: 640px) { .a-offer-row { grid-template-columns: 1fr auto; padding-bottom: 8px; border-bottom: 1px solid var(--line-2); }
   .a-offer-row input:nth-child(2) { grid-column: 1; grid-row: 2; } .a-offer-btns { grid-column: 2; grid-row: 1 / span 2; flex-direction: column; } }
+
+/* ---------- Zálohy ---------- */
+.a-bk { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.a-bk-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid var(--line-2); }
+.a-bk-row:first-child { border-top: 0; }
+.a-bk-row .txt { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.a-bk-row .txt b { font-weight: 700; font-size: 16px; }
+.a-bk-row .info { font-size: 13px; color: var(--fg-2); overflow-wrap: anywhere; }
+.a-bk-kind { padding: 1px 6px; border: 1px solid var(--fg-3); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2); }
+.a-bk-kind.manual { border-color: var(--fg); color: var(--fg); }
+.a-bk-kind.restore, .a-bk-kind.file { border-color: var(--moved); color: var(--moved); }
+.a-bk-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.a-fs .a-bk-back { color: #ff8a8a; border-color: #5e0710; }
+.a-filebtn { cursor: pointer; }

@@ -3,7 +3,7 @@
 Všeobecné pravidlá o Lonzim sú v `~/.claude/CLAUDE.md`. Tu je iba to, čo platí pre FULka.
 **Tento súbor udržiavaj živý:** po každej zmene, ktorá mení správanie alebo dohodu, ho uprav v tom istom commite.
 Neplatné veci zmaž, históriu nedumpuj. `HANDOFF.md` je pôvodné zadanie (pri rozpore platí tento súbor) – čítaj z neho iba časť, ktorú potrebuješ.
-Stav k 23. 10. 2026.
+Stav k 3. 11. 2026.
 
 ## Pravidlá projektu
 
@@ -23,6 +23,7 @@ Stav k 23. 10. 2026.
 - Dáta, fotky, prihlásenie: Supabase projekt `lonzi-weby` (spoločný s `laura`), tabuľky `fulka_*`, bucket `fulka`.
   Zápis povoľuje RLS cez `public.is_admin('fulka')`. Budík proti uspaniu databázy beží v repozitári `laura`.
 - Spustené SQL: `supabase/1-fulka.sql` (tabuľky, pravidlá, štartovacie dáta), `supabase/2-loga-webp.sql` (logá víťazov vo WebP).
+  **`supabase/3-zalohy.sql` (zálohy) je pripravený, Lonzi ho ešte musí spustiť** – dovtedy admin → Zálohy ukáže výzvu na spustenie. Po spustení tento riadok uprav.
 - Sezóna: Zimná 2026 (pilotná), tímy Veľká sála Giants, Libresso Brewers, Recepcia Rangers, Kaplnka Saints.
 
 ## Súbory
@@ -31,13 +32,13 @@ Stav k 23. 10. 2026.
 |---|---|
 | `index.html` | kostra; načíta `config.js`, `db.js`, `logic.js`, `upece.js`, `render.js` |
 | `config.js` | URL + publishable key (verejné) |
-| `db.js` | fetch klient: načítanie všetkých 8 tabuliek + cache v `localStorage` (`fulka-data-v1`), prihlásenie s obnovou tokenu (`fulka-session-v1`), `upsert(kind, rows, key)`, `remove(kind, where)`, `upload`, `photoUrl` |
+| `db.js` | fetch klient: načítanie všetkých 8 tabuliek + cache v `localStorage` (`fulka-data-v1`), prihlásenie s obnovou tokenu (`fulka-session-v1`), `upsert(kind, rows, key)`, `remove(kind, where, maybe)` (where aj `{ seq: { gt: 3 } }`), `upload`, `photoUrl`, zálohy `backups/backupData/backup/restore/restoreFile` |
 | `logic.js` | čisté výpočty (testované): skóre, tabuľka, bodovanie, playoff, dátumy v čase Bratislavy, draft zápasu ↔ riadok DB (`draftOf`/`rowOf`), `DEFAULTS` nastavení |
 | `upece.js` | sekcia „Z UPeCe“: načítanie a čítanie týždenných oznamov a noviniek z upcba.sk (čisté funkcie + `load()` s cache `fulka-upece-v1`) |
 | `render.js` | verejný web; s `?edit` sa nevykresľuje a načíta `admin.js` + `admin.css` |
 | `admin.js` / `admin.css` | admin podľa `design/Admin.dc.html`; triedy admina majú predponu `a-` (napr. `.a-mid`), aby sa nebili so `styles.css` |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
-| `tests/*.test.js` | `node --test tests/*.test.js` (46 testov: `logic` 39, `upece` 7; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (59 testov: `logic` 52, `upece` 7; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF |
@@ -57,7 +58,8 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - **Písmo Saira.** PP Monument Extended je platený (na dafonte iba na osobné použitie) → súbory sú iba lokálne v `assets/fonts/` (gitignore),
   prepína sa iba cez `?pismo=monument` a použije sa až po úspešnom načítaní písma. Prepínač písma v admine je skrytý.
 - Banner: najbližšie neodohrané zápasy (počet `bannerCount`); zápas ostáva, kým ho admin neoznačí ako odohraný (bez časovej tolerancie).
-  Bez presného termínu ukáže týždeň (`window_from–to`) a „termín sa doplní“.
+  Bez presného termínu ukáže týždeň (`window_from–to`) a „termín sa doplní“. Playoff na banneri až keď sú tímy isté (`fixed`); sezóna bez zápasov
+  základnej časti nemá „dohranú“ základnú časť (inak by sa SF nasadilo abecedne). Strelec ≠ asistent v tom istom góle (kontrola pri uložení).
 - Tabuľka: body → kritériá z `tableOrder` (nastaviteľné poradie, lebo pilotná sezóna). Vzájomné zápasy sa rátajú iba medzi tímami,
   ktoré sú dovtedy úplne rovnaké. Úplná zhoda → poradie tímov (abecedne). Pod tabuľkou je poznámka vygenerovaná z poradia kritérií.
 - Kanadské bodovanie: základná časť **aj playoff**; tím hráča = strana gólu (nie súpiska). Rovnaké čísla → **rovnaká priečka** (1, 2, 2, 4…),
@@ -84,6 +86,15 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - „Celý kalendár“ → upcba.sk/kalendar/ (curl dostane 403 od Cloudflare, prehliadač je OK) · „Všetko, čo ponúkame“ → upcba.sk/o-upece/.
   - Ponuka: zoznam z nastavení (`upeceOffer`) + všetky tímy, ktoré kedy hrali, s menom miesta (`venue`).
   - Ak sa zmení šablóna oznamov na upcba.sk, program sa ukáže prázdny („ešte nie je zverejnený“) – oprava v `upece.js` + test.
+- **Potvrdenie pred každým zápisom** (Lonzi chcel): `ask()` v `admin.js` ukáže zoznam „čo → na čo“ (`L.describeMatch`, `L.describeFields`)
+  a upozornenia (`L.matchWarnings`: odohraný v budúcnosti, 0:0, strelec zo súpisky súpera, zmena tímov s gólmi, zrušenie odohrania).
+  Mazanie / odobratie tímov = červené okno. Bez zmeny sa nič neukladá („Nič sa nezmenilo“).
+- Góly sa ukladajú bez mazania vopred: upsert podľa `match_id,seq`, potom zmazať iba `seq > počet` (predtým sa najprv všetko zmazalo → pri výpadku by góly zmizli).
+- **Zálohy** (`supabase/3-zalohy.sql`, admin → Zálohy): snímka všetkých 8 tabuliek v `fulka_backups` (~25 kB). Automaticky ju robí spúšťač v DB
+  pred prvou zmenou v každom 10-min. okne (nedá sa obísť z prehliadača), ručne tlačidlom (max 1 za 30 s). Cez API ich nikto nezmaže ani nezmení –
+  ani ukradnuté prihlásenie admina; mazať iba Lonzi v SQL Editore (príkaz je na konci skriptu). Návrat k zálohe: popis zmien po tabuľkách
+  (`L.compareData`) + napísať **OBNOVIŤ**; DB najprv sama uloží stav „pred návratom“, potom v jednej transakcii nahradí tabuľky (`fulka_apply`).
+  Stiahnutie zálohy do počítača (JSON `format: fulka-zaloha-1`) a návrat zo súboru (`fulka_restore_file`). Fotky v buckete sa nezálohujú.
 - Päta: odkaz na UPeCe Bratislava (upcba.sk, biele logo) a Supabase (supabase.com, „Dáta, fotky a prihlásenie bežia na Supabase“).
 
 ## Ako testovať (bez zápisu do databázy)
@@ -95,7 +106,8 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/" 390 /tmp/m.png            # sc
 node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fake-login.js RELOAD @tools/mock-db.js "<JS kroky>"
 ```
 - `shot.js <url> <šírka> <out.png> [kroky]` – krok `RELOAD`, `@súbor.js` alebo JS kód; `CLIP=x,y,w,h` oreže obrázok.
-- Admin: `fake-login.js` podvrhne prihlásenie, `mock-db.js` presmeruje zápisy do pamäte (`__mem()`, `__writes`).
+- Admin: `fake-login.js` podvrhne prihlásenie, `mock-db.js` presmeruje zápisy do pamäte (`__mem()`, `__writes`, zálohy `__backups` s 2 ukážkovými).
+  Potvrdzovacie okno je `.a-modal`: potvrdiť `[data-m=ok]`, zrušiť `[data-m=no]`, slovo do `[data-m=word]`.
 - Chromium je Playwright headless shell; chýbajúce knižnice sú v `tools/.cache/libroot` (bez sudo, gitignore).
 - Port 8765 používa iný projekt – nezabíjať.
 
@@ -114,6 +126,9 @@ texty z DB sa escapujú. Nízke riziká: hádanie hesla, prihlásenie uložené 
 ochrana admina pred vložením do cudzej stránky (clickjacking) – zatiaľ nerobené.
 
 ## Otvorené / nápady
+
+- Fotky nie sú v zálohe: nahratie prepíše starú (`x-upsert`) a admin by ich vedel zmazať. Dalo by sa: nové cesty pre každú fotku + zrušiť pravidlá update/delete v buckete (ak Lonzi bude chcieť).
+- Záloha mimo Supabase automaticky (napr. denný GitHub Action → artifact), zatiaľ iba ručné „Stiahnuť“ (ak Lonzi bude chcieť).
 
 - Clickjacking ochrana v `admin.js` (ak Lonzi bude chcieť).
 - Text pri Supabase v päte prípadne zmeniť na „Vybudované s pomocou Supabase“ (ak Lonzi bude chcieť).
