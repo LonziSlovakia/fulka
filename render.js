@@ -6,7 +6,7 @@
   const L = window.Logic;
   const U = window.Upece;
   const app = document.getElementById("app");
-  const state = { data: null, season: null, open: undefined, menu: false, photos: true, font: "saira", layout: "wide" };
+  const state = { data: null, season: null, open: undefined, menu: false, photos: true, font: "saira", layout: "wide", allPlayers: false };
 
   /* ---------- Drobnosti ---------- */
   const STAGE = { SF1: "Semifinále 1", SF2: "Semifinále 2", B3: "O 3. miesto", F: "Finále" };
@@ -54,6 +54,7 @@
       s, teamIds, matches, gm, settings, table, rounds,
       po: L.playoff(s, raw, gm, table),
       top: L.scorers(matches, gm, P, table, 10, settings),
+      all: L.scorers(matches, gm, P, table, Infinity, settings, d.roster.filter((r) => r.season_id === s.id)), // „Všetci hráči“ aj bez bodu
       roster: d.roster.filter((r) => r.season_id === s.id),
       doneRounds: rounds.filter((r) => r.matches.every((m) => m.status === "done")).length,
       champ: L.champion(matches, gm),
@@ -388,12 +389,23 @@
     }).join("");
   }
 
+  // riadok na konci tabuľky: ＋ rozbalí všetkých hráčov sezóny (aj bez bodu), − ich znova skryje
+  function moreRow(c) {
+    const extra = c.v.all.length - c.v.top.length;
+    if (extra <= 0) return "";
+    const open = state.allPlayers;
+    return `<button type="button" class="ptbl-more" data-act="allPlayers" aria-expanded="${open}"><span class="pm" aria-hidden="true">${open ? "−" : "+"}</span>
+      ${open ? "Skryť, ukázať iba top 10" : `Všetci hráči sezóny <span class="cnt">(${c.v.all.length})</span>`}</button>`;
+  }
+  const shownPlayers = (c) => (state.allPlayers ? c.v.all : c.v.top);
+
   function players(c) {
     const top = c.v.top;
     const hint = "Gól = 1 bod · asistencia = 1 bod";
     if (!top.length) return `<section id="hraci" class="sec">${secHead("Kanadské bodovanie", hint)}<p class="empty">Zatiaľ nepadol žiadny gól. Body sa začnú rátať po prvom zápase.</p></section>`;
-    const rest = top.slice(3);
-    const tbl = rest.length ? `<div class="ptbl"><div class="ptbl-row ptbl-head"><span>#</span><span>Hráč</span><span>Z</span><span>G</span><span>A</span><span>B</span></div>${playerRows(rest, c, true)}</div>` : "";
+    const rest = shownPlayers(c).slice(3);
+    const more = moreRow(c);
+    const tbl = rest.length || more ? `<div class="ptbl"><div class="ptbl-row ptbl-head"><span>#</span><span>Hráč</span><span>Z</span><span>G</span><span>A</span><span>B</span></div>${playerRows(rest, c, true)}${more}</div>` : "";
     return `<section id="hraci" class="sec">${secHead("Kanadské bodovanie", hint)}<div class="podium">${top.slice(0, 3).map((x) => podiumCard(x, c)).join("")}</div>${tbl}</section>`;
   }
 
@@ -558,7 +570,7 @@
   function topPlayers(c) {
     if (!c.v.top.length) return "";
     return `<section id="hraci" class="sec" style="padding-top:48px">${secHead("Najlepší hráči", "Kanadské bodovanie celej sezóny vrátane playoff")}
-      <div class="ptbl nz"><div class="ptbl-row ptbl-head"><span>#</span><span>Hráč</span><span>G</span><span>A</span><span>B</span></div>${playerRows(c.v.top, c, false)}</div></section>`;
+      <div class="ptbl nz"><div class="ptbl-row ptbl-head"><span>#</span><span>Hráč</span><span>G</span><span>A</span><span>B</span></div>${playerRows(shownPlayers(c), c, false)}${moreRow(c)}</div></section>`;
   }
 
   function pastBody(c, open) {
@@ -673,6 +685,7 @@
     state.season = id;
     state.menu = false;
     state.open = undefined;
+    state.allPlayers = false; // iná sezóna → znova iba top 10
     render();
     window.scrollTo(0, 0);
   }
@@ -684,6 +697,13 @@
     if (act === "menu") { state.menu = !state.menu; render(); }
     else if (act === "season") pickSeason(el.dataset.id);
     else if (act === "home") { e.preventDefault(); pickSeason(null); }
+    else if (act === "allPlayers") {
+      state.allPlayers = !state.allPlayers;
+      render();
+      // po zbalení dlhého zoznamu ostať pri tlačidle, nie niekde pod tabuľkou
+      const btn = app.querySelector('[data-act="allPlayers"]');
+      if (!state.allPlayers && btn && btn.getBoundingClientRect().top < 0) btn.scrollIntoView({ block: "center" });
+    }
     else if (act === "open") {
       const c = context();
       state.open = openId(c) === el.dataset.id ? null : el.dataset.id;

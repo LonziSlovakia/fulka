@@ -174,8 +174,9 @@
   /* ---------- Kanadské bodovanie ---------- */
   // tím hráča = strana jeho posledného gólu/asistencie (nie aktuálna súpiska – vyradený hráč si body necháva)
   /* Poradie: body → kritériá z nastavení (settings.scorerOrder) → pri úplnej zhode podľa scorerTies
-     (rovnaká priečka / abeceda / tím a abeceda). Vráti hráčov s priečkou do `limit` (pri zhode aj viac). */
-  function scorers(matches, gm, players, table, limit, settings) {
+     (rovnaká priečka / abeceda / tím a abeceda). Vráti hráčov s priečkou do `limit` (pri zhode aj viac).
+     roster (nepovinné) = súpiska sezóny: pridá aj hráčov bez bodu (tím zo súpisky) → celý zoznam „Všetci hráči“. */
+  function scorers(matches, gm, players, table, limit, settings, roster) {
     const played = {};
     (table || []).forEach((t) => { played[t.id] = t.z; });
     const p = {};
@@ -191,6 +192,9 @@
         add(g.scorer_id, "g", teamId);
         add(g.assist_id, "a", teamId);
       });
+    });
+    (roster || []).forEach((r) => {
+      if (!p[r.player_id] && players[r.player_id]) p[r.player_id] = { player_id: r.player_id, name: players[r.player_id].name, team_id: r.team_id, g: 0, a: 0 };
     });
     const opts = Object.assign({}, DEFAULTS, settings);
     const teamPos = {};

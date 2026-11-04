@@ -232,6 +232,12 @@ a { color: inherit; }
 .ptbl-row .pl > img { width: 20px; height: 20px; flex: none; opacity: 0.85; }
 .ptbl-row .soft { color: #cfcfcf; }
 .ptbl-row .pts { font-family: var(--fc); font-weight: 900; font-size: 24px; line-height: 1; }
+/* „Všetci hráči sezóny“: posledný riadok tabuľky, ＋ rozbalí / − zbalí */
+.ptbl-more { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 10px 16px; background: transparent; color: var(--fg); border: 0; border-top: 1px solid var(--line);
+  font-family: var(--fc); font-weight: 800; font-size: 18px; letter-spacing: 0.04em; text-transform: uppercase; text-align: left; cursor: pointer; }
+.ptbl-more:hover { background: #111111; }
+.ptbl-more .pm { display: grid; place-items: center; width: 28px; height: 28px; flex: none; background: var(--fg); color: var(--bg); font-size: 22px; line-height: 1; }
+.ptbl-more .cnt { color: var(--fg-3); }
 
 /* avatar: fotka alebo iniciály v tímovej farbe */
 .av { position: relative; flex: none; width: 32px; height: 32px; overflow: hidden; background: var(--c); clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%); }

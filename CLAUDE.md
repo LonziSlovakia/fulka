@@ -3,7 +3,7 @@
 Všeobecné pravidlá o Lonzim sú v `~/.claude/CLAUDE.md`. Tu je iba to, čo platí pre FULka.
 **Tento súbor udržiavaj živý:** po každej zmene, ktorá mení správanie alebo dohodu, ho uprav v tom istom commite.
 Neplatné veci zmaž, históriu nedumpuj. `HANDOFF.md` je pôvodné zadanie (pri rozpore platí tento súbor) – čítaj z neho iba časť, ktorú potrebuješ.
-Stav k 3. 11. 2026.
+Stav k 4. 11. 2026.
 
 ## Pravidlá projektu
 
@@ -38,7 +38,7 @@ Stav k 3. 11. 2026.
 | `render.js` | verejný web; s `?edit` sa nevykresľuje a načíta `admin.js` + `admin.css` |
 | `admin.js` / `admin.css` | admin podľa `design/Admin.dc.html`; triedy admina majú predponu `a-` (napr. `.a-mid`), aby sa nebili so `styles.css` |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
-| `tests/*.test.js` | `node --test tests/*.test.js` (56 testov: `logic` 49, `upece` 7; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (57 testov: `logic` 50, `upece` 7; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF |
@@ -64,6 +64,8 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   ktoré sú dovtedy úplne rovnaké. Úplná zhoda → poradie tímov (abecedne). Pod tabuľkou je poznámka vygenerovaná z poradia kritérií.
 - Kanadské bodovanie: základná časť **aj playoff**; tím hráča = strana gólu (nie súpiska). Rovnaké čísla → **rovnaká priečka** (1, 2, 2, 4…),
   voliteľne abecedne alebo podľa tímu + abecedy; zobrazuje sa do 10. priečky (pri zhode aj viac riadkov). Na mobile sa skryje ikonka tímu, aby sa mená neorezávali.
+  Posledný riadok tabuľky „＋ Všetci hráči sezóny (N)“ rozbalí všetkých zo súpisky sezóny aj s 0 bodmi (`L.scorers(…, Infinity, settings, roster)`),
+  „−“ zbalí späť na top 10 (aj v archíve; pri zmene sezóny sa zbalí, nepamätá sa).
 - Playoff: „podľa tabuľky“ (SF1 = 1.–4., SF2 = 2.–3., isté až po celej základnej časti) alebo „ručne“ (tímy SF v zápase). B3/F sa dopĺňajú z výsledkov SF.
 - Presun zápasu: pôvodný termín = ten, **z ktorého sa presúva**; pri ďalšom presune voľba posledný/prvý; dá sa aj skryť.
   Lonzi je s tým spokojný („presne tak, ako to chcem mať“) – nemeniť.

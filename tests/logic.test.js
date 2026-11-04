@@ -541,3 +541,15 @@ test("zálohy: porovnanie aktuálneho stavu so zálohou", () => {
   assert.deepEqual(r.settings, { added: 0, removed: 0, changed: 0 });
   assert.deepEqual(r.teams, { added: 0, removed: 0, changed: 0 });
 });
+
+test("kanadské bodovanie: so súpiskou aj hráči bez bodu (Všetci hráči), poradie top 10 sa nemení", () => {
+  const ms = [match("m1", 1, "gia", "bre", "done")];
+  const gm = L.goalsByMatch(goals("m1", "hha", (s, i) => (i === 2 ? "b1" : "a1"), (s, i) => (i === 0 ? "a2" : null)));
+  const t = L.standings(TEAMS, ms, gm, {});
+  const roster = [{ player_id: "a1", team_id: "gia" }, { player_id: "a2", team_id: "gia" }, { player_id: "b1", team_id: "bre" }, { player_id: "r1", team_id: "ran" }, { player_id: "s1", team_id: "sai" }, { player_id: "zz", team_id: "sai" }];
+  const top = L.scorers(ms, gm, PLAYERS, t, 10, {});
+  const all = L.scorers(ms, gm, PLAYERS, t, Infinity, {}, roster);
+  assert.deepEqual(top.map((x) => x.player_id), ["a1", "b1", "a2"]); // rovnaké body → viac gólov
+  assert.deepEqual(all.map((x) => [x.player_id, x.pos, x.b, x.team_id]), [["a1", 1, 2, "gia"], ["b1", 2, 1, "bre"], ["a2", 3, 1, "gia"], ["r1", 4, 0, "ran"], ["s1", 4, 0, "sai"]]); // zz nie je medzi hráčmi
+  assert.deepEqual(all.slice(0, 3), top);
+});
