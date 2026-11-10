@@ -3,7 +3,7 @@
 Všeobecné pravidlá o Lonzim sú v `~/.claude/CLAUDE.md`. Tu je iba to, čo platí pre FULka.
 **Tento súbor udržiavaj živý:** po každej zmene, ktorá mení správanie alebo dohodu, ho uprav v tom istom commite.
 Neplatné veci zmaž, históriu nedumpuj. `HANDOFF.md` je pôvodné zadanie (pri rozpore platí tento súbor) – čítaj z neho iba časť, ktorú potrebuješ.
-Stav k 4. 11. 2026.
+Stav k 10. 11. 2026.
 
 ## Pravidlá projektu
 
@@ -18,7 +18,7 @@ Stav k 4. 11. 2026.
 
 ## Čo beží
 
-- Web: https://lonzislovakia.github.io/fulka/ · admin: `…/fulka/?edit` (prihlásenie e-mail + heslo, účet Lonzi; registrácia je vypnutá).
+- Web: https://lonzislovakia.github.io/fulka/ · admin: `…/fulka/?edit` (prihlásenie e-mail + heslo; admini sú dvaja, oba účty sú Lonziho: hlavný a sekundárny „Jozef“, pridaný ručne cez Add user + `public.admins`; registrácia je vypnutá).
 - Repozitár `LonziSlovakia/fulka` (verejný), u Lonziho `~/projects/fulka`, vetva `main` = to, čo je na webe.
 - Dáta, fotky, prihlásenie: Supabase projekt `lonzi-weby` (spoločný s `laura`), tabuľky `fulka_*`, bucket `fulka`.
   Zápis povoľuje RLS cez `public.is_admin('fulka')`. Budík proti uspaniu databázy beží v repozitári `laura`.
