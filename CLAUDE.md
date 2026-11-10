@@ -130,5 +130,7 @@ ochrana admina pred vložením do cudzej stránky (clickjacking) – zatiaľ ner
 ## Otvorené / nápady
 
 
+- Budík proti uspaniu (`keepalive.yml` v repozitári `laura`) pinguje iba raz za 3 dni, kým docs Supabase uvádzajú „niekoľko požiadaviek denne“. Lonzi ho zatiaľ nechce meniť, lebo to funguje.
+  Ak príde varovný e-mail od Supabase alebo sa projekt uspí: zmeniť cron na každých 6 hodín (`17 */6 * * *`, 4× denne).
 - Clickjacking ochrana v `admin.js` (ak Lonzi bude chcieť).
 - Text pri Supabase v päte prípadne zmeniť na „Vybudované s pomocou Supabase“ (ak Lonzi bude chcieť).
