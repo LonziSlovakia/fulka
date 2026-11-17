@@ -220,14 +220,60 @@
     const row = L.rowOf(Object.assign({}, d, { id, season_id: c.s.id }), saved, c.s.seed_mode);
     const goals = L.goalRowsOf(d, id);
     const had = (c.gm[id] || []).length;
-    run(async () => {
-      await DB.upsert("matches", row);
-      // góly sa prepíšu na mieste podľa poradia (seq) a až potom sa zmažú tie navyše –
-      // keby zápis spadol v polovici, staré góly nezmiznú
-      if (goals.length) await DB.upsert("goals", goals, "match_id,seq");
-      if (had > goals.length) await DB.remove("goals", { match_id: id, seq: { gt: goals.length } });
-    }, "Uložené. Web sa hneď aktualizuje — tabuľka aj štatistiky sa prepočítali.", () => select(id));
+    run(() => writeMatch(row, goals, had), "Uložené. Web sa hneď aktualizuje — tabuľka aj štatistiky sa prepočítali.", () => select(id));
   }
+
+  // zápas + góly do databázy; góly sa prepíšu na mieste podľa poradia (seq) a až potom sa zmažú tie navyše –
+  // keby zápis spadol v polovici, staré góly nezmiznú
+  async function writeMatch(row, goals, had) {
+    await DB.upsert("matches", row);
+    if (goals.length) await DB.upsert("goals", goals, "match_id,seq");
+    if (had > goals.length) await DB.remove("goals", { match_id: row.id, seq: { gt: goals.length } });
+  }
+
+  /* ---------- Výsledková tabuľa (board-admin.js) ---------- */
+  // draft odohraného zápasu z tabule: góly zo stavu tabule; zápas bez termínu dostane dnešný dátum a čas
+  function draftFromBoard(st, c) {
+    const saved = savedOf(c, st.matchId);
+    if (!saved) return null;
+    const d = L.draftOf(saved, c.gm[saved.id], c.settings.defaultTime);
+    d.status = "done";
+    d.goals = st.goals.map((g) => ({ side: g.side, scorer: g.scorer, assist: g.assist }));
+    if (d.tbd) { const now = L.localParts(Date.now()); d.tbd = false; d.date = now.date; d.time = now.time; }
+    // základná časť a ručné semifinále majú tímy zadané v zápase (z tabule sa uložia); finále, o 3. miesto a SF „podľa tabuľky“ sa dopĺňajú samé
+    const own = saved.stage === "R" || (c.s.seed_mode === "manual" && (saved.stage === "SF1" || saved.stage === "SF2"));
+    const resolved = teamsFor(saved, c);
+    const teams = own ? [st.home.id, st.away.id] : resolved;
+    if (own) { d.home_id = teams[0]; d.away_id = teams[1]; }
+    return { d, saved, teams, own };
+  }
+  // text chyby, keď by sa výsledok z tabule nedal uložiť (napr. remíza v playoff), inak ""
+  function checkBoard(st) {
+    const c = ctx();
+    const b = draftFromBoard(st, c);
+    if (!b) return "Tento zápas sa v databáze nenašiel (možno bol medzitým vymazaný).";
+    if (!b.own) {
+      const [h, a] = b.teams;
+      if (!h || !a) return "Tímy tohto zápasu sa v databáze doplňujú samé (z výsledkov semifinále / podľa tabuľky) a ešte nie sú známe. Zapíš najprv výsledky predchádzajúcich zápasov v záložke Zápasy a potom ulož výsledok znova.";
+      if (h !== st.home.id || a !== st.away.id) return `Podľa databázy hrajú ${(c.T[h] || {}).name || "?"} a ${(c.T[a] || {}).name || "?"}, na tabuli sú iné tímy. Zruš tabuľu a vyber zápas znova.`;
+    }
+    return L.validateMatch(Object.assign({}, b.d, { home_id: b.teams[0], away_id: b.teams[1] }), c.s.seed_mode);
+  }
+  // uloží výsledok z tabule (zápas = odohraný + góly); vráti text chyby, alebo "" a spustí zápis
+  function saveFromBoard(st, after) {
+    const err = checkBoard(st);
+    if (err) return err;
+    const c = ctx();
+    const { d, saved } = draftFromBoard(st, c);
+    const row = L.rowOf(d, saved, c.s.seed_mode);
+    const goals = L.goalRowsOf(d, saved.id);
+    run(() => writeMatch(row, goals, (c.gm[saved.id] || []).length), "Zápas je uložený — výsledok, tabuľka aj štatistiky sú na webe.", after);
+    return "";
+  }
+  const boardApi = () => ({
+    ctx, teamsFor, listRow, esc, msgs, ask, checkBoard, saveFromBoard, icon,
+    busy: () => S.busy, clearMsg: () => { S.toast = ""; S.error = ""; },
+  });
 
   async function removeMatch() {
     const id = S.sel;
@@ -561,7 +607,7 @@
   }
 
   function nav(c) {
-    const tabs = [["matches", "Zápasy"], ["playoff", "Playoff"], ["teams", "Tímy"], ["seasons", "Sezóny"], ["settings", "Nastavenia"], ["backups", "Zálohy"]]
+    const tabs = [["matches", "Zápasy"], ["playoff", "Playoff"], ["teams", "Tímy"], ["seasons", "Sezóny"], ["settings", "Nastavenia"], ["backups", "Zálohy"], ["board", "Tabuľa"]]
       .map(([id, label]) => `<button type="button" data-a="tab" data-id="${id}" ${pressed(S.tab === id)}>${label}</button>`).join("");
     let bar = "";
     if (S.tab !== "seasons" && S.tab !== "settings" && S.tab !== "backups") {
@@ -587,7 +633,7 @@
     return { t: `Termín sa hľadá${orig}`, warn: true };
   }
 
-  function listRow(m, c) {
+  function listRow(m, c, act = "select", cur = S.sel) {
     const [h, a] = teamsFor(m, c);
     const H = h && (c.T[h] || NOTEAM);
     const A = a && (c.T[a] || NOTEAM);
@@ -595,7 +641,7 @@
     const sc = L.score(c.gm[m.id]);
     const w = rowWhen(m);
     const center = done ? `${sc.h}:${sc.a}` : m.starts_at ? L.matchTime(m) : "TBD";
-    return `<button type="button" class="a-row" data-a="select" data-id="${esc(m.id)}" aria-current="${S.sel === m.id}">
+    return `<button type="button" class="a-row" data-${act === "select" ? "a" : "b"}="${act}" data-id="${esc(m.id)}" aria-current="${cur === m.id}">
       <span class="rail" aria-hidden="true" style="--hc:${H ? H.c : "#333333"};--ac:${A ? A.c : "#333333"}"></span>
       <span class="k">${m.stage === "R" ? `K${m.round}` : STAGE_SHORT[m.stage]}</span>
       <span class="a-mid"><span class="a-teams">${logo(H)}${H ? esc(H.abbr) : "?"}<span class="ctr${done ? " done" : ""}">${center}</span>${A ? esc(A.abbr) : "?"}${logo(A)}</span>
@@ -1225,17 +1271,18 @@
     if (S.tab === "seasons" && !S.seasonDraft && !mobile()) { selectSeason(c.s.id); return; }
     const isMP = S.tab === "matches" || S.tab === "playoff";
     const detail = isMP ? !!S.draft : S.tab === "teams" ? !!(S.teamSel || S.teamDraft) : S.tab === "seasons" ? !!S.seasonDraft : true;
-    const single = S.tab === "settings" || S.tab === "backups"; // iba jeden stĺpec
+    const single = S.tab === "settings" || S.tab === "backups" || S.tab === "board"; // iba jeden stĺpec
     const showLeft = !single && !(mobile() && detail);
     const showRight = single || !mobile() || detail;
     const left = { matches: matchList, playoff: playoffLeft, teams: teamList, seasons: seasonList }[S.tab];
-    const right = isMP ? matchEditor(c) : S.tab === "teams" ? (S.teamDraft ? teamForm(c) : S.teamSel ? teamEditor(c) : "") : S.tab === "seasons" ? (S.seasonDraft ? seasonEditor(c) : "") : S.tab === "backups" ? backupsPanel() : settingsPanel(c);
+    const right = isMP ? matchEditor(c) : S.tab === "teams" ? (S.teamDraft ? teamForm(c) : S.teamSel ? teamEditor(c) : "") : S.tab === "seasons" ? (S.seasonDraft ? seasonEditor(c) : "") : S.tab === "backups" ? backupsPanel() : S.tab === "board" ? window.BoardAdmin.html(boardApi()) : settingsPanel(c);
     const focus = document.activeElement && document.activeElement.closest && document.activeElement.closest("[data-a]");
     const key = focus ? `[data-a="${focus.dataset.a}"]${focus.dataset.id !== undefined ? `[data-id="${CSS.escape(focus.dataset.id)}"]` : ""}${focus.dataset.i !== undefined ? `[data-i="${focus.dataset.i}"]` : ""}` : null;
     app.innerHTML = `<div class="adm">${header(c)}${nav(c)}<main class="wrap a-main">
       ${showLeft && left ? `<section class="a-left" aria-label="Zoznam">${left(c)}</section>` : ""}
       ${showRight ? `<section class="a-right" aria-label="Úprava">${right}</section>` : ""}</main></div>`;
     document.title = `FULka – admin · ${c.s.name}`;
+    if (S.tab === "board") window.BoardAdmin.after(app, boardApi());
     if (key) { const el = app.querySelector(key); if (el) el.focus({ preventScroll: true }); }
   }
 

@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>FULka – skúška tabule (bez zápisu do databázy)</title>
+<style>html, body { margin: 0; height: 100%; background: #050505; } iframe { border: 0; width: 100%; height: 100%; }</style>
+<!-- Otvor: http://127.0.0.1:8770/fulka/tools/board-demo.html
+     Admin sa načíta s podvrhnutým prihlásením a zápisy idú iba do pamäte (nič do Supabase). Tabuľu otvoríš tlačidlom v záložke Tabuľa. -->
+<iframe id="f" src="../?edit"></iframe>
+<script>
+(async () => {
+  const f = document.getElementById("f");
+  const [login, mock] = await Promise.all([fetch("fake-login.js").then((r) => r.text()), fetch("mock-db.js").then((r) => r.text())]);
+  const loaded = () => new Promise((r) => f.addEventListener("load", r, { once: true }));
+  await loaded();
+  f.contentWindow.eval(login);          // podvrhnuté prihlásenie (iba localStorage tohto localhostu)
+  f.contentWindow.location.reload();
+  await loaded();
+  for (let i = 0; i < 100 && !(f.contentWindow.App && f.contentWindow.App.state.data && f.contentWindow.Admin); i++) await new Promise((r) => setTimeout(r, 100));
+  f.contentWindow.eval(mock);           // zápisy do pamäte
+  f.contentWindow.Admin.render();
+})();
+</script>

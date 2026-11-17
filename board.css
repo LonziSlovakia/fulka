@@ -1,0 +1,53 @@
+/* Výsledková tabuľa (druhá obrazovka aj náhľad v admine) – v štýle webu „Shard“: čierne pozadie, tímové farby cez --c --d --ink,
+   Saira Extra Condensed, šikmé štítky. Plátno je 16:9 (100 × 56,25 jednotky --u podľa veľkosti kontajnera .sb),
+   takže vyzerá rovnako na celej obrazovke aj v malom náhľade. --f = posuvník „veľkosť“ (1 = 100 %), mení texty, loga a tresty. */
+.sb { container-type: size; position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--bg, #050505); color: #fff; user-select: none; }
+.sb-in { --u: min(1cqw, 1.7778cqh); --k: calc(var(--u) * var(--f, 1)); position: absolute; left: 50%; top: 50%; width: calc(100 * var(--u)); height: calc(56.25 * var(--u));
+  transform: translate(-50%, -50%); display: flex; flex-direction: column;
+  background: #000; }
+
+/* horná lišta */
+.sb-bar { flex: none; height: calc(5.6 * var(--u)); display: flex; align-items: center; gap: calc(1.2 * var(--u)); padding: 0 calc(2.4 * var(--u)); border-bottom: 1px solid var(--line, #1e1e1e); }
+.sb-bar img { width: calc(3.4 * var(--u)); height: calc(3.4 * var(--u)); }
+.sb-bar b { font-family: var(--fc); font-weight: 900; font-size: calc(3.6 * var(--u)); line-height: 1; transform: skewX(-8deg); }
+.sb-bar span { margin-left: auto; font-size: calc(1.45 * var(--u)); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #fff; }
+
+/* tri stĺpce: domáci | čas | hostia */
+.sb-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.sb-mid { position: relative; z-index: 1; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(1.6 * var(--k)); padding: 0 calc(1.2 * var(--k)); min-width: calc(30 * var(--u)); }
+.sb-clock { font-family: var(--fc); font-weight: 900; font-size: calc(15.5 * var(--k)); line-height: 0.85; letter-spacing: 0.01em; transform: skewX(-8deg); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sb-end { font-family: var(--fc); font-weight: 900; font-size: calc(10 * var(--k)); line-height: 0.9; transform: skewX(-8deg); letter-spacing: 0.02em; }
+.sb-part { display: inline-flex; align-items: center; gap: calc(1 * var(--k)); padding: calc(0.7 * var(--k)) calc(2 * var(--k)); border: 2px solid #fff; transform: skewX(-10deg);
+  font-family: var(--fc); font-weight: 800; font-size: calc(3.4 * var(--k)); line-height: 1.1; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+.sb-part.sb-dotonly { border-color: transparent; }
+.sb-dot { width: calc(1.3 * var(--k)); height: calc(1.3 * var(--k)); flex: none; border: 2px solid #fff; background: transparent; }
+.sb-dot.on { background: var(--live, #3ddc84); border-color: var(--live, #3ddc84); }
+
+/* panel tímu (gradient z tímových farieb, šikmá hrana k stredu) */
+.sb-team { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(1.3 * var(--k)); padding: calc(1.5 * var(--k)) calc(2.5 * var(--k)); color: var(--ink, #fff); transition: filter 0.4s, opacity 0.4s; }
+.sb-team.l { clip-path: polygon(0 0, 100% 0, calc(100% - 6 * var(--u)) 100%, 0 100%); padding-right: calc(6 * var(--u)); }
+.sb-team.r { clip-path: polygon(calc(6 * var(--u)) 0, 100% 0, 100% 100%, 0 100%); padding-left: calc(6 * var(--u)); }
+.sb-team.lose { filter: grayscale(0.8) brightness(0.8); }
+/* Kontrast pre slabé projektory: text (--ink, čierna alebo biela) musí byť čitateľný na každom mieste panelu.
+   Na svetlej farbe (čierny text) ostáva farba skoro celá, tmavý odtieň je len v spodnom rohu; na tmavej (biely text, .lt) tmavne viac. */
+.sb-bg { position: absolute; inset: 0; background: linear-gradient(165deg, var(--c) 0%, var(--c) 80%, var(--d) 155%); }
+.sb-team.lt .sb-bg { background: linear-gradient(160deg, var(--c) 0%, var(--d) 130%); }
+.sb-stripes { position: absolute; inset: 0; background: repeating-linear-gradient(-62deg, rgba(0, 0, 0, 0.06) 0 2px, rgba(0, 0, 0, 0) 2px 16px); }
+.sb-team > :not(.sb-bg):not(.sb-stripes) { position: relative; }
+.sb-head { display: flex; flex-direction: column; align-items: center; gap: calc(1 * var(--k)); max-width: 100%; }
+.sb-logo { width: calc(9.5 * var(--k)); height: calc(9.5 * var(--k)); object-fit: contain; filter: drop-shadow(0 calc(0.3 * var(--k)) calc(0.8 * var(--k)) rgba(0, 0, 0, 0.35)); }
+.sb-name { max-width: 100%; padding: calc(0.5 * var(--k)) calc(2 * var(--k)); background: #050505; color: #fff; transform: skewX(-10deg); }
+.sb-name b { display: block; font-family: var(--fc); font-weight: 800; font-size: calc(4.8 * var(--k)); line-height: 1.1; text-transform: uppercase; letter-spacing: 0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-score { font-family: var(--fc); font-weight: 900; font-size: calc(21 * var(--k)); line-height: 0.8; transform: skewX(-8deg); font-variant-numeric: tabular-nums; }
+
+/* tresty pod skóre (2 riadky vyhradené, aby sa tabuľa nehýbala) */
+.sb-pens { list-style: none; margin: 0; padding: 0; width: 100%; min-height: calc(7.6 * var(--k)); display: flex; flex-direction: column; align-items: center; gap: calc(0.6 * var(--k)); }
+.sb-pens li { display: flex; align-items: center; justify-content: space-between; gap: calc(2 * var(--k)); min-width: 62%; max-width: 100%; padding: calc(0.4 * var(--k)) calc(1.6 * var(--k)); background: #000; color: #fff; transform: skewX(-10deg); }
+.sb-pens .sb-pn { font-family: var(--fc); font-weight: 700; font-size: calc(3 * var(--k)); line-height: 1.1; letter-spacing: 0.04em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-pens b { font-family: var(--fc); font-weight: 900; font-size: calc(3.6 * var(--k)); line-height: 1.1; font-variant-numeric: tabular-nums; color: #ffc233; }
+
+/* čakanie na zápas */
+.sb-wait { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(2 * var(--u)); }
+.sb-wait img { width: calc(12 * var(--u)); height: calc(12 * var(--u)); }
+.sb-wait b { font-family: var(--fc); font-weight: 900; font-size: calc(12 * var(--u)); line-height: 0.9; transform: skewX(-8deg); }
+.sb-wait .sb-part { font-size: calc(2.6 * var(--u)); }

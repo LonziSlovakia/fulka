@@ -3,7 +3,7 @@
 Všeobecné pravidlá o Lonzim sú v `~/.claude/CLAUDE.md`. Tu je iba to, čo platí pre FULka.
 **Tento súbor udržiavaj živý:** po každej zmene, ktorá mení správanie alebo dohodu, ho uprav v tom istom commite.
 Neplatné veci zmaž, históriu nedumpuj. `HANDOFF.md` je pôvodné zadanie (pri rozpore platí tento súbor) – čítaj z neho iba časť, ktorú potrebuješ.
-Stav k 10. 11. 2026.
+Stav k 17. 11. 2026.
 
 ## Pravidlá projektu
 
@@ -37,8 +37,12 @@ Stav k 10. 11. 2026.
 | `upece.js` | sekcia „Z UPeCe“: načítanie a čítanie týždenných oznamov a noviniek z upcba.sk (čisté funkcie + `load()` s cache `fulka-upece-v1`) |
 | `render.js` | verejný web; s `?edit` sa nevykresľuje a načíta `admin.js` + `admin.css` |
 | `admin.js` / `admin.css` | admin podľa `design/Admin.dc.html`; triedy admina majú predponu `a-` (napr. `.a-mid`), aby sa nebili so `styles.css` |
+| `board.js` | výsledková tabuľa, čisté funkcie (testované): stav → nový stav (čas z časovej značky, tresty, góly, koniec) + uloženie do `localStorage` (`fulka-board-v1`) |
+| `board-view.js` / `board.css` | vykreslenie tabule (plátno 16:9 v jednotkách kontajnera, premenná `--f` = veľkosť); používa ho `tabula.html` aj náhľad v admine |
+| `board-admin.js` | admin → záložka „Tabuľa“ (ovládanie); načíta ho `render.js` s `?edit` pred `admin.js` |
+| `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
-| `tests/*.test.js` | `node --test tests/*.test.js` (57 testov: `logic` 50, `upece` 7; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (81 testov: `logic` 50, `upece` 7, `board` 24; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF |
@@ -88,7 +92,20 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - „Celý kalendár“ → upcba.sk/kalendar/ (curl dostane 403 od Cloudflare, prehliadač je OK) · „Všetko, čo ponúkame“ → upcba.sk/o-upece/.
   - Ponuka: zoznam z nastavení (`upeceOffer`) + všetky tímy, ktoré kedy hrali, s menom miesta (`venue`).
   - Ak sa zmení šablóna oznamov na upcba.sk, program sa ukáže prázdny („ešte nie je zverejnený“) – oprava v `upece.js` + test.
-- Potvrdzovacie okno (`ask()` v `admin.js`) je **iba pri mazaní a pri zálohách**. Potvrdenie pred každou bežnou úpravou Lonzi **nechce**
+- **Výsledková tabuľa** (admin → Tabuľa, súbory `board*.js`, `tabula.html`; vyžiadal Lonzi 17. 11. 2026, **zatiaľ nepushnuté, čaká na jeho schválenie**):
+  - Tok: vybrať neodohraný zápas (iba s oboma známymi tímami) → počet častí (1 / 2 polčasy / 3 tretiny / 4 štvrtiny) × minúty → jedna alebo dve obrazovky → ovládanie.
+    Čas sa **odpočítava** (`3:42`, pod ním „2. tretina“; pri jednej časti bez názvu). Tresty (max. 2 aktívne na tím, minúty + sekundy, hráč zo súpisky) bežia iba kým beží čas a prechádzajú aj do ďalšej časti.
+    Ovládanie: štart/pauza (aj medzerník), korekcia ±10 s / ±1 min, ďalšia časť, ＋ Gól → zoznam hráčov tímu (jedno kliknutie = zapísané; asistenciu možno doplniť v zozname gólov), zrušenie gólu/trestu.
+  - Ďalšie dohody (17. 11.): **kontrast pre slabé projektory** – text na tímovej farbe je čierny/biely podľa kontrastu (`B.contrastInk`, nie `ink` z DB), čas biely na čiernej, tresty na čiernom štítku, panel drží farbu tímu bez tmavého prechodu pod skóre.
+    **Výmena strán** (`flip`: mení iba stranu na obrazovke aj v ovládaní, góly ostávajú domáci/hostia). **Späť o časť** (vráti čas, kde sa skončilo), **Čas časti od začiatku** a **Vynulovať zápas** (s potvrdením; tímy, strany a veľkosť ostanú).
+    **Posun času** ±10 s / ±1 min je predvolene iba hra, checkbox „Posunúť aj tresty“ posúva aj aktívne tresty.
+    V zozname zápasov sú aj finále a zápas o 3. miesto bez určených tímov – tímy sa vyberú v nastavení tabule. Uložiť ich do DB nejde (dopĺňajú sa z výsledkov SF), preto „Ukončiť zápas“ ohlási chybu, kým SF nie sú v DB; tabuľa ostane, po zapísaní SF sa dá uložiť znova.
+  - **Prenos na druhú obrazovku**: cez `localStorage` + udalosť `storage` → funguje iba v tom istom prehliadači na tom istom PC (Win + P a presunúť okno). Admin ukazuje „druhá obrazovka pripojená“ (ping každé 2 s). Na iné zariadenie by treba Supabase realtime – zatiaľ nerobené.
+  - **Góly sa do databázy posielajú až na konci** (tlačidlo „Ukončiť zápas“ → potvrdenie → `writeMatch` v `admin.js`, rovnaký zápis ako „Uložiť zmeny“ zápasu). Dôvod: v DB nie je „rozohraný zápas“ (polovičný výsledok by sa na webe ukázal ako hotový) a pri výpadku internetu by sa nič nestratilo – stav je v `localStorage`.
+    Remíza v playoff sa neuloží (rovnaká kontrola ako v editore). Zápas bez termínu dostane dnešný dátum a čas. Po neúspešnom uložení ostane „Uložiť výsledok na web“ / „Späť do zápasu“.
+  - Potvrdenie pri „Ukončiť zápas“ je zámerné (zverejňuje výsledok); pri bežných akciách tabule žiadne potvrdenie nie je.
+  - Lonzi **nechce** zvukovú sirénu ani realtime na iné zariadenia. Nie je (nápady): počítanie času nahor, predĺženie, čas gólu v DB.
+- Potvrdzovacie okno (`ask()` v `admin.js`) je **iba pri mazaní, pri zálohách a pri ukončení zápasu na tabuli**. Potvrdenie pred každou bežnou úpravou Lonzi **nechce**
   (raz som ho pridal, vrátil som to) – nepridávať.
 - Góly sa ukladajú bez mazania vopred: upsert podľa `match_id,seq`, potom zmazať iba `seq > počet` (predtým sa najprv všetko zmazalo → pri výpadku by góly zmizli).
 - **Zálohy** (`supabase/3-zalohy.sql`, admin → Zálohy): **iba ručné** tlačidlom „Uložiť zálohu“ (Lonzi si zálohuje po kolách; automatické
@@ -110,6 +127,8 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fa
 - `shot.js <url> <šírka> <out.png> [kroky]` – krok `RELOAD`, `@súbor.js` alebo JS kód; `CLIP=x,y,w,h` oreže obrázok.
 - Admin: `fake-login.js` podvrhne prihlásenie, `mock-db.js` presmeruje zápisy do pamäte (`__mem()`, `__writes`, zálohy `__backups()` s 2 ukážkovými).
   Potvrdzovacie okno je `.a-modal`: potvrdiť `[data-m=ok]`, zrušiť `[data-m=no]`, slovo do `[data-m=word]`.
+- Tabuľa: `tools/board-demo.html` (http://127.0.0.1:8770/fulka/tools/board-demo.html) otvorí admin s podvrhnutým prihlásením a zápismi iba do pamäte – dá sa skúšať bez zásahu do Supabase.
+  Screenshoty/testy: `tools/board-demo.js` (ukážkový stav → `tabula.html`), `board-flow.js`, `board-flow2.js`, `board-end.js`, `board-sync.js` (kroky pre `shot.js` po `fake-login.js RELOAD mock-db.js`).
 - Chromium je Playwright headless shell; chýbajúce knižnice sú v `tools/.cache/libroot` (bez sudo, gitignore).
 - Port 8765 používa iný projekt – nezabíjať.
 

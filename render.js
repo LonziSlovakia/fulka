@@ -760,13 +760,19 @@
 
   // admin (editor) sa načíta iba s ?edit v adrese
   if (EDIT) {
-    const css = document.createElement("link");
-    css.rel = "stylesheet";
-    css.href = "admin.css";
-    document.head.appendChild(css);
-    const s = document.createElement("script");
-    s.src = "admin.js";
-    document.body.appendChild(s);
+    ["admin.css", "board.css"].forEach((href) => {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = href;
+      document.head.appendChild(css);
+    });
+    // poradie je dôležité: tabuľa (board*.js) musí byť načítaná skôr ako admin.js
+    ["board.js", "board-view.js", "board-admin.js", "admin.js"].forEach((src) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.async = false;
+      document.body.appendChild(s);
+    });
   }
 
   window.App = { state, render, setData, context };
