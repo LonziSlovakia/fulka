@@ -51,3 +51,14 @@
 .sb-wait img { width: calc(12 * var(--u)); height: calc(12 * var(--u)); }
 .sb-wait b { font-family: var(--fc); font-weight: 900; font-size: calc(12 * var(--u)); line-height: 0.9; transform: skewX(-8deg); }
 .sb-wait .sb-part { font-size: calc(2.6 * var(--u)); }
+
+/* gól: logo trikrát pulzuje so žiarou (v tom čase hrá animované logo), skóre „vyskočí“, panel krátko zasvieti */
+.sb-team.sb-goal .sb-logo { animation: sb-pulse 1.2s ease-in-out 3; }
+.sb-team.sb-goal .sb-score { animation: sb-pop 0.8s cubic-bezier(0.2, 1.5, 0.4, 1) 1; }
+.sb-team.sb-goal .sb-bg { animation: sb-flash 1.2s ease-in-out 3; }
+@keyframes sb-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0)); }
+  50% { transform: scale(1.28); filter: drop-shadow(0 0 calc(2.4 * var(--k)) rgba(255, 255, 255, 0.95)); }
+}
+@keyframes sb-pop { 0% { transform: skewX(-8deg) scale(1.6); } 100% { transform: skewX(-8deg) scale(1); } }
+@keyframes sb-flash { 0%, 100% { filter: none; } 50% { filter: brightness(1.22) saturate(1.15); } }

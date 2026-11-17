@@ -40,7 +40,7 @@
       .sort((x, y) => x.name.localeCompare(y.name, "sk"));
   }
   const labelOf = (p) => `${p.number ? `#${p.number} ` : ""}${p.name}`;
-  const teamOf = (c, id) => { const t = c.T[id]; return { id: t.id, name: t.name, abbr: t.abbr, c: t.c, d: t.d, ink: t.ink, logo: t.svg }; };
+  const teamOf = (c, id) => { const t = c.T[id]; return { id: t.id, name: t.name, abbr: t.abbr, c: t.c, d: t.d, ink: t.ink, logo: t.svg, anim: t.gif }; };
   const vars = (t) => `--c:${esc(t.c)};--d:${esc(t.d)};--ink:${B.contrastInk(t.c)}`;
 
   function commit(s) { cur = B.save(s); redraw(); }
@@ -267,7 +267,7 @@
     next: () => edit((s) => B.nextPart(s, now())),
     goal: (el) => { U.open = U.open === el.dataset.side ? null : el.dataset.side; U.penOpen = null; redraw(); },
     goalclose: () => { U.open = null; redraw(); },
-    scorer: (el) => { U.open = null; edit((s) => B.addGoal(s, el.dataset.side, el.dataset.id)); },
+    scorer: (el) => { U.open = null; edit((s) => B.addGoal(s, el.dataset.side, el.dataset.id, now())); },
     goalrm: (el) => edit((s) => B.removeGoal(s, Number(el.dataset.i))),
     penopen: (el) => { U.penOpen = el.dataset.side; U.open = null; redraw(); },
     pencancel: () => { U.penOpen = null; redraw(); },

@@ -13,6 +13,7 @@
   const PART_NAME = { 1: "1 časť", 2: "2 polčasy", 3: "3 tretiny", 4: "4 štvrtiny" };
   const MAX_PENS = 2; // naraz aktívne tresty jedného tímu
   const MAX_CLOCK = 99 * 60000;
+  const GOAL_FX_MS = 3600; // ako dlho po góle pulzuje logo a hrá animované logo
   const UNKNOWN = "?"; // strelec „Neznámy hráč“ (rovnako ako v logic.js)
 
   const clone = (s) => JSON.parse(JSON.stringify(s));
@@ -165,12 +166,16 @@
 
   /* ---------- Góly ---------- */
   const score = (s) => ({ h: s.goals.filter((g) => g.side === "h").length, a: s.goals.filter((g) => g.side === "a").length });
-  function addGoal(s, side, scorer) {
+  // now (nepovinné) = čas gólu; podľa neho sa na tabuli krátko prehrá animácia loga
+  function addGoal(s, side, scorer, now) {
     if (s.ended) return s;
     const n = clone(s);
     n.goals.push({ side, scorer: scorer || UNKNOWN, assist: "" });
+    n.lastGoal = now ? { side, at: now } : null;
     return n;
   }
+  // strana ("h" / "a"), ktorá práve dala gól a má hrať animáciu, inak ""
+  const goalFx = (s, now) => (s.lastGoal && now - s.lastGoal.at >= 0 && now - s.lastGoal.at < GOAL_FX_MS ? s.lastGoal.side : "");
   function setAssist(s, i, assist) {
     if (!s.goals[i]) return s;
     const n = clone(s);
@@ -181,6 +186,7 @@
     if (s.ended || !s.goals[i]) return s;
     const n = clone(s);
     n.goals.splice(i, 1);
+    n.lastGoal = null;
     return n;
   }
 
@@ -231,7 +237,7 @@
     MAX_PENS, PART_NAME, UNKNOWN, partLabel, partMs, fmt, penaltyMs,
     create, view, snap, settle, start, pause, adjust, nextPart, prevPart, hasNextPart, hasPrevPart, resetClock, resetAll, swapSides, contrastInk, contrast,
     activePens, canPenalty, addPenalty, removePenalty,
-    score, addGoal, setAssist, removeGoal, end, reopen, markSaved, setScale, setTwoScreens,
+    GOAL_FX_MS, goalFx, score, addGoal, setAssist, removeGoal, end, reopen, markSaved, setScale, setTwoScreens,
     load, save, clear, subscribe, ping, pingAge, onPing,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Board;

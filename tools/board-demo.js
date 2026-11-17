@@ -1,6 +1,6 @@
 // Ukážkový stav tabule do localStorage (na screenshoty): potom krok RELOAD. Argumenty cez globálne premenné window.__demo (voliteľné).
 (() => {
-  const T = (id, name, c, d, ink) => ({ id, name, abbr: name.slice(0, 3).toUpperCase(), c, d, ink, logo: `assets/logos/${id}.svg` });
+  const T = (id, name, c, d, ink) => ({ id, name, abbr: name.slice(0, 3).toUpperCase(), c, d, ink, logo: `assets/logos/${id}.svg`, anim: `assets/anim/${id}.webp` });
   const s = Board.create({ matchId: "z26-07", seasonId: "z26", title: "Kolo 7 · Zimná sezóna 2026",
     home: T("giants", "Giants", "#C9A15B", "#6B4F1F", "#050505"), away: T("brewers", "Brewers", "#8B5E34", "#3A2412", "#FFFFFF") }, { parts: 3, minutes: 15 }, { twoScreens: true });
   let n = Board.adjust(s, -(15 * 60000 - 222000), Date.now());

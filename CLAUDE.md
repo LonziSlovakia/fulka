@@ -42,7 +42,7 @@ Stav k 17. 11. 2026.
 | `board-admin.js` | admin → záložka „Tabuľa“ (ovládanie); načíta ho `render.js` s `?edit` pred `admin.js` |
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
-| `tests/*.test.js` | `node --test tests/*.test.js` (81 testov: `logic` 50, `upece` 7, `board` 24; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (82 testov: `logic` 50, `upece` 7, `board` 25; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF |
@@ -92,7 +92,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - „Celý kalendár“ → upcba.sk/kalendar/ (curl dostane 403 od Cloudflare, prehliadač je OK) · „Všetko, čo ponúkame“ → upcba.sk/o-upece/.
   - Ponuka: zoznam z nastavení (`upeceOffer`) + všetky tímy, ktoré kedy hrali, s menom miesta (`venue`).
   - Ak sa zmení šablóna oznamov na upcba.sk, program sa ukáže prázdny („ešte nie je zverejnený“) – oprava v `upece.js` + test.
-- **Výsledková tabuľa** (admin → Tabuľa, súbory `board*.js`, `tabula.html`; vyžiadal Lonzi 17. 11. 2026, **zatiaľ nepushnuté, čaká na jeho schválenie**):
+- **Výsledková tabuľa** (admin → Tabuľa, súbory `board*.js`, `tabula.html`; vyžiadal Lonzi 17. 11. 2026, nasadené 17. 11. 2026):
   - Tok: vybrať neodohraný zápas (iba s oboma známymi tímami) → počet častí (1 / 2 polčasy / 3 tretiny / 4 štvrtiny) × minúty → jedna alebo dve obrazovky → ovládanie.
     Čas sa **odpočítava** (`3:42`, pod ním „2. tretina“; pri jednej časti bez názvu). Tresty (max. 2 aktívne na tím, minúty + sekundy, hráč zo súpisky) bežia iba kým beží čas a prechádzajú aj do ďalšej časti.
     Ovládanie: štart/pauza (aj medzerník), korekcia ±10 s / ±1 min, ďalšia časť, ＋ Gól → zoznam hráčov tímu (jedno kliknutie = zapísané; asistenciu možno doplniť v zozname gólov), zrušenie gólu/trestu.
@@ -100,6 +100,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     **Výmena strán** (`flip`: mení iba stranu na obrazovke aj v ovládaní, góly ostávajú domáci/hostia). **Späť o časť** (vráti čas, kde sa skončilo), **Čas časti od začiatku** a **Vynulovať zápas** (s potvrdením; tímy, strany a veľkosť ostanú).
     **Posun času** ±10 s / ±1 min je predvolene iba hra, checkbox „Posunúť aj tresty“ posúva aj aktívne tresty.
     V zozname zápasov sú aj finále a zápas o 3. miesto bez určených tímov – tímy sa vyberú v nastavení tabule. Uložiť ich do DB nejde (dopĺňajú sa z výsledkov SF), preto „Ukončiť zápas“ ohlási chybu, kým SF nie sú v DB; tabuľa ostane, po zapísaní SF sa dá uložiť znova.
+  - **Animácia gólu** (`board.js` `goalFx`, `board.css` `.sb-goal`): po góle (3,6 s) logo strany, ktorá dala gól, trikrát pulzuje so žiarou, hrá animované logo (`logo_anim` tímu = `assets/anim/*.webp`, v stave tabule `anim`), skóre „vyskočí“ a panel zasvieti. Trieda je `sb-goal`, nie `goal` (kolízia so `styles.css`). Zrušenie gólu animáciu vypne.
   - **Prenos na druhú obrazovku**: cez `localStorage` + udalosť `storage` → funguje iba v tom istom prehliadači na tom istom PC (Win + P a presunúť okno). Admin ukazuje „druhá obrazovka pripojená“ (ping každé 2 s). Na iné zariadenie by treba Supabase realtime – zatiaľ nerobené.
   - **Góly sa do databázy posielajú až na konci** (tlačidlo „Ukončiť zápas“ → potvrdenie → `writeMatch` v `admin.js`, rovnaký zápis ako „Uložiť zmeny“ zápasu). Dôvod: v DB nie je „rozohraný zápas“ (polovičný výsledok by sa na webe ukázal ako hotový) a pri výpadku internetu by sa nič nestratilo – stav je v `localStorage`.
     Remíza v playoff sa neuloží (rovnaká kontrola ako v editore). Zápas bez termínu dostane dnešný dátum a čas. Po neúspešnom uložení ostane „Uložiť výsledok na web“ / „Späť do zápasu“.

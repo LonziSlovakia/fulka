@@ -25,28 +25,29 @@
   }
 
   // pos = "l" / "r" (strana na obrazovke), side = "h" / "a" (domáci / hostia – podľa toho sa počítajú góly)
-  function team(t, side, pos, v, lose) {
-    return `<section class="sb-team ${pos}${inkOf(t) === "#FFFFFF" ? " lt" : ""}${lose ? " lose" : ""}" data-side="${side}" style="${vars(t)}">
+  function team(t, side, pos, v, lose, fx) {
+    return `<section class="sb-team ${pos}${inkOf(t) === "#FFFFFF" ? " lt" : ""}${lose ? " lose" : ""}${fx ? " sb-goal" : ""}" data-side="${side}" style="${vars(t)}">
       <i class="sb-bg" aria-hidden="true"></i><i class="sb-stripes" aria-hidden="true"></i>
-      <div class="sb-head"><img class="sb-logo" src="${esc(t.logo)}" alt=""><span class="sb-name"><b>${esc(t.name)}</b></span></div>
+      <div class="sb-head"><img class="sb-logo" src="${esc(fx && t.anim ? t.anim : t.logo)}" alt=""><span class="sb-name"><b>${esc(t.name)}</b></span></div>
       <b class="sb-score">${v.score[side]}</b>${pens(v.pens[side])}</section>`;
   }
 
   function board(s, now) {
     const v = B.view(s, now);
+    const fx = B.goalFx(s, now); // strana, ktorá práve dala gól: logo pulzuje a prehrá sa animované logo
     const lose = s.ended && v.score.h !== v.score.a ? (v.score.h < v.score.a ? "h" : "a") : "";
     const mid = s.ended
       ? `<b class="sb-end">KONIEC</b>`
       : `<b class="sb-clock" data-clock>${B.fmt(v.ms)}</b>${v.label ? `<span class="sb-part"><i class="sb-dot${v.running ? " on" : ""}" aria-hidden="true"></i>${esc(v.label)}</span>` : `<span class="sb-part sb-dotonly"><i class="sb-dot${v.running ? " on" : ""}" aria-hidden="true"></i></span>`}`;
     return `<div class="sb-bar"><img src="assets/logos/ful-mark-white.png" alt=""><b>FULka</b><span>${esc(s.title)}</span></div>
-      <div class="sb-grid">${s.flip ? team(s.away, "a", "l", v, lose === "a") : team(s.home, "h", "l", v, lose === "h")}<section class="sb-mid">${mid}</section>${s.flip ? team(s.home, "h", "r", v, lose === "h") : team(s.away, "a", "r", v, lose === "a")}</div>`;
+      <div class="sb-grid">${s.flip ? team(s.away, "a", "l", v, lose === "a", fx === "a") : team(s.home, "h", "l", v, lose === "h", fx === "h")}<section class="sb-mid">${mid}</section>${s.flip ? team(s.home, "h", "r", v, lose === "h", fx === "h") : team(s.away, "a", "r", v, lose === "a", fx === "a")}</div>`;
   }
 
   function waiting() {
     return `<div class="sb-wait"><img src="assets/logos/ful-mark-white.png" alt=""><b>FULka</b><span class="sb-part">Čaká sa na zápas</span></div>`;
   }
 
-  const sigOf = (s, now) => (s ? `${s.rev}|${B.view(s, now).pens.h.map((p) => p.id)}|${B.view(s, now).pens.a.map((p) => p.id)}` : "none");
+  const sigOf = (s, now) => (s ? `${s.rev}|${B.goalFx(s, now)}|${B.view(s, now).pens.h.map((p) => p.id)}|${B.view(s, now).pens.a.map((p) => p.id)}` : "none");
 
   function render(root, s, now) {
     now = now || Date.now();

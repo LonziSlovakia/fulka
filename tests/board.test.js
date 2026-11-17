@@ -245,3 +245,12 @@ test("čitateľný text na tímovej farbe: tmavý na svetlej, biely na tmavej, k
   });
   assert.ok(B.contrast("#FFFFFF", "#000000") > 20);
 });
+
+test("gól spustí animáciu na krátky čas; zrušenie gólu ju vypne", () => {
+  let s = B.addGoal(mk(), "a", "p1", T0);
+  assert.equal(B.goalFx(s, T0 + 500), "a");
+  assert.equal(B.goalFx(s, T0 + B.GOAL_FX_MS + 1), "");
+  assert.equal(B.goalFx(B.addGoal(mk(), "h", "p1"), T0), ""); // bez času sa animácia nespustí
+  s = B.removeGoal(s, 0);
+  assert.equal(B.goalFx(s, T0 + 500), "");
+});
