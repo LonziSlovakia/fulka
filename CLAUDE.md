@@ -81,6 +81,8 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - Admin: zápas, sezóna a nastavenia sa ukladajú tlačidlom; súpiska hneď. Po uložení sa všetko znova načíta z DB. Mazanie (zápas, hráč, tím zo sezóny)
   potvrdí vlastný dialóg s rozmazaným pozadím. Poradie v Nastaveniach: banner → náhľad banneru → fotky → rozloženie → Z UPeCe → kritériá → Uložiť dole.
 - Časy v admine: rýchle voľby 19:00 / 20:15 / 21:00 / 21:15 a ±15 min.
+- Admin → Tímy: prepínač **„<sezóna> / Všetky tímy“** (`S.teamScope`). „Všetky tímy“ = všetky z DB aj s menami sezón; tím mimo upravovanej sezóny
+  sa dá upraviť („Upraviť tím“) a tlačidlom „Pridať do sezóny …“ pridať (súpiska patrí k sezóne). Vyžiadal Lonzi 20. 11. 2026 – tím odobratý zo všetkých sezón sa inak nedal upraviť.
 - Tlačidlo „hore“: plávajúce vpravo dole (biely štvorec so šípkou, zrezaný roh), ukáže sa po odscrollovaní o 400 px, iba na verejnom webe (nie v `?edit`).
   Je mimo `.page`, lebo `container-type` by inak bral `position: fixed` voči kontajneru.
 - **Sekcia „Z UPeCe“** (nad pätou, podľa návrhu z Claude Design, ktorý Lonzi poslal iba ako screenshot): tri stĺpce podpora → kalendár → ponuka, na úzkej obrazovke pod sebou.
@@ -151,6 +153,7 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fa
 - Admin: `fake-login.js` podvrhne prihlásenie, `mock-db.js` presmeruje zápisy do pamäte (`__mem()`, `__writes`, zálohy `__backups()` s 2 ukážkovými).
   Potvrdzovacie okno je `.a-modal`: potvrdiť `[data-m=ok]`, zrušiť `[data-m=no]`, slovo do `[data-m=word]`.
 - Tabuľa: `tools/board-demo.html` (http://127.0.0.1:8770/fulka/tools/board-demo.html) otvorí admin s podvrhnutým prihlásením a zápismi iba do pamäte – dá sa skúšať bez zásahu do Supabase.
+  Tímy mimo sezóny: `tools/team-scope.js` (krok pre `shot.js` po `fake-login.js RELOAD mock-db.js`; s `#pridat` v URL aj pridá tím do sezóny).
   Screenshoty/testy: `tools/board-demo.js` (ukážkový stav → `tabula.html`), `board-flow.js`, `board-flow2.js`, `board-end.js`, `board-sync.js` (kroky pre `shot.js` po `fake-login.js RELOAD mock-db.js`).
 - Pripravujeme: `tools/future-demo.html` (http://127.0.0.1:8770/fulka/tools/future-demo.html, `?timy=1` = iba 1 tím) ukáže pripravovanú sezónu s 2 ukážkovými termínmi bez zápisu;
   krok `tools/future-demo.js` pre `shot.js`, admin tok termínov `tools/season-dates.js` (po `fake-login.js RELOAD mock-db.js`).

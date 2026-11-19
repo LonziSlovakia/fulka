@@ -455,3 +455,7 @@
 .a-sdate-in { display: flex; gap: 6px; }
 .a-sdate-in .a-input { flex: 1; min-width: 0; color-scheme: dark; }
 .a-sdate-in .a-x:disabled { opacity: 0.35; cursor: default; }
+
+/* Tímy: prepínač „sezóna / všetky tímy“ pod nadpisom zoznamu */
+.a-team-scope { margin: 12px 16px; }
+.a-team-scope button { font-size: 14px; }

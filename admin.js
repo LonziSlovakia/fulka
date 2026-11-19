@@ -10,7 +10,7 @@
   const S = {
     data: null, tab: "matches", season: null, filter: "all",
     sel: null, draft: null, pick: null, cal: null,
-    teamSel: null, moving: null, newName: "",
+    teamSel: null, moving: null, newName: "", teamScope: "season", // teamScope: "season" = tímy upravovanej sezóny, "all" = všetky tímy z DB
     seasonSel: null, seasonDraft: null, setDraft: null,
     toast: "", error: "", busy: false, uploading: null, loginError: "",
     bk: null, bkLabel: "", bkAll: false, // zálohy: { list, undo, loading, missing, error }
@@ -877,26 +877,52 @@
   }
 
   /* ---------- Tímy a hráči ---------- */
+  // tímy v zozname: iba upravovaná sezóna, alebo všetky tímy z databázy (aj tie, ktoré nie sú v žiadnej sezóne)
+  const listedTeams = (c) => (S.teamScope === "all" ? c.d.teams.map((t) => t.id) : c.teamIds);
+  // krátke mená sezón, v ktorých tím je (napr. „Leto 2027, Zima 2026“)
+  const teamSeasons = (c, id) => c.d.seasons.filter((x) => c.d.season_teams.some((st) => st.season_id === x.id && st.team_id === id)).map((x) => x.short || x.name);
   function teamList(c) {
     const n = c.roster.length;
-    const rows = c.teamIds.map((id) => {
+    const all = S.teamScope === "all";
+    const rows = listedTeams(c).map((id) => {
       const t = c.T[id];
       const rs = c.roster.filter((r) => r.team_id === id);
       const cap = rs.find((r) => r.captain);
-      const info = rs.length ? `${rs.length} ${plural(rs.length, "hráč", "hráči", "hráčov")} · ${cap && c.P[cap.player_id] ? `kapitán ${c.P[cap.player_id].name}` : "bez kapitána"}` : "Súpiska je prázdna";
+      const inSeason = c.teamIds.includes(id);
+      const seasons = teamSeasons(c, id);
+      const roster = rs.length ? `${rs.length} ${plural(rs.length, "hráč", "hráči", "hráčov")} · ${cap && c.P[cap.player_id] ? `kapitán ${c.P[cap.player_id].name}` : "bez kapitána"}` : "Súpiska je prázdna";
+      const info = !all ? roster : seasons.length ? `${seasons.join(", ")}${inSeason ? ` · ${roster}` : ""}` : "Nie je v žiadnej sezóne";
       return `<button type="button" class="a-trow" data-a="team-sel" data-id="${esc(id)}" aria-current="${S.teamSel === id}" style="${vars(t)}"><span class="shard" aria-hidden="true"></span>
-        <span class="txt"><span class="lbl">${esc(t.pre)}</span><span class="nm">${esc(t.name)}</span><span class="info${rs.length ? "" : " warn"}">${esc(info)}</span></span><img src="${esc(t.svg)}" alt=""></button>`;
+        <span class="txt"><span class="lbl">${esc(t.pre)}</span><span class="nm">${esc(t.name)}</span><span class="info${(all ? seasons.length : rs.length) ? "" : " warn"}">${esc(info)}</span></span><img src="${esc(t.svg)}" alt=""></button>`;
     }).join("");
     return `<div class="a-panel"><div class="a-panel-head"><span><h1 class="a-h1">Tímy a hráči</h1>
-      <span class="small" style="font-size:13px">${c.teamIds.length} ${plural(c.teamIds.length, "tím", "tímy", "tímov")} · ${n} ${plural(n, "hráč", "hráči", "hráčov")}</span></span>
-      <button type="button" class="a-new" data-a="newTeam">${icon.plus}Nový tím</button></div>${rows}
+      <span class="small" style="font-size:13px">${all ? `${c.d.teams.length} ${plural(c.d.teams.length, "tím", "tímy", "tímov")} v databáze` : `${c.teamIds.length} ${plural(c.teamIds.length, "tím", "tímy", "tímov")} · ${n} ${plural(n, "hráč", "hráči", "hráčov")}`}</span></span>
+      <button type="button" class="a-new" data-a="newTeam">${icon.plus}Nový tím</button></div>
+      <div class="a-seg a-team-scope" role="group" aria-label="Ktoré tímy ukázať"><button type="button" data-a="teamScope" data-id="season" ${pressed(!all)}>${esc(c.s.short || c.s.name)} (${c.teamIds.length})</button>
+        <button type="button" data-a="teamScope" data-id="all" ${pressed(all)}>Všetky tímy (${c.d.teams.length})</button></div>${rows}
       <div class="a-bulk"><label class="a-ghost w${S.uploading === "*" ? " busy" : ""}">${icon.cam}${S.uploading === "*" ? "Nahrávam…" : "Nahrať fotky viacerých hráčov naraz"}
           <input type="file" accept="image/png, image/jpeg, image/webp" multiple data-photos-bulk="1"${S.uploading === "*" ? " disabled" : ""}></label>
         <span class="small">Súbory pomenované <code>id-hráča_full</code>, <code>_head</code>, <code>_face</code> (napr. <code>p-bartos-andrej_full.webp</code>) — priradia sa samé.</span></div></div>`;
   }
 
+  // tím, ktorý nie je v upravovanej sezóne: hlavička + úprava tímu + pridanie do sezóny (súpiska patrí k sezóne)
+  function teamOutside(c, id) {
+    const t = c.T[id] || NOTEAM;
+    const seasons = teamSeasons(c, id);
+    return `<div class="a-ed"><div class="a-team-head">
+        <span class="fill" aria-hidden="true" style="background:linear-gradient(150deg, ${t.c}, ${t.d});clip-path:polygon(0 0, 62% 0, 50% 100%, 0 100%)"></span>
+        ${backBtn("teamBack", "Späť na tímy")}<img class="logo" src="${esc(t.svg)}" alt="">
+        <span class="tt"><small>Tím · ${esc(t.pre)}</small><span>${seasons.length ? `Sezóny: ${esc(seasons.join(", "))}` : "Nie je v žiadnej sezóne"}</span><b>${esc(t.name)}</b></span>
+        <button type="button" class="a-ghost w a-edteam" data-a="editTeam" data-id="${esc(id)}">Upraviť tím</button></div>
+      ${msgs()}
+      <div class="a-body"><fieldset class="a-fs" style="gap:10px"><legend>${esc(c.s.name)}</legend>
+          <span class="muted" style="font-size:14px">Tím nie je v tejto sezóne. Súpiska a hráči patria k sezóne – keď ho pridáš, môžeš mu pridať hráčov. Názov, miesto, farby a logá upravíš cez „Upraviť tím“.</span>
+          <div class="a-actions"><button type="button" class="a-save" data-a="teamToSeason" data-id="${esc(id)}"${S.busy ? " disabled" : ""}>${S.busy ? "Ukladám…" : `Pridať do sezóny ${esc(c.s.short || c.s.name)}`}</button></div></fieldset></div></div>`;
+  }
+
   function teamEditor(c) {
     const id = S.teamSel;
+    if (!c.teamIds.includes(id)) return teamOutside(c, id);
     const t = c.T[id] || NOTEAM;
     const stats = {};
     c.resolved.filter(L.isPlayed).forEach((m) => (c.gm[m.id] || []).forEach((g) => {
@@ -1281,7 +1307,7 @@
     if (!S.data) { app.innerHTML = '<p class="msg">Načítavam…</p>'; return; }
     const c = ctx();
     if (!c.s) { app.innerHTML = `<div class="adm">${header(c)}<p class="msg">V databáze nie je žiadna sezóna.</p></div>`; return; }
-    if (S.tab === "teams" && !S.teamSel && !S.teamDraft && !mobile()) S.teamSel = c.teamIds[0] || null;
+    if (S.tab === "teams" && !S.teamSel && !S.teamDraft && !mobile()) S.teamSel = listedTeams(c)[0] || null;
     if (S.tab === "seasons" && !S.seasonDraft && !mobile()) { selectSeason(c.s.id); return; }
     const isMP = S.tab === "matches" || S.tab === "playoff";
     const detail = isMP ? !!S.draft : S.tab === "teams" ? !!(S.teamSel || S.teamDraft) : S.tab === "seasons" ? !!S.seasonDraft : true;
@@ -1339,6 +1365,8 @@
     editTeam: (el) => startTeam(el.dataset.id),
     cancelTeam: () => { S.teamDraft = null; S.error = ""; render(); },
     saveTeam: () => saveTeam(),
+    teamScope: (el) => { S.teamScope = el.dataset.id; S.teamDraft = null; S.moving = null; S.toast = ""; S.error = ""; if (!mobile() && !listedTeams(ctx()).includes(S.teamSel)) S.teamSel = null; render(); },
+    teamToSeason: (el) => { const c = ctx(); const id = el.dataset.id; run(() => DB.upsert("season_teams", { season_id: c.s.id, team_id: id }, "season_id,team_id"), `Tím ${(c.T[id] || NOTEAM).name} je v sezóne ${c.s.name}. Teraz mu môžeš pridať hráčov.`, () => { S.teamSel = id; }); },
     "team-sel": (el) => { S.teamDraft = null; S.teamSel = el.dataset.id; S.moving = null; S.newName = ""; S.toast = ""; S.error = ""; render(); },
     teamBack: () => { S.teamSel = null; S.moving = null; render(); },
     cap: (el) => toggleCaptain(el.dataset.id),
