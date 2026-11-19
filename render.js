@@ -767,18 +767,19 @@
     U.load().then((v) => { state.up = v; render(); }, () => { state.upFail = true; render(); });
   }
 
-  // admin (editor) sa načíta iba s ?edit v adrese
+  // admin (editor) sa načíta iba s ?edit v adrese; dostane rovnakú verziu (?v=…) ako render.js v index.html, aby prehliadač nebral starú kópiu
+  const VER = (document.currentScript && new URL(document.currentScript.src).search) || "";
   if (EDIT) {
     ["admin.css", "board.css"].forEach((href) => {
       const css = document.createElement("link");
       css.rel = "stylesheet";
-      css.href = href;
+      css.href = href + VER;
       document.head.appendChild(css);
     });
     // poradie je dôležité: tabuľa (board*.js) musí byť načítaná skôr ako admin.js
     ["board.js", "board-view.js", "board-admin.js", "admin.js"].forEach((src) => {
       const s = document.createElement("script");
-      s.src = src;
+      s.src = src + VER;
       s.async = false;
       document.body.appendChild(s);
     });

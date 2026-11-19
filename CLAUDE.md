@@ -11,6 +11,8 @@ Stav k 19. 11. 2026.
 - Kód v malých samostatných funkciách. Výpočty patria do `logic.js` (čisté funkcie + testy), vykresľovanie do `render.js` / `admin.js`.
 - Fotky a dáta patria do Supabase (bucket a tabuľky `fulka`), nie do repozitára.
 - SQL skripty (`supabase/N-nazov.sql`) iba pripravíš; Lonzi ich spustí v Supabase → SQL Editor. Povedz mu aj, ako to overiť.
+- **Keď sa zmení JS alebo CSS: `bash tools/verzia.sh`** (dá `?v=<čas>` do `index.html` a `tabula.html`; admin a tabuľu `render.js` načíta s rovnakou verziou).
+  Dôvod: Cloudflare na `ful.upcba.sk` necháva prehliadač pamätať si JS/CSS 4 hodiny (HTML iba 10 min) – bez novej verzie Lonzi vidí starý admin.
 - Pred commitom: `node --test tests/*.test.js`; vizuálne zmeny over cez `tools/shot.js` (desktop 1440 aj mobil 390).
 - **Commit + push na `main` hneď po otestovaní je OK** (Lonzi to tak chce) a potom over nasadenie (nižšie).
 - Keď sa zmení niečo v spoločnej Supabase (`lonzi-weby`), uprav aj `~/projects/laura/mapalasky/supabase/PREHLAD-PRE-DALSIE-WEBY.md`.
@@ -81,7 +83,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - Admin: zápas, sezóna a nastavenia sa ukladajú tlačidlom; súpiska hneď. Po uložení sa všetko znova načíta z DB. Mazanie (zápas, hráč, tím zo sezóny)
   potvrdí vlastný dialóg s rozmazaným pozadím. Poradie v Nastaveniach: banner → náhľad banneru → fotky → rozloženie → Z UPeCe → kritériá → Uložiť dole.
 - Časy v admine: rýchle voľby 19:00 / 20:15 / 21:00 / 21:15 a ±15 min.
-- Admin → Tímy: prepínač **„<sezóna> / Všetky tímy“** (`S.teamScope`). „Všetky tímy“ = všetky z DB aj s menami sezón; tím mimo upravovanej sezóny
+- Admin → Tímy: v riadku sezón je navyše čip **„Všetky tímy (N)“** (`S.teamScope`; Lonzi ho chcel tam, nie v zozname). „Všetky tímy“ = všetky z DB aj s menami sezón; tím mimo upravovanej sezóny
   sa dá upraviť („Upraviť tím“) a tlačidlom „Pridať do sezóny …“ pridať (súpiska patrí k sezóne). Vyžiadal Lonzi 20. 11. 2026 – tím odobratý zo všetkých sezón sa inak nedal upraviť.
 - Tlačidlo „hore“: plávajúce vpravo dole (biely štvorec so šípkou, zrezaný roh), ukáže sa po odscrollovaní o 400 px, iba na verejnom webe (nie v `?edit`).
   Je mimo `.page`, lebo `container-type` by inak bral `position: fixed` voči kontajneru.

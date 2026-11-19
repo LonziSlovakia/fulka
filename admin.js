@@ -616,10 +616,12 @@
       .map(([id, label]) => `<button type="button" data-a="tab" data-id="${id}" ${pressed(S.tab === id)}>${label}</button>`).join("");
     let bar = "";
     if (S.tab !== "seasons" && S.tab !== "settings" && S.tab !== "backups") {
+      const all = S.tab === "teams" && S.teamScope === "all"; // Tímy → „Všetky tímy“ namiesto jednej sezóny
       const chips = c.d.seasons.slice().sort((x, y) => x.sort - y.sort).map((x) =>
-        `<button type="button" class="a-schip" data-a="season" data-id="${esc(x.id)}" ${pressed(x.id === c.s.id)}>${sq(STATE[x.state], x.id === c.s.id)}${esc(x.short || x.name)}</button>`).join("");
-      const notice = { done: "Upravuješ skončenú sezónu — zmeny uvidia ľudia v archíve.", soon: "Táto sezóna sa len pripravuje — na webe je zatiaľ banner. Zápasy aj súpisky môžeš chystať dopredu.", live: "" }[c.s.state];
-      bar = `<div class="a-seasonbar"><span class="lbl">Upravuješ sezónu</span>${chips}</div>${notice ? `<div class="a-notice${c.s.state === "done" ? " done" : ""}">${icon.info}${notice}</div>` : ""}`;
+        `<button type="button" class="a-schip" data-a="season" data-id="${esc(x.id)}" ${pressed(!all && x.id === c.s.id)}>${sq(STATE[x.state], !all && x.id === c.s.id)}${esc(x.short || x.name)}</button>`).join("")
+        + (S.tab === "teams" ? `<button type="button" class="a-schip" data-a="teamScope" data-id="all" ${pressed(all)}>Všetky tímy (${c.d.teams.length})</button>` : "");
+      const notice = all ? "" : { done: "Upravuješ skončenú sezónu — zmeny uvidia ľudia v archíve.", soon: "Táto sezóna sa len pripravuje — na webe je zatiaľ banner. Zápasy aj súpisky môžeš chystať dopredu.", live: "" }[c.s.state];
+      bar = `<div class="a-seasonbar"><span class="lbl">${all ? "Tímy" : "Upravuješ sezónu"}</span>${chips}</div>${notice ? `<div class="a-notice${c.s.state === "done" ? " done" : ""}">${icon.info}${notice}</div>` : ""}`;
     }
     return `<div class="wrap a-nav"><div class="a-tabs" role="group" aria-label="Sekcia administrácie">${tabs}</div>${bar}</div>`;
   }
@@ -897,9 +899,7 @@
     }).join("");
     return `<div class="a-panel"><div class="a-panel-head"><span><h1 class="a-h1">Tímy a hráči</h1>
       <span class="small" style="font-size:13px">${all ? `${c.d.teams.length} ${plural(c.d.teams.length, "tím", "tímy", "tímov")} v databáze` : `${c.teamIds.length} ${plural(c.teamIds.length, "tím", "tímy", "tímov")} · ${n} ${plural(n, "hráč", "hráči", "hráčov")}`}</span></span>
-      <button type="button" class="a-new" data-a="newTeam">${icon.plus}Nový tím</button></div>
-      <div class="a-seg a-team-scope" role="group" aria-label="Ktoré tímy ukázať"><button type="button" data-a="teamScope" data-id="season" ${pressed(!all)}>${esc(c.s.short || c.s.name)} (${c.teamIds.length})</button>
-        <button type="button" data-a="teamScope" data-id="all" ${pressed(all)}>Všetky tímy (${c.d.teams.length})</button></div>${rows}
+      <button type="button" class="a-new" data-a="newTeam">${icon.plus}Nový tím</button></div>${rows}
       <div class="a-bulk"><label class="a-ghost w${S.uploading === "*" ? " busy" : ""}">${icon.cam}${S.uploading === "*" ? "Nahrávam…" : "Nahrať fotky viacerých hráčov naraz"}
           <input type="file" accept="image/png, image/jpeg, image/webp" multiple data-photos-bulk="1"${S.uploading === "*" ? " disabled" : ""}></label>
         <span class="small">Súbory pomenované <code>id-hráča_full</code>, <code>_head</code>, <code>_face</code> (napr. <code>p-bartos-andrej_full.webp</code>) — priradia sa samé.</span></div></div>`;
@@ -1330,7 +1330,7 @@
   const ACTIONS = {
     logout: () => { DB.signOut(); render(); },
     tab: (el) => { S.tab = el.dataset.id; S.toast = ""; S.error = ""; S.moving = null; S.teamDraft = null; if (S.tab !== "matches" && S.tab !== "playoff") { S.sel = null; S.draft = null; } if (S.tab === "settings") S.setDraft = null; render(); if (S.tab === "backups") loadBackups(); },
-    season: (el) => { S.season = el.dataset.id; S.teamDraft = null; S.sel = null; S.draft = null; S.teamSel = null; S.moving = null; S.filter = "all"; S.toast = ""; S.error = ""; render(); },
+    season: (el) => { S.season = el.dataset.id; S.teamScope = "season"; S.teamDraft = null; S.sel = null; S.draft = null; S.teamSel = null; S.moving = null; S.filter = "all"; S.toast = ""; S.error = ""; render(); },
     filter: (el) => { S.filter = el.dataset.id; render(); },
     select: (el) => select(el.dataset.id),
     back: () => select(null),
