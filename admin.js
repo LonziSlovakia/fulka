@@ -543,7 +543,7 @@
   /* ---------- Sezóny ---------- */
   function selectSeason(id) {
     const c = ctx();
-    const src = id === "new" ? { id: "new", name: "", state: "soon", seed_mode: "auto", sort: 0, teams: c.d.teams.map((t) => t.id) }
+    const src = id === "new" ? { id: "new", name: "", state: "soon", seed_mode: "auto", sort: 0, teams: [] /* tímy pribúdajú postupne */ }
       : Object.assign({}, c.d.seasons.find((x) => x.id === id));
     if (id !== "new") src.teams = c.d.season_teams.filter((x) => x.season_id === id).map((x) => x.team_id);
     S.seasonSel = id; S.seasonDraft = src; S.toast = ""; S.error = "";
@@ -559,16 +559,21 @@
     return id;
   }
 
+  // DB už má stĺpce na termíny (supabase/4-terminy-sezony.sql)? Bez nich by zápis zlyhal, preto sa vtedy neposielajú.
+  const hasDates = (c) => c.d.seasons.some((x) => "signup_date" in x);
+  const seasonDates = (d, c) => (hasDates(c) ? Object.fromEntries(L.SEASON_STEPS.map(([k]) => [k, d[k] || null])) : {});
+
   async function saveSeason() {
     const c = ctx();
     const d = S.seasonDraft;
     const name = (d.name || "").trim();
     if (!name) return fail("Daj sezóne názov, napr. „Jarná sezóna 2027“.");
-    if (d.teams.length < 2) return fail("Sezóna potrebuje aspoň 2 tímy.");
+    const teamsErr = L.seasonTeamsError(d.state, d.teams.length);
+    if (teamsErr) return fail(teamsErr);
     const isNew = d.id === "new";
     const id = isNew ? newSeasonId(name) : d.id;
     const sort = isNew ? Math.max(0, ...c.d.seasons.map((s) => s.sort)) + 10 : d.sort;
-    const row = { id, name, short: L.shortName(name), state: d.state, seed_mode: d.seed_mode || "auto", sort };
+    const row = Object.assign({ id, name, short: L.shortName(name), state: d.state, seed_mode: d.seed_mode || "auto", sort }, seasonDates(d, c));
     const otherLive = c.d.seasons.filter((x) => x.state === "live" && x.id !== id);
     const had = c.d.season_teams.filter((x) => x.season_id === id).map((x) => x.team_id);
     const dropped = had.filter((t) => !d.teams.includes(t));
@@ -966,7 +971,7 @@
     const tabs = [["soon", "Pripravujeme"], ["live", "Prebieha"], ["done", "Skončená"]].map(([v, label]) =>
       `<button type="button" data-a="sstate" data-id="${v}" ${pressed(d.state === v)}>${sq(STATE[v], d.state === v)}${label}</button>`).join("");
     const title = { soon: "Na webe: banner „Pripravujeme“", live: "Na webe: hlavná sezóna", done: "Na webe: archív" }[d.state];
-    const help = { soon: "Ľudia uvidia len logo FULky a nápis, že sezóna sa chystá.", live: "Web ju ukazuje ako hlavnú — výsledky, rozpis, tabuľku, hráčov aj playoff.", done: "Ľudia si pozrú šampióna, konečné poradie, tabuľku, playoff a všetky výsledky." }[d.state];
+    const help = { soon: "Ľudia uvidia logo FULky, termíny (prázdny = „čoskoro“) a tímy, ktoré sú už vybraté.", live: "Web ju ukazuje ako hlavnú — výsledky, rozpis, tabuľku, hráčov aj playoff.", done: "Ľudia si pozrú šampióna, konečné poradie, tabuľku, playoff a všetky výsledky." }[d.state];
     const otherLive = c.d.seasons.find((x) => x.state === "live" && x.id !== d.id);
     const chips = c.d.teams.map((t) => {
       const T = c.T[t.id];
@@ -984,11 +989,20 @@
         <fieldset class="a-fs" style="gap:12px"><legend>Stav na webe</legend><div class="a-seg" role="group" aria-label="Stav sezóny">${tabs}</div>
           <div class="a-info solid">${icon.screen}<span><strong>${title}</strong><small>${help}</small></span></div>
           ${d.state === "live" && otherLive ? `<span class="a-warn" style="background:rgba(255,176,32,0.08)">„${esc(otherLive.name)}“ sa po uložení prepne na Skončená — naraz môže prebiehať len jedna sezóna.</span>` : ""}</fieldset>
-        <fieldset class="a-fs" style="gap:10px"><legend>Tímy v sezóne</legend><div class="a-teams-pick" style="grid-template-columns:repeat(auto-fit, minmax(130px, 1fr))">${chips}</div></fieldset>
+        ${d.state === "soon" ? seasonDatesFs(d, c) : ""}
+        <fieldset class="a-fs" style="gap:10px"><legend>Tímy v sezóne</legend>${d.state === "soon" ? '<span class="small">Kým sa sezóna pripravuje, môže byť aj bez tímov — vybraté tímy sa hneď ukážu na webe.</span>' : ""}<div class="a-teams-pick" style="grid-template-columns:repeat(auto-fit, minmax(130px, 1fr))">${chips}</div></fieldset>
         ${ch ? `<div class="a-champ" style="${vars(ch)}"><span class="shard" aria-hidden="true"></span><img src="${esc(ch.gif)}" alt=""><span style="position:relative"><span class="lbl">Šampión (z výsledku finále)</span><b>${esc(ch.name)}</b></span></div>` : ""}
         <div class="a-stats">${stats}</div>
         <div class="a-actions"><button type="button" class="a-save" data-a="saveSeason"${S.busy ? " disabled" : ""}>${S.busy ? "Ukladám…" : isNew ? "Vytvoriť sezónu" : "Uložiť sezónu"}</button>
           ${isNew ? "" : `<button type="button" class="a-ghost w" data-a="openSeason" data-id="${esc(d.id)}">Upravovať zápasy tejto sezóny${icon.next}</button>`}</div></div></div>`;
+  }
+
+  // tri termíny na stránke „Pripravujeme“; × vymaže (na webe znova „čoskoro“)
+  function seasonDatesFs(d, c) {
+    if (!hasDates(c)) return `<fieldset class="a-fs"><legend>Termíny na webe</legend><span class="a-warn">Najprv spusti v Supabase skript <b>supabase/4-terminy-sezony.sql</b>, potom sa tu dajú vybrať dátumy.</span></fieldset>`;
+    const rows = L.seasonSteps(d).map((x) => `<label class="a-field lbl a-sdate">${x.label}<span class="a-sdate-in"><input type="date" class="a-input" data-in="sdate" data-key="${x.key}" value="${x.date}">
+        <button type="button" class="a-x" data-a="sdateClear" data-id="${x.key}" aria-label="Vymazať: ${x.label}"${x.date ? "" : " disabled"}>${icon.x}</button></span><span class="small">${x.date ? L.longDate(x.date) : "na webe: čoskoro"}</span></label>`).join("");
+    return `<fieldset class="a-fs" style="gap:10px"><legend>Termíny na webe</legend><div class="a-sdates">${rows}</div></fieldset>`;
   }
 
   /* ---------- Nastavenia ---------- */
@@ -1335,6 +1349,7 @@
     "season-sel": (el) => selectSeason(el.dataset.id),
     seasonBack: () => { S.seasonSel = null; S.seasonDraft = null; render(); },
     sstate: (el) => { S.seasonDraft.state = el.dataset.id; render(); },
+    sdateClear: (el) => { S.seasonDraft[el.dataset.id] = null; render(); },
     steam: (el) => { const t = S.seasonDraft.teams; const i = t.indexOf(el.dataset.id); if (i >= 0) t.splice(i, 1); else t.push(el.dataset.id); render(); },
     saveSeason: () => saveSeason(),
     openSeason: (el) => { S.season = el.dataset.id; S.tab = "matches"; S.sel = null; S.draft = null; S.toast = ""; S.error = ""; render(); },
@@ -1379,6 +1394,7 @@
     if (k === "upHours") editSet((sd) => { sd.upeceHours = e.target.value; });
     if (k === "upT" || k === "upD") editSet((sd) => { sd.upeceOffer[Number(e.target.dataset.i)][k === "upT" ? "t" : "d"] = e.target.value; });
     if (k === "seasonName" && S.seasonDraft) S.seasonDraft.name = e.target.value;
+    if (k === "sdate" && S.seasonDraft) S.seasonDraft[e.target.dataset.key] = e.target.value || null;
     if (S.teamDraft && k === "tname") S.teamDraft.name = e.target.value;
     if (S.teamDraft && k === "tvenue") S.teamDraft.venue = e.target.value;
     if (S.teamDraft && k === "tabbr") S.teamDraft.abbr = e.target.value.toUpperCase();
@@ -1392,6 +1408,7 @@
     if (id) uploadPhoto(id, e.target.files);
     if (e.target.dataset && e.target.dataset.photosBulk) uploadMany(e.target.files);
     if (e.target.dataset && e.target.dataset.bkFile) { restoreFromFile(e.target.files[0]); e.target.value = ""; }
+    if (S.seasonDraft && e.target.dataset && e.target.dataset.in === "sdate") render(); // termín vybraný → deň v týždni pod ním
     if (S.teamDraft && e.target.dataset && e.target.dataset.tcolor) render(); // farba vybraná → prekresliť náhľad
     const kind = e.target.dataset && e.target.dataset.tfile;
     if (S.teamDraft && kind) {

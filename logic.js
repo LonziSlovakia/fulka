@@ -431,6 +431,16 @@
     return Array.from({ length: cells }, (_, i) => new Date(Date.UTC(y, m0, i - start + 1)).toISOString().slice(0, 10));
   }
 
+  /* ---------- Pripravovaná sezóna: termíny a počet tímov ---------- */
+  // tri termíny na stránke „Pripravujeme“ = stĺpce v fulka_seasons (supabase/4-terminy-sezony.sql); prázdny termín = „čoskoro“
+  const SEASON_STEPS = [["signup_date", "Prihlasovanie"], ["draft_date", "Draft tímov"], ["start_date", "Prvý zápas"]];
+  const isDate = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  const seasonSteps = (s) => SEASON_STEPS.map(([key, label]) => ({ key, label, date: isDate(s && s[key]) ? s[key] : "" }));
+  // "2027-01-12" → "Ut 12. 1. 2027", prázdne → "čoskoro"
+  const stepDate = (date) => (isDate(date) ? `${shortDate(date)} ${date.slice(0, 4)}` : "čoskoro");
+  // pripravovaná sezóna smie mať 0 tímov (pribúdajú postupne), prebiehajúca a skončená potrebuje aspoň 2
+  const seasonTeamsError = (state, n) => (state !== "soon" && n < 2 ? "Prebiehajúca alebo skončená sezóna potrebuje aspoň 2 tímy." : "");
+
   /* ---------- Drobnosti ---------- */
   const initials = (name) => name.split(" ").filter(Boolean).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
   const settingsOf = (data) => Object.assign({}, DEFAULTS, data || {});
@@ -444,6 +454,7 @@
     rounds, byTime, nextMatches, matchState,
     validateMatch, compareData, initials, settingsOf,
     draftOf, rowOf, goalRowsOf, slug, playerId, shortName, shiftTime, longDate, monthDays,
+    SEASON_STEPS, seasonSteps, stepDate, seasonTeamsError,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Logic;
   else window.Logic = Logic;

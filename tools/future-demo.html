@@ -1,0 +1,18 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>FULka – ukážka „Pripravujeme“ (bez zápisu do databázy)</title>
+<style>html, body { margin: 0; height: 100%; background: #050505; } iframe { border: 0; width: 100%; height: 100%; }</style>
+<!-- Otvor: http://127.0.0.1:8770/fulka/tools/future-demo.html  (?timy=0 / 1 / 2 … = koľko tímov ukázať)
+     Pripravovaná sezóna dostane naoko 2 termíny, nič sa neukladá. Pre mobil: F12 → ikonka mobilu (Ctrl+Shift+M). -->
+<iframe id="f" src="../"></iframe>
+<script>
+(async () => {
+  const f = document.getElementById("f");
+  const demo = await fetch("future-demo.js").then((r) => r.text());
+  await new Promise((r) => f.addEventListener("load", r, { once: true }));
+  for (let i = 0; i < 100 && !(f.contentWindow.App && f.contentWindow.App.state.data); i++) await new Promise((r) => setTimeout(r, 100));
+  const n = new URLSearchParams(location.search).get("timy");
+  if (n !== null) f.contentWindow.history.replaceState(null, "", `?timy=${n}`);
+  f.contentWindow.eval(demo);
+})();
+</script>

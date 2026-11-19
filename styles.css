@@ -358,6 +358,18 @@ a { color: inherit; }
 .step { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--card); border: 1px solid var(--line-2); text-align: left; }
 .step b { display: block; font-family: var(--fc); font-weight: 800; font-size: 24px; line-height: 1; text-transform: uppercase; }
 .step small { display: block; margin-top: 2px; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
+.step.set small { color: var(--fg); }
+/* tímy pripravovanej sezóny: vedľa seba, na mobile pod sebou; logo na tímovej farbe, pod ním miesto a názov */
+.ft-sec { padding-top: 56px; padding-bottom: 24px; }
+.ft-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
+.ft { position: relative; overflow: hidden; flex: 1 1 220px; max-width: 320px; padding: 28px 18px 24px; background: var(--card); border: 1px solid var(--line);
+  display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+.ft .fill { clip-path: polygon(0 0, 100% 0, 100% 44%, 0 64%); }
+.ft img { position: relative; width: 128px; height: 128px; object-fit: contain; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.55)); }
+.ft-txt { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ft-txt small { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-2); }
+.ft-txt b { font-family: var(--fc); font-weight: 900; font-size: 38px; line-height: 0.95; text-transform: uppercase; transform: skewX(-8deg); }
+@container (max-width: 480px) { .ft { flex-basis: 100%; max-width: none; } }
 
 /* ---------- Päta ---------- */
 .foot { position: relative; background: #111111; }
@@ -376,7 +388,7 @@ a { color: inherit; }
 :root[data-font="monument"] { --fm: "PP Monument Extended", var(--fc); }
 :root[data-font="monument"] :is(.sec-head h2, .tname, .kicker, .res-side span, .row-team span, .round-title b, .tbl-team b, .pod-name, .seed .nm,
   .fin-head b, .fin-sides .nm, .po-head b, .po-side .nm, .team-title b, .champ-name, .champ-final .nm, .place-txt b, .future-in h1, .future-chip,
-  .season-card .name, .step b, .btn-white) { font-family: var(--fm); font-weight: 900; letter-spacing: 0.01em; }
+  .season-card .name, .step b, .ft-txt b, .btn-white) { font-family: var(--fm); font-weight: 900; letter-spacing: 0.01em; }
 :root[data-font="monument"] :is(.sec-head h2, .champ-name, .future-in h1, .season-card .name, .fin-head b, .po-head b) { transform: none; }
 :root[data-font="monument"] .sec-head h2 { font-size: clamp(28px, 3.6cqi, 48px); line-height: 1; }
 :root[data-font="monument"] .tname { font-size: calc(var(--ts, 20px) * 0.6); padding-top: 5px; padding-bottom: 5px; }

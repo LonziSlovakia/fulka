@@ -248,7 +248,14 @@
             <span class="note" style="color:#EDEDED">${esc(day.note)}</span>
           </div>${team(A)}</div>
         ${notes ? `<span class="mnote">${notes}</span>` : ""}
-      </div><div class="teeth" aria-hidden="true"></div></section>`;
+      </div><div class="teeth" aria-hidden="true"></div></section>${futureTeams(c)}`;
+  }
+  // tímy pripravovanej sezóny (pribúdajú postupne): logo, pod ním miesto menším a názov väčším
+  function futureTeams(c) {
+    if (!c.v.teamIds.length) return "";
+    const cards = c.v.teamIds.map((id) => c.T[id] || NOTEAM).map((t) => `<div class="ft" style="${vars(t)}"><span class="fill grad" aria-hidden="true"></span><span class="fill stripes" aria-hidden="true"></span>
+      <img src="${esc(t.svg)}" alt=""><span class="ft-txt">${t.pre ? `<small>${esc(t.pre)}</small>` : ""}<b>${esc(t.name)}</b></span></div>`).join("");
+    return `<section id="timy" class="sec wrap ft-sec">${secHead("Tímy", `${c.v.teamIds.length} ${plural(c.v.teamIds.length, "tím", "tímy", "tímov")} v sezóne`)}<div class="ft-list">${cards}</div></section>`;
   }
 
   function heroMulti(ups, c, day, kicker) {
@@ -272,7 +279,14 @@
       <div class="fill stripes-light" aria-hidden="true"></div>
       <div class="wrap hero-in"><span class="kicker">${kicker}</span>${head}
         <div class="cards" style="grid-template-columns:repeat(auto-fit, minmax(min(100%, ${sz.minCol}), 1fr))">${cards.join("")}</div>
-      </div><div class="teeth" aria-hidden="true"></div></section>`;
+      </div><div class="teeth" aria-hidden="true"></div></section>${futureTeams(c)}`;
+  }
+  // tímy pripravovanej sezóny (pribúdajú postupne): logo, pod ním miesto menším a názov väčším
+  function futureTeams(c) {
+    if (!c.v.teamIds.length) return "";
+    const cards = c.v.teamIds.map((id) => c.T[id] || NOTEAM).map((t) => `<div class="ft" style="${vars(t)}"><span class="fill grad" aria-hidden="true"></span><span class="fill stripes" aria-hidden="true"></span>
+      <img src="${esc(t.svg)}" alt=""><span class="ft-txt">${t.pre ? `<small>${esc(t.pre)}</small>` : ""}<b>${esc(t.name)}</b></span></div>`).join("");
+    return `<section id="timy" class="sec wrap ft-sec">${secHead("Tímy", `${c.v.teamIds.length} ${plural(c.v.teamIds.length, "tím", "tímy", "tímov")} v sezóne`)}<div class="ft-list">${cards}</div></section>`;
   }
 
   /* ---------- Výsledky ---------- */
@@ -505,7 +519,14 @@
         <div class="champ-txt"><span class="kicker dark" style="padding:6px 16px">Šampión · ${esc(c.cur.name)}</span>
           <span class="champ-name">${esc(ch.name)}</span><span class="champ-sub">${ch.pre ? `${esc(ch.pre)} · ` : ""}víťaz finále</span></div>
         <div class="champ-final"><div class="box-head"><span>Finále</span><span>${esc(dayLabel(f))}</span></div>${rows}</div>
-      </div><div class="teeth" aria-hidden="true"></div></section>`;
+      </div><div class="teeth" aria-hidden="true"></div></section>${futureTeams(c)}`;
+  }
+  // tímy pripravovanej sezóny (pribúdajú postupne): logo, pod ním miesto menším a názov väčším
+  function futureTeams(c) {
+    if (!c.v.teamIds.length) return "";
+    const cards = c.v.teamIds.map((id) => c.T[id] || NOTEAM).map((t) => `<div class="ft" style="${vars(t)}"><span class="fill grad" aria-hidden="true"></span><span class="fill stripes" aria-hidden="true"></span>
+      <img src="${esc(t.svg)}" alt=""><span class="ft-txt">${t.pre ? `<small>${esc(t.pre)}</small>` : ""}<b>${esc(t.name)}</b></span></div>`).join("");
+    return `<section id="timy" class="sec wrap ft-sec">${secHead("Tímy", `${c.v.teamIds.length} ${plural(c.v.teamIds.length, "tím", "tímy", "tímov")} v sezóne`)}<div class="ft-list">${cards}</div></section>`;
   }
 
   function placesSec(c) {
@@ -583,8 +604,8 @@
 
   /* ---------- Pripravovaná sezóna ---------- */
   function futureBody(c) {
-    const steps = ["Prihlasovanie", "Draft tímov", "Prvý zápas"].map((s, i) =>
-      `<div class="step"><span class="outline-num" style="font-size:52px">${i + 1}</span><span><b>${s}</b><small>čoskoro</small></span></div>`).join("");
+    const steps = L.seasonSteps(c.cur).map((s, i) =>
+      `<div class="step${s.date ? " set" : ""}"><span class="outline-num" style="font-size:52px">${i + 1}</span><span><b>${s.label}</b><small>${L.stepDate(s.date)}</small></span></div>`).join("");
     return `<section class="hero" aria-label="Pripravovaná sezóna">
       <div class="fill" aria-hidden="true" style="background:linear-gradient(150deg, #2A2A2A 0%, #0E0E0E 70%);clip-path:polygon(0 0, 46% 0, 34% 48%, 40% 52%, 26% 100%, 0 100%)"></div>
       <div class="fill" aria-hidden="true" style="background:linear-gradient(210deg, #2A2A2A 0%, #0E0E0E 70%);clip-path:polygon(70% 0, 100% 0, 100% 100%, 82% 100%, 90% 54%, 84% 50%)"></div>
@@ -594,7 +615,14 @@
         <p>Sezóna ešte nezačala. Keď bude draft a rozpis, nájdeš tu výsledky, tabuľku aj playoff.</p>
         <div class="steps">${steps}</div>
         ${c.live ? '<button type="button" class="btn-white big" data-act="home">Pozrieť prebiehajúcu sezónu</button>' : ""}
-      </div><div class="teeth" aria-hidden="true"></div></section>`;
+      </div><div class="teeth" aria-hidden="true"></div></section>${futureTeams(c)}`;
+  }
+  // tímy pripravovanej sezóny (pribúdajú postupne): logo, pod ním miesto menším a názov väčším
+  function futureTeams(c) {
+    if (!c.v.teamIds.length) return "";
+    const cards = c.v.teamIds.map((id) => c.T[id] || NOTEAM).map((t) => `<div class="ft" style="${vars(t)}"><span class="fill grad" aria-hidden="true"></span><span class="fill stripes" aria-hidden="true"></span>
+      <img src="${esc(t.svg)}" alt=""><span class="ft-txt">${t.pre ? `<small>${esc(t.pre)}</small>` : ""}<b>${esc(t.name)}</b></span></div>`).join("");
+    return `<section id="timy" class="sec wrap ft-sec">${secHead("Tímy", `${c.v.teamIds.length} ${plural(c.v.teamIds.length, "tím", "tímy", "tímov")} v sezóne`)}<div class="ft-list">${cards}</div></section>`;
   }
 
   /* ---------- Z UPeCe (podpora, program týždňa naživo z upcba.sk, čo UPeCe ponúka) ---------- */

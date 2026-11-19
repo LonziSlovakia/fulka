@@ -35,7 +35,7 @@
   /* ---------- Čítanie ---------- */
   const QUERIES = {
     settings: "select=data&id=eq.1",
-    seasons: "select=id,name,short,state,seed_mode,sort&order=sort.desc",
+    seasons: "select=*&order=sort.desc", // * = aj termíny (signup_date, draft_date, start_date), keď je spustené supabase/4-terminy-sezony.sql
     teams: "select=id,name,venue,abbr,color,color_dark,ink,logo,logo_anim&order=name",
     season_teams: "select=season_id,team_id",
     players: "select=id,name,photo,photo_head,photo_face&order=name",

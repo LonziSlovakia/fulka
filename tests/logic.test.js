@@ -553,3 +553,15 @@ test("kanadské bodovanie: so súpiskou aj hráči bez bodu (Všetci hráči), p
   assert.deepEqual(all.map((x) => [x.player_id, x.pos, x.b, x.team_id]), [["a1", 1, 2, "gia"], ["b1", 2, 1, "bre"], ["a2", 3, 1, "gia"], ["r1", 4, 0, "ran"], ["s1", 4, 0, "sai"]]); // zz nie je medzi hráčmi
   assert.deepEqual(all.slice(0, 3), top);
 });
+
+test("pripravovaná sezóna: termíny (prázdne = čoskoro) a 0 tímov", () => {
+  const steps = L.seasonSteps({ signup_date: "2027-01-12", draft_date: null, start_date: "zlé" });
+  assert.deepEqual(steps.map((x) => [x.label, x.date]), [["Prihlasovanie", "2027-01-12"], ["Draft tímov", ""], ["Prvý zápas", ""]]);
+  assert.deepEqual(L.seasonSteps({}).map((x) => x.date), ["", "", ""]); // stará DB bez stĺpcov
+  assert.equal(L.stepDate("2027-01-12"), "Ut 12. 1. 2027");
+  assert.equal(L.stepDate(""), "čoskoro");
+  assert.equal(L.seasonTeamsError("soon", 0), "");
+  assert.match(L.seasonTeamsError("live", 1), /aspoň 2/);
+  assert.match(L.seasonTeamsError("done", 0), /aspoň 2/);
+  assert.equal(L.seasonTeamsError("live", 2), "");
+});

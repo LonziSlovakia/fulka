@@ -3,7 +3,7 @@
 Všeobecné pravidlá o Lonzim sú v `~/.claude/CLAUDE.md`. Tu je iba to, čo platí pre FULka.
 **Tento súbor udržiavaj živý:** po každej zmene, ktorá mení správanie alebo dohodu, ho uprav v tom istom commite.
 Neplatné veci zmaž, históriu nedumpuj. `HANDOFF.md` je pôvodné zadanie (pri rozpore platí tento súbor) – čítaj z neho iba časť, ktorú potrebuješ.
-Stav k 17. 11. 2026.
+Stav k 19. 11. 2026.
 
 ## Pravidlá projektu
 
@@ -24,7 +24,8 @@ Stav k 17. 11. 2026.
   Zápis povoľuje RLS cez `public.is_admin('fulka')`. Budík proti uspaniu databázy beží v repozitári `laura`.
 - Spustené SQL: `supabase/1-fulka.sql` (tabuľky, pravidlá, štartovacie dáta), `supabase/2-loga-webp.sql` (logá víťazov vo WebP),
   `supabase/3-zalohy.sql` (ručné zálohy + poistka; spustené a Lonzim otestované 3. 11. 2026).
-- Sezóna: Zimná 2026 (pilotná), tímy Veľká sála Giants, Libresso Brewers, Recepcia Rangers, Kaplnka Saints.
+  **Čaká na spustenie:** `supabase/4-terminy-sezony.sql` (3 stĺpce termínov v `fulka_seasons` + približné termíny z26). Web aj admin fungujú aj bez neho (admin ukáže upozornenie).
+- Sezóny: Zimná 2026 `z26` (pilotná, skončená), Letná 2027 `l27` (pripravujeme). Tímy Veľká sála Giants, Libresso Brewers, Recepcia Rangers, Kaplnka Saints.
 
 ## Súbory
 
@@ -32,7 +33,7 @@ Stav k 17. 11. 2026.
 |---|---|
 | `index.html` | kostra; načíta `config.js`, `db.js`, `logic.js`, `upece.js`, `render.js` |
 | `config.js` | URL + publishable key (verejné) |
-| `db.js` | fetch klient: načítanie všetkých 8 tabuliek + cache v `localStorage` (`fulka-data-v1`), prihlásenie s obnovou tokenu (`fulka-session-v1`), `upsert(kind, rows, key)`, `remove(kind, where, maybe)` (where aj `{ seq: { gt: 3 } }`), `upload`, `photoUrl`, zálohy `backups/backupData/backup/restore/restoreFile` |
+| `db.js` | fetch klient: načítanie všetkých 8 tabuliek (sezóny `select=*`, aby fungovalo pred aj po pridaní stĺpcov) + cache v `localStorage` (`fulka-data-v1`), prihlásenie s obnovou tokenu (`fulka-session-v1`), `upsert(kind, rows, key)`, `remove(kind, where, maybe)` (where aj `{ seq: { gt: 3 } }`), `upload`, `photoUrl`, zálohy `backups/backupData/backup/restore/restoreFile` |
 | `logic.js` | čisté výpočty (testované): skóre, tabuľka, bodovanie, playoff, dátumy v čase Bratislavy, draft zápasu ↔ riadok DB (`draftOf`/`rowOf`), `DEFAULTS` nastavení |
 | `upece.js` | sekcia „Z UPeCe“: načítanie a čítanie týždenných oznamov a noviniek z upcba.sk (čisté funkcie + `load()` s cache `fulka-upece-v1`) |
 | `render.js` | verejný web; s `?edit` sa nevykresľuje a načíta `admin.js` + `admin.css` |
@@ -42,7 +43,7 @@ Stav k 17. 11. 2026.
 | `board-admin.js` | admin → záložka „Tabuľa“ (ovládanie); načíta ho `render.js` s `?edit` pred `admin.js` |
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
-| `tests/*.test.js` | `node --test tests/*.test.js` (82 testov: `logic` 50, `upece` 7, `board` 25; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (83 testov: `logic` 51, `upece` 7, `board` 25; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF |
@@ -106,6 +107,12 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Remíza v playoff sa neuloží (rovnaká kontrola ako v editore). Zápas bez termínu dostane dnešný dátum a čas. Po neúspešnom uložení ostane „Uložiť výsledok na web“ / „Späť do zápasu“.
   - Potvrdenie pri „Ukončiť zápas“ je zámerné (zverejňuje výsledok); pri bežných akciách tabule žiadne potvrdenie nie je.
   - Lonzi **nechce** zvukovú sirénu ani realtime na iné zariadenia. Nie je (nápady): počítanie času nahor, predĺženie, čas gólu v DB.
+- **Stránka „Pripravujeme“** (sezóna `soon`, vyžiadal Lonzi 19. 11. 2026): tri termíny Prihlasovanie / Draft tímov / Prvý zápas = stĺpce `signup_date`, `draft_date`, `start_date`
+  (typ `date`, prázdne = „čoskoro“, vyplnený = „Po 1. 2. 2027“ bielou). V admine Sezóny → sezóna → „Termíny na webe“ (iba pri stave Pripravujeme; × vymaže).
+  Pod banerom sekcia „Tímy“ (nadpis so zigzagom) s kartami vybratých tímov: logo na tímovej farbe, pod ním miesto menším, názov väčším; vedľa seba, na mobile pod sebou.
+  Pripravovaná sezóna smie mať **0 tímov** (`L.seasonTeamsError`; prebieha/skončená aspoň 2) a nová sezóna začína bez tímov – pribúdajú postupne.
+  Animované logo FULky (`assets/anim/ful.webp`, iba tu): 440 ms úvod, snímky 64 ms (pôvodne 40 = 1,6× pomalšie), posledná snímka 2,5 s, potom znova.
+  Zmena: `python3 tools/webp-timing.py assets/anim/ful.webp <prvá> <ostatné> <posledná>` (bez čísel vypíše časy).
 - Potvrdzovacie okno (`ask()` v `admin.js`) je **iba pri mazaní, pri zálohách a pri ukončení zápasu na tabuli**. Potvrdenie pred každou bežnou úpravou Lonzi **nechce**
   (raz som ho pridal, vrátil som to) – nepridávať.
 - Góly sa ukladajú bez mazania vopred: upsert podľa `match_id,seq`, potom zmazať iba `seq > počet` (predtým sa najprv všetko zmazalo → pri výpadku by góly zmizli).
@@ -130,6 +137,8 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fa
   Potvrdzovacie okno je `.a-modal`: potvrdiť `[data-m=ok]`, zrušiť `[data-m=no]`, slovo do `[data-m=word]`.
 - Tabuľa: `tools/board-demo.html` (http://127.0.0.1:8770/fulka/tools/board-demo.html) otvorí admin s podvrhnutým prihlásením a zápismi iba do pamäte – dá sa skúšať bez zásahu do Supabase.
   Screenshoty/testy: `tools/board-demo.js` (ukážkový stav → `tabula.html`), `board-flow.js`, `board-flow2.js`, `board-end.js`, `board-sync.js` (kroky pre `shot.js` po `fake-login.js RELOAD mock-db.js`).
+- Pripravujeme: `tools/future-demo.html` (http://127.0.0.1:8770/fulka/tools/future-demo.html, `?timy=1` = iba 1 tím) ukáže pripravovanú sezónu s 2 ukážkovými termínmi bez zápisu;
+  krok `tools/future-demo.js` pre `shot.js`, admin tok termínov `tools/season-dates.js` (po `fake-login.js RELOAD mock-db.js`).
 - Chromium je Playwright headless shell; chýbajúce knižnice sú v `tools/.cache/libroot` (bez sudo, gitignore).
 - Port 8765 používa iný projekt – nezabíjať.
 

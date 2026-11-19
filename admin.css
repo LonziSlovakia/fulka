@@ -449,3 +449,9 @@
 .a-bd-tside { display: flex; flex-direction: column; gap: 8px; }
 .a-bd-tchips { display: flex; flex-wrap: wrap; gap: 6px; }
 .a-bd-tchips .a-tp:disabled { cursor: default; }
+
+/* termíny pripravovanej sezóny (Sezóny → Pripravujeme) */
+.a-sdates { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.a-sdate-in { display: flex; gap: 6px; }
+.a-sdate-in .a-input { flex: 1; min-width: 0; color-scheme: dark; }
+.a-sdate-in .a-x:disabled { opacity: 0.35; cursor: default; }
