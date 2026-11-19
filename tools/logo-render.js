@@ -10,7 +10,7 @@ const LIBS = path.join(__dirname, ".cache/libroot/usr/lib/x86_64-linux-gnu");
 const WEBP = path.join(__dirname, ".cache/webproot/usr");
 const SRC = "http://127.0.0.1:8770/fulka/design/ants/zdroj.html?v=1";
 const [list = "1,2,3,4", outDir = path.join(__dirname, "../design/ants")] = process.argv.slice(2);
-const FRAMES = 24, HOLD0 = 900, STEP = 45, HOLD1 = 1200;
+const FRAMES = 32, HOLD0 = 900, STEP = 50, HOLD1 = 1200; // 32 × 50 ms ≈ 1,6 s animácie
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // časy snímok: [t 0..1, trvanie ms]
@@ -50,7 +50,7 @@ const timeline = () => [[0, HOLD0], ...Array.from({ length: FRAMES - 1 }, (_, i)
       fs.writeFileSync(f, Buffer.from(shot.result.data, "base64"));
       if (i === 0) fs.copyFileSync(f, path.join(outDir, `ants-${v}.png`)); // statické logo = prvá snímka
       // prvá a posledná snímka (dlho na obrazovke) bezstratovo, ostatné stratovo – súbor je niekoľkokrát menší
-      args.push("-d", String(ms), ...(i === 0 || i === last ? ["-lossless"] : ["-lossy", "-q", "82"]), f);
+      args.push("-d", String(ms), ...(i === 0 || i === last ? ["-lossless"] : ["-lossy", "-q", "70"]), f);
     }
     const out = path.join(outDir, `ants-${v}.webp`);
     execFileSync(path.join(WEBP, "bin/img2webp"), [...args, "-o", out], { env, stdio: "ignore" });

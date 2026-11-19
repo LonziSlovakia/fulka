@@ -1,8 +1,10 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Kuchynka Ants – zdroj lôg (4 návrhy)</title>
-<!-- Zdroj 4 návrhov loga. Každý návrh je funkcia času t (0 = začiatok, 1 = koniec animácie), ktorá vráti SVG 512×512.
-     ?v=1&t=0.5 → iba jedno logo (na vyrenderovanie snímky cez tools/ants-render.js), bez parametrov → všetky 4 sa animujú. -->
+<title>Kuchynka Ants – zdroj loga (4 verzie)</title>
+<!-- Logo Kuchynka Ants podľa Lonziho predlohy (predloha/koncepty.png, koncept vpravo hore): hlava mravca z profilu bez šesťuholníka,
+     bez spodného pravého dielika (alebo zlúčeného s vrchom hlavy), vedľa predmet z kuchyne (ako zvonček pri Rangers).
+     Každá verzia je funkcia času t (0 = začiatok, 1 = koniec animácie) → SVG 512×512.
+     ?v=1&t=0.5 → iba jedno logo (snímky pre tools/logo-render.js), bez parametrov → všetky 4 sa animujú. -->
 <style>
   html, body { margin: 0; background: transparent; }
   body.preview { background: #050505; color: #fff; font-family: system-ui, sans-serif; display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; }
@@ -12,193 +14,185 @@
 <body>
 <script>
 "use strict";
-// ---------- farby ----------
+// ---------- farby (z predlohy) ----------
 const CREAM = "#FCF6E8", INK = "#0A0A0A";
-const G = { hi: "#B4E678", lt: "#8FD150", c: "#74BC3C", md: "#5FA032", dk: "#3F7A1E", dp: "#1F4D16", brow: "#14300D" };
-const WOOD = { hi: "#F2D3A2", lt: "#E2B878", md: "#C48E52", dk: "#8A5A2B" };
-const STEEL = { hi: "#F1F5F7", lt: "#CFD7DC", md: "#9AA6AD", dk: "#5E6A71" };
+const O = { hi: "#FFA24A", lt: "#FF8424", c: "#EE6A12", md: "#D2560C", dk: "#A8420A", dp: "#6E2A05" };
+const WOOD = { hi: "#F4D6A6", lt: "#E3B97A", md: "#C88F52", dk: "#8E5B2A" };
+const STEEL = { hi: "#F2F5F7", lt: "#D3DADF", md: "#A3ADB4", dk: "#5B666D" };
 
-// ---------- pomocné funkcie (body → SVG) ----------
-const pts = (p) => p.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+// ---------- pomocné funkcie ----------
+// predloha je kreslená v súradniciach výrezu 870×960, M ju prevedie do loga 512×512
+const M = ([x, y]) => [x * 0.56 - 30, y * 0.56 - 12];
+const pts = (p) => p.map(M).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+const ptsRaw = (p) => p.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
 const poly = (p, fill, extra = "") => `<polygon points="${pts(p)}" fill="${fill}" ${extra}/>`;
-const mir = (p) => p.map(([x, y]) => [512 - x, y]);
-const both = (p, fl, fr = fl) => poly(p, fl) + poly(mir(p), fr);
-const circle = (x, y, r, fill) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}"/>`;
-const rot = (deg, x, y, s) => `<g transform="rotate(${deg.toFixed(2)} ${x} ${y})">${s}</g>`;
-const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
-const seg = (t, a, b) => ease((t - a) / (b - a)); // 0 → 1 medzi časmi a a b
-// mykanie tykadlami medzi časmi a a b (dve kmitnutia, doznie), mimo toho 0
-const twitch = (t, a, b, deg) => { const u = (t - a) / (b - a); return u <= 0 || u >= 1 ? 0 : deg * Math.sin(u * Math.PI * 4) * (1 - u); };
-// fázy idú po sebe (tykadlá → oči → predmet), aby sa naraz menila iba malá časť loga (menší súbor)
-
-// časť loga = obrys (sil, z neho sa robí krémový a čierny okraj) + kresba (art)
+const polyRaw = (p, fill, extra = "") => `<polygon points="${ptsRaw(p)}" fill="${fill}" ${extra}/>`;
+const cut = (p, w = 4) => `<polyline points="${pts(p)}" fill="none" stroke="${INK}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+const rotAt = (deg, p, s) => { const [x, y] = M(p); return `<g transform="rotate(${deg.toFixed(2)} ${x.toFixed(1)} ${y.toFixed(1)})">${s}</g>`; };
+const phase = (t, a, b) => Math.min(1, Math.max(0, (t - a) / (b - a)));
+// kmitanie medzi časmi a a b (n kmitov, doznie), mimo toho 0
+const wiggle = (t, a, b, deg, n = 2) => { const u = phase(t, a, b); return u <= 0 || u >= 1 ? 0 : deg * Math.sin(u * Math.PI * 2 * n) * (1 - u); };
+// časť loga = obrys (sil → krémový a čierny okraj) + kresba (art)
 const part = (sil, art) => ({ sil, art });
-// celé logo: krémový okraj, čierny okraj, kresba
-function sticker(parts, defs = "") {
+function sticker(parts) {
   const sil = parts.map((p) => p.sil).join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><defs>${defs}</defs>
-    <g fill="${CREAM}" stroke="${CREAM}" stroke-width="40" stroke-linejoin="round">${sil}</g>
-    <g fill="${INK}" stroke="${INK}" stroke-width="16" stroke-linejoin="round">${sil}</g>
-    ${parts.map((p) => p.art).join("")}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><g id="all">
+    <g fill="${CREAM}" stroke="${CREAM}" stroke-width="34" stroke-linejoin="round">${sil}</g>
+    <g fill="${INK}" stroke="${INK}" stroke-width="14" stroke-linejoin="round">${sil}</g>
+    ${parts.map((p) => p.art).join("")}</g></svg>`;
 }
 
-// ---------- mravčia hlava (spoločná pre návrhy 1–3) ----------
-const HEAD_L = [[256, 142], [206, 124], [160, 136], [130, 174], [116, 234], [126, 294], [158, 344], [204, 376], [256, 386]];
-const HEAD = HEAD_L.concat(mir(HEAD_L.slice(1, -1)).reverse());
-// tykadlo: od hlavy hore a cez lakeť von, na konci gulička; ang = mykanie (stupne)
-function antenna(ang, flip, base = [204, 132], elbow = [160, 64], tip = [100, 50]) {
-  const [bx, by] = base;
-  const p = [[bx - 10, by + 2], [elbow[0] - 6, elbow[1] + 6], [tip[0] + 2, tip[1] + 9], [tip[0] - 2, tip[1] - 7], [elbow[0] + 8, elbow[1] - 9], [bx + 10, by - 6]];
-  const pp = flip ? mir(p) : p;
-  const [kx, ky] = flip ? [512 - tip[0], tip[1]] : tip;
-  const cx = flip ? 512 - bx : bx;
-  const a = flip ? -ang : ang;
-  const shape = (f1, f2) => poly(pp, f1) + circle(kx, ky, 15, f2);
-  return part(rot(a, cx, by, shape("#000", "#000")),
-    rot(a, cx, by, shape(G.dk, G.md) + circle(kx - 4, ky - 5, 6, G.hi)));
+// ---------- hlava mravca ----------
+// tykadlo vpredu: zvislý článok z hlavy a zalomený článok dopredu; zadné tykadlo je tmavšie, za hlavou
+const ANT_BASE = [478, 286];
+const ANT1_UP = [[456, 292], [448, 118], [480, 80], [498, 88], [502, 292]];
+const ANT1_FW = [[486, 80], [188, 206], [210, 224], [460, 134]]; // zalomený článok sa zužuje do hrotu
+const ANT2_UP = [[526, 290], [520, 160], [544, 142], [556, 288]];
+const ANT2_FW = [[544, 142], [360, 200], [376, 212], [528, 176]];
+function antennae(deg) {
+  const back = rotAt(deg * 0.7, [540, 286], poly(ANT2_UP, O.dk) + poly(ANT2_FW, O.dk) + poly([[544, 142], [360, 200], [368, 202], [538, 154]], O.md));
+  const front = rotAt(deg, ANT_BASE, poly(ANT1_UP, O.md) + poly([[456, 292], [448, 118], [480, 80], [474, 122], [474, 292]], O.lt)
+    + poly(ANT1_FW, O.c) + poly([[486, 80], [188, 206], [198, 210], [478, 98]], O.hi));
+  const sil = rotAt(deg * 0.7, [540, 286], poly(ANT2_UP, "#000") + poly(ANT2_FW, "#000")) + rotAt(deg, ANT_BASE, poly(ANT1_UP, "#000") + poly(ANT1_FW, "#000"));
+  return [part(sil, back + front)];
 }
-// hlava: plochy (svetlá ľavá, tmavšia pravá), mračiace sa obočie, oči (glow 0–1 = rozsvietenie), čeľuste
-function head(glow, opts = {}) {
-  const art = [
-    poly(HEAD, G.md),
-    poly(HEAD_L, G.lt),
-    poly([[256, 142], [206, 124], [160, 136], [130, 174], [176, 196], [256, 206]], G.hi),
-    poly(mir([[256, 142], [206, 124], [160, 136], [130, 174], [176, 196], [256, 206]]), G.c),
-    poly([[116, 234], [126, 294], [158, 344], [204, 376], [224, 330], [172, 298]], G.md),
-    poly(mir([[116, 234], [126, 294], [158, 344], [204, 376], [224, 330], [172, 298]]), G.dk),
-    // nos (štít medzi očami)
-    poly([[232, 292], [280, 292], [294, 334], [256, 352], [218, 334]], G.c),
-    poly([[256, 292], [280, 292], [294, 334], [256, 352]], G.dk),
-    // obočie: ťažké, do V (pozerá ako golem v Giants)
-    poly([[132, 210], [198, 202], [256, 248], [314, 202], [380, 210], [372, 244], [302, 246], [256, 276], [210, 246], [140, 244]], G.brow),
-    poly([[132, 210], [198, 202], [256, 248], [250, 256], [196, 214], [138, 222]], G.dp),
-  ];
-  const eye = [[156, 250], [220, 254], [244, 272], [228, 286], [170, 274]];
-  const lit = glow > 0.02;
-  if (lit) art.push(`<g filter="url(#glow)" opacity="${glow.toFixed(2)}">${both(eye, "#D9FF4F")}</g>`);
-  art.push(both(eye, lit ? mixHex("#0B0B0B", "#E9FF7A", glow) : "#0B0B0B"));
-  art.push(both([[178, 260], [196, 262], [184, 268]], lit ? "#FFFFFF" : "#F5F5F5"));
-  // čeľuste
-  // čeľuste: veľké kliešte so zúbkami, hroty smerujú k sebe
-  const mand = [[196, 356], [170, 392], [168, 432], [188, 462], [222, 472], [252, 458], [238, 450], [242, 440], [226, 444], [228, 430], [212, 432], [214, 414], [232, 392], [240, 368]];
-  const mouth = [[204, 380], [308, 380], [300, 452], [256, 462], [212, 452]]; // tmavá medzera medzi čeľusťami
-  art.push(poly(mouth, INK));
-  art.push(both(mand, G.dk, G.dp), poly([[196, 356], [170, 392], [168, 432], [188, 462], [196, 440], [190, 404], [214, 372]], G.md),
-    poly(mir([[196, 356], [170, 392], [168, 432], [188, 462], [196, 440], [190, 404], [214, 372]]), G.dk));
-  return part(poly(HEAD, "#000") + both(mand, "#000") + poly(mouth, "#000"), art.join(""));
+// vrch hlavy s okom; merged = spodný pravý dielik zlúčený s hlavou (inak chýba)
+const HEAD_TOP = [[168, 578], [196, 520], [236, 430], [300, 372], [372, 330], [440, 292], [520, 272], [640, 250], [722, 248], [690, 322], [744, 350], [770, 410], [752, 470], [640, 500], [520, 530], [430, 562], [345, 600], [262, 628], [214, 616]];
+const HEAD_MERGED = [[168, 578], [196, 520], [236, 430], [300, 372], [372, 330], [440, 292], [520, 272], [640, 250], [722, 248], [690, 322], [744, 350], [782, 420], [792, 520], [760, 610], [690, 680], [590, 722], [490, 728], [430, 690], [400, 640], [345, 610], [262, 628], [214, 616]];
+function head(merged, blink = 0) {
+  const shape = merged ? HEAD_MERGED : HEAD_TOP;
+  const art = [poly(shape, O.c)];
+  if (merged) art.push(poly([[620, 430], [752, 470], [792, 520], [760, 610], [690, 680], [590, 722], [490, 728], [430, 690], [520, 600], [640, 520]], O.md),
+    poly([[640, 520], [792, 520], [760, 610], [690, 680], [600, 640]], O.dk), cut([[430, 690], [520, 600], [640, 520], [752, 470]], 5));
+  art.push(
+    poly([[236, 430], [300, 372], [372, 330], [440, 292], [520, 272], [640, 250], [722, 248], [690, 322], [560, 332], [430, 382], [304, 452]], O.lt),
+    poly([[440, 292], [520, 272], [640, 250], [722, 248], [708, 268], [520, 298]], O.hi),
+    poly([[690, 322], [744, 350], [770, 410], [752, 470], [640, 500], [622, 432]], O.md),
+    poly([[168, 578], [214, 616], [262, 628], [345, 600], [334, 562], [238, 574]], O.dk),
+    poly([[334, 562], [345, 600], [430, 562], [520, 530], [640, 500], [604, 468], [470, 502]], O.md),
+    cut([[622, 432], [690, 322]]), cut([[304, 452], [238, 574]]), cut([[238, 574], [334, 562], [470, 502], [604, 468]]));
+  // oko: mandľové, zamračené; blink = záblesk lesku (0–1)
+  const big = (p) => p.map(([x, y]) => [430 + (x - 430) * 1.25, 455 + (y - 455) * 1.25]); // oko o štvrtinu väčšie ako v prvom obkreslení
+  art.push(poly(big([[296, 532], [350, 472], [420, 422], [550, 368], [502, 442], [440, 492], [360, 527]]), INK));
+  art.push(poly(big([[402, 472], [464, 428], [448, 470]]), "#FFFFFF"));
+  if (blink > 0.02) {
+    const [gx, gy] = M([452, 446]);
+    art.push(`<g opacity="${blink.toFixed(2)}">${poly(big([[392, 478], [486, 416], [456, 478]]), "#FFFFFF")}<circle cx="${gx}" cy="${gy}" r="${(4 + 10 * blink).toFixed(1)}" fill="#FFFFFF" opacity="0.8"/></g>`);
+  }
+  return part(poly(shape, "#000"), art.join(""));
 }
-function mixHex(a, b, k) {
-  const pa = a.match(/\w\w/g).map((h) => parseInt(h, 16)), pb = b.match(/\w\w/g).map((h) => parseInt(h, 16));
-  return "#" + pa.map((v, i) => Math.round(v + (pb[i] - v) * k).toString(16).padStart(2, "0")).join("");
+// kusadlá: dva háky dole vľavo; open = otvorenie (stupne), kladné = od seba
+const MAND1 = [[196, 600], [150, 598], [108, 622], [86, 672], [94, 736], [110, 772], [128, 722], [150, 692], [178, 678], [208, 668], [224, 640]];
+const MAND2 = [[296, 636], [376, 628], [414, 662], [402, 718], [352, 772], [270, 814], [300, 756], [334, 712], [338, 680], [298, 668]];
+function mandibles(open) {
+  const m1 = rotAt(open, [206, 618], poly(MAND1, O.c) + poly([[150, 598], [108, 622], [86, 672], [94, 736], [110, 772], [112, 712], [132, 660], [176, 622]], O.lt) + poly([[196, 600], [224, 640], [208, 668], [178, 678], [176, 640]], O.dk));
+  const m2 = rotAt(-open, [330, 640], poly(MAND2, O.c) + poly([[296, 636], [376, 628], [352, 660], [318, 704], [270, 814], [300, 720], [318, 676]], O.lt) + poly([[376, 628], [414, 662], [402, 718], [352, 772], [368, 700]], O.dk));
+  const sil = rotAt(open, [206, 618], poly(MAND1, "#000")) + rotAt(-open, [330, 640], poly(MAND2, "#000"));
+  return part(sil, m1 + m2);
 }
-const GLOW = `<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>`;
-// odlesk: biely pás, ktorý prejde cez tvar (clip = obrys), x = poloha pásu
-const shineDefs = (id, sil) => `<clipPath id="${id}">${sil}</clipPath>`;
-const shine = (id, x, w = 46) => (x < -100 || x > 620 ? "" : `<g clip-path="url(#${id})"><polygon points="${pts([[x, 0], [x + w, 0], [x + w - 160, 512], [x - 160, 512]])}" fill="#FFFFFF" opacity="0.55"/></g>`);
 
-// ---------- predmety z kuchyne ----------
-// valček na cesto: os od (x1,y1) do (x2,y2), hrúbka r; sh = poloha odlesku 0–1 (pri gúľaní)
-function rollingPin(x1, y1, x2, y2, sh = -1) {
-  const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
-  const at = (s, o) => [x1 + ux * s + nx * o, y1 + uy * s + ny * o];
-  const rect = (s1, s2, o1, o2) => [at(s1, o1), at(s2, o1), at(s2, o2), at(s1, o2)];
-  const r = 30, h = 13, k = 0.16 * L;
-  const body = rect(k, L - k, -r, r), hl = rect(0, k, -h, h), hr = rect(L - k, L, -h, h);
-  let art = poly(hl, WOOD.md) + poly(hr, WOOD.md) + poly(rect(0, k, -h, -3), WOOD.lt) + poly(rect(L - k, L, -h, -3), WOOD.lt)
-    + poly(body, WOOD.md) + poly(rect(k, L - k, -r, -8), WOOD.lt) + poly(rect(k, L - k, -r, -22), WOOD.hi) + poly(rect(k, L - k, 14, r), WOOD.dk);
-  if (sh >= 0) { const s = k + (L - 2 * k) * sh; art += poly(rect(Math.max(k, s - 14), Math.min(L - k, s + 14), -r, r), "#FFFFFF", 'opacity="0.35"'); }
-  return part(poly(body, "#000") + poly(hl, "#000") + poly(hr, "#000"), art);
-}
-// obracačka: rúčka od (x,y) dĺžky L pod uhlom ang, na konci široká lopatka so štrbinami
-function spatula(x, y, ang, L = 250) {
+// ---------- predmety z kuchyne (súradnice priamo v logu 512×512) ----------
+// obracačka: rúčka od bodu (x, y) pod uhlom ang, oranžová rúčka a kovová lopatka so štrbinami (ako v predlohe)
+function spatula(x, y, ang, L = 230) {
   const g = (s) => `<g transform="translate(${x} ${y}) rotate(${ang.toFixed(2)})">${s}</g>`;
-  const handle = [[0, -12], [L * 0.55, -10], [L * 0.55, 10], [0, 12]];
-  const neck = [[L * 0.55, -6], [L * 0.66, -6], [L * 0.66, 6], [L * 0.55, 6]];
-  const blade = [[L * 0.64, -36], [L, -44], [L + 8, 0], [L, 44], [L * 0.64, 36]];
-  const slots = [-20, 0, 20].map((o) => poly([[L * 0.72, o - 4], [L * 0.94, o - 5], [L * 0.94, o + 5], [L * 0.72, o + 4]], STEEL.dk)).join("");
-  const art = poly(handle, "#2A2A2A") + poly([[0, -12], [L * 0.55, -10], [L * 0.55, -3], [0, -4]], "#4A4A4A") + poly(neck, STEEL.md)
-    + poly(blade, STEEL.lt) + poly([[L * 0.64, -36], [L, -44], [L + 8, 0], [L * 0.64, 0]], STEEL.hi) + slots;
-  return part(g(poly(handle, "#000") + poly(neck, "#000") + poly(blade, "#000")), g(art));
+  const handle = [[0, -13], [L * 0.5, -11], [L * 0.5, 11], [0, 13]];
+  const neck = [[L * 0.5, -6], [L * 0.62, -6], [L * 0.62, 6], [L * 0.5, 6]];
+  const blade = [[L * 0.6, -40], [L, -48], [L + 8, 0], [L, 48], [L * 0.6, 40]];
+  const slots = [-22, 0, 22].map((o) => polyRaw([[L * 0.68, o - 4], [L * 0.94, o - 5], [L * 0.94, o + 5], [L * 0.68, o + 4]], STEEL.dk)).join("");
+  const art = polyRaw(handle, O.c) + polyRaw([[0, -13], [L * 0.5, -11], [L * 0.5, -3], [0, -4]], O.hi) + polyRaw([[0, 5], [L * 0.5, 4], [L * 0.5, 11], [0, 13]], O.dk)
+    + `<circle cx="${L * 0.08}" cy="0" r="4" fill="${INK}"/>` + polyRaw(neck, STEEL.md)
+    + polyRaw(blade, STEEL.lt) + polyRaw([[L * 0.6, -40], [L, -48], [L + 8, 0], [L * 0.6, 0]], STEEL.hi) + slots;
+  return part(g(polyRaw(handle, "#000") + polyRaw(neck, "#000") + polyRaw(blade, "#000")), g(art));
 }
-// varecha: rúčka + oválna lyžica
-function spoon(x, y, ang, L = 250) {
-  const g = (s) => `<g transform="translate(${x} ${y}) rotate(${ang.toFixed(2)})">${s}</g>`;
-  const handle = [[0, -11], [L * 0.66, -9], [L * 0.66, 9], [0, 11]];
-  const bowl = (f) => `<ellipse cx="${L * 0.84}" cy="0" rx="${L * 0.2}" ry="34" fill="${f}"/>`;
-  const art = poly(handle, WOOD.md) + poly([[0, -11], [L * 0.66, -9], [L * 0.66, -2], [0, -3]], WOOD.lt) + bowl(WOOD.md)
-    + `<ellipse cx="${L * 0.82}" cy="-8" rx="${L * 0.15}" ry="20" fill="${WOOD.lt}"/>` + `<ellipse cx="${L * 0.86}" cy="4" rx="${L * 0.1}" ry="16" fill="${WOOD.dk}" opacity="0.55"/>`;
-  return part(g(poly(handle, "#000") + bowl("#000")), g(art));
+// valček: stred (cx, cy), os pod uhlom ang, dĺžka L; roll = posun kolmo na os (gúľa sa), pásy dreva sa točia podľa posunu
+function rollingPin(cx, cy, ang, L = 200, roll = 0) {
+  const r = L * 0.135, h = L * 0.058, k = 0.17 * L, half = L / 2;
+  const g = (s) => `<g transform="translate(${cx} ${cy}) rotate(${ang}) translate(0 ${roll.toFixed(2)})">${s}</g>`;
+  const rect = (x1, x2, y1, y2) => [[x1, y1], [x2, y1], [x2, y2], [x1, y2]];
+  const body = rect(-half + k, half - k, -r, r), hl = rect(-half, -half + k, -h, h), hr = rect(half - k, half, -h, h);
+  // pásy na valci: uhol = posun / polomer; vidno iba prednú polovicu
+  const turn = -roll / r;
+  const bands = [0, 1, 2, 3].map((i) => {
+    const a = turn + (i * Math.PI) / 2, y = r * Math.sin(a);
+    return Math.cos(a) > 0.15 ? polyRaw(rect(-half + k + 4, half - k - 4, y - 2.5, y + 2.5), WOOD.dk, `opacity="${(0.25 + 0.35 * Math.cos(a)).toFixed(2)}"`) : "";
+  }).join("");
+  const art = polyRaw(hl, WOOD.md) + polyRaw(hr, WOOD.md) + polyRaw(rect(-half, -half + k, -h, -3), WOOD.lt) + polyRaw(rect(half - k, half, -h, -3), WOOD.lt)
+    + `<circle cx="${-half}" cy="0" r="${h}" fill="${WOOD.md}"/><circle cx="${half}" cy="0" r="${h}" fill="${WOOD.md}"/>`
+    + polyRaw(body, WOOD.md) + polyRaw(rect(-half + k, half - k, -r, -8), WOOD.lt) + polyRaw(rect(-half + k, half - k, -r, -20), WOOD.hi)
+    + polyRaw(rect(-half + k, half - k, 14, r), WOOD.dk) + bands;
+  const sil = polyRaw(body, "#000") + polyRaw(hl, "#000") + polyRaw(hr, "#000") + `<circle cx="${-half}" cy="0" r="${h}"/><circle cx="${half}" cy="0" r="${h}"/>`;
+  return part(g(sil), g(art));
 }
-// kuchárska čiapka (návrh 3)
-function chefHat(squash = 0) {
-  const sy = 1 - squash * 0.08;
-  const g = (s) => `<g transform="translate(256 186) scale(1 ${sy.toFixed(3)}) translate(-256 -186)">${s}</g>`;
-  const band = [[176, 150], [336, 150], [330, 192], [182, 192]];
-  const puff = (f) => circle(200, 116, 44, f) + circle(256, 92, 54, f) + circle(312, 116, 44, f) + poly([[166, 120], [346, 120], [336, 156], [176, 156]], f);
-  const art = puff("#E9ECEE") + circle(244, 84, 34, "#FFFFFF") + circle(194, 112, 26, "#FFFFFF") + circle(318, 124, 26, "#D3D8DB")
-    + poly(band, "#F7F8F9") + poly([[256, 150], [336, 150], [330, 192], [256, 192]], "#D9DEE1")
-    + [200, 228, 284, 312].map((x) => poly([[x - 3, 154], [x + 3, 154], [x + 2, 188], [x - 2, 188]], "#C2C8CC")).join("");
-  return part(g(puff("#000") + poly(band, "#000")), g(art));
-}
-// písmeno A (návrh 4): šikmé ako R pri Rangers, ľavá strana svetlejšia
-const A_OUT = [[96, 452], [226, 98], [320, 98], [424, 452], [326, 452], [306, 388], [210, 388], [190, 452]];
-const A_HOLE = [[232, 318], [286, 318], [262, 222]];
-const aPath = (f) => `<path d="M${pts(A_OUT).replace(/ /g, " L")} Z M${pts(A_HOLE).replace(/ /g, " L")} Z" fill="${f}" fill-rule="evenodd"/>`;
-function letterA() {
-  const art = aPath(G.md)
-    + poly([[96, 452], [226, 98], [262, 98], [148, 452]], G.hi) + poly([[148, 452], [262, 98], [276, 98], [210, 388], [190, 452]], G.lt)
-    + poly([[320, 98], [424, 452], [384, 452], [298, 120]], G.dk) + poly([[210, 388], [306, 388], [296, 358], [220, 358]], G.dp)
-    + poly(A_HOLE, INK);
-  return part(aPath("#000"), art);
+// obláčik múky pri valčeku (iba kresba, bez obrysu)
+function flour(cx, cy, u) {
+  if (u <= 0 || u >= 1) return part("", "");
+  const a = Math.sin(Math.PI * u);
+  const dots = [[-60, 6, 9], [-30, 16, 7], [10, 20, 10], [48, 12, 8], [72, 2, 6]].map(([dx, dy, rr], i) =>
+    `<circle cx="${(cx + dx * (0.8 + u * 0.5)).toFixed(1)}" cy="${(cy + dy - 26 * u - (i % 2) * 8 * u).toFixed(1)}" r="${(rr * (0.6 + u)).toFixed(1)}" fill="#FFFFFF" opacity="${(0.75 * a).toFixed(2)}"/>`).join("");
+  return part("", dots);
 }
 
-// ---------- 4 návrhy: t = 0..1 priebeh animácie ----------
-const DESIGNS = {
-  // 1: hlava + valček vpravo dole (ako zvonček pri Rangers); oči sa rozsvietia, tykadlá myknú, valček sa zablysne
+// ---------- 4 verzie ----------
+// fázy po sebe: tykadlá → kusadlá → predmet (menšia zmena na snímku = menší súbor)
+const motion = (t) => ({ ant: wiggle(t, 0, 0.3, 9), jaw: t > 0.26 && t < 0.56 ? 16 * Math.abs(Math.sin(Math.PI * 2 * phase(t, 0.26, 0.56))) : 0 });
+const VERSIONS = {
+  // 1: presne podľa popisu – bez spodného pravého dielika, obracačka vedľa; na konci zamáva obracačkou
   1(t) {
-    const tw = twitch(t, 0, 0.32, 10), glow = seg(t, 0.32, 0.55);
-    return sticker([antenna(tw, false), antenna(tw, true), head(glow), rollingPin(318, 482, 482, 378, t > 0.58 && t < 0.97 ? seg(t, 0.58, 0.97) : -1)], GLOW);
+    const m = motion(t);
+    return sticker([...antennae(m.ant), head(false), mandibles(m.jaw), spatula(316, 506, -60 + wiggle(t, 0.58, 1, 26, 1.5), 270)]);
   },
-  // 2: hlava + skrížená varecha a obracačka za ňou; oči, tykadlá, odlesk cez hlavu
+  // 2: presne podľa popisu s valčekom; na konci sa valček zgúľa tam a späť
   2(t) {
-    const tw = twitch(t, 0, 0.32, 10), glow = seg(t, 0.32, 0.55);
-    const h = head(glow);
-    const x = -120 + 760 * seg(t, 0.58, 0.97);
-    return sticker([spoon(446, 482, -134, 500), spatula(66, 482, -46, 480), antenna(tw, false), antenna(tw, true), h,
-      part("", t > 0.58 && t < 0.97 ? shine("s2", x) : "")], GLOW + shineDefs("s2", poly(HEAD, "#000")));
+    const m = motion(t);
+    return sticker([...antennae(m.ant), head(false), mandibles(m.jaw), rollingPin(376, 438, -26, 250, -26 * Math.sin(2 * Math.PI * phase(t, 0.58, 1)))]);
   },
-  // 3: hlava s kuchárskou čiapkou + obracačka vpravo; obracačka „obráti palacinku“ (švihne), čiapka podskočí
+  // 3: moja úprava – spodný dielik zlúčený s hlavou (plnšia hlava), obracačka, oku sa zablysne
   3(t) {
-    const tw = twitch(t, 0, 0.28, 8), glow = seg(t, 0.28, 0.5);
-    const flip = -38 * Math.sin(Math.PI * seg(t, 0.52, 0.97));
-    const squash = Math.sin(Math.PI * seg(t, 0.52, 0.72));
-    return sticker([antenna(tw, false, [186, 170], [142, 110], [88, 104]), antenna(tw, true, [186, 170], [142, 110], [88, 104]), head(glow), chefHat(squash), spatula(472, 482, -108 + flip, 250)], GLOW);
+    const m = motion(t);
+    return sticker([...antennae(m.ant), head(true, Math.sin(Math.PI * phase(t, 0.5, 0.66))), mandibles(m.jaw), spatula(334, 508, -56 + wiggle(t, 0.6, 1, 26, 1.5), 260)]);
   },
-  // 4: písmeno A s tykadlami + valček (ako R so zvončekom); odlesk prejde cez písmeno, tykadlá myknú, valček poskočí
+  // 4: moja úprava – zlúčená hlava, valček sa gúľa a zvíri múku
   4(t) {
-    const x = -160 + 780 * seg(t, 0, 0.42);
-    const tw = twitch(t, 0.42, 0.72, 11);
-    const hop = -18 * Math.sin(Math.PI * seg(t, 0.72, 0.97));
-    return sticker([antenna(tw, false, [244, 104], [206, 44], [148, 34]), antenna(tw, true, [244, 104], [206, 44], [148, 34]), letterA(),
-      part("", t < 0.42 ? shine("s4", x, 54) : ""), rollingPin(286, 488 + hop, 476, 372 + hop)], shineDefs("s4", aPath("#000")));
+    const m = motion(t);
+    const u = phase(t, 0.58, 1);
+    return sticker([...antennae(m.ant), head(true), mandibles(m.jaw), flour(378, 458, u), rollingPin(376, 460, -16, 250, -26 * Math.sin(2 * Math.PI * u))]);
   },
 };
+// prispôsobenie: zmeria logo vo všetkých polohách animácie a zmenší/vycentruje ho, aby sa celé zmestilo (okraj 20 px na obrys)
+const FIT = {};
+function fitOf(v) {
+  if (FIT[v]) return FIT[v];
+  const box = document.createElement("div");
+  box.style.cssText = "position:absolute;left:-9999px;top:0";
+  document.body.appendChild(box);
+  let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+  for (let i = 0; i <= 40; i++) {
+    box.innerHTML = VERSIONS[v](i / 40);
+    const b = box.querySelector("#all").getBBox();
+    x1 = Math.min(x1, b.x); y1 = Math.min(y1, b.y); x2 = Math.max(x2, b.x + b.width); y2 = Math.max(y2, b.y + b.height);
+  }
+  box.remove();
+  const pad = 22, k = Math.min((512 - 2 * pad) / (x2 - x1), (512 - 2 * pad) / (y2 - y1));
+  return (FIT[v] = `translate(${(256 - k * (x1 + x2) / 2).toFixed(2)} ${(256 - k * (y1 + y2) / 2).toFixed(2)}) scale(${k.toFixed(4)})`);
+}
+const fitted = (v, t) => VERSIONS[v](t).replace('<g id="all">', `<g id="all" transform="${fitOf(v)}">`);
+window.DESIGNS = { 1: (t) => fitted(1, t), 2: (t) => fitted(2, t), 3: (t) => fitted(3, t), 4: (t) => fitted(4, t) };
 
 const q = new URLSearchParams(location.search);
 if (q.has("v")) {
   document.body.className = "one";
-  document.body.innerHTML = DESIGNS[q.get("v")](Number(q.get("t") || 0));
-  window.draw = (v, t) => { document.body.innerHTML = DESIGNS[v](t); };
+  document.body.innerHTML = fitted(q.get("v"), Number(q.get("t") || 0));
+  window.draw = (v, t) => { document.body.innerHTML = fitted(v, t); };
 } else {
-  // náhľad: rovnaké načasovanie ako WebP (pauza na začiatku, animácia, pauza na konci)
+  // náhľad: rovnaké načasovanie ako WebP (pauza, animácia, pauza)
   document.body.className = "preview";
-  const HOLD0 = 900, RUN = 1100, HOLD1 = 1200;
-  const figs = Object.keys(DESIGNS).map((v) => { const f = document.createElement("figure"); document.body.appendChild(f); return [v, f]; });
+  const HOLD0 = 900, RUN = 1600, HOLD1 = 1200;
+  const figs = Object.keys(VERSIONS).map((v) => { const f = document.createElement("figure"); document.body.appendChild(f); return [v, f]; });
   const t0 = performance.now();
   (function tick(now) {
     const ms = (now - t0) % (HOLD0 + RUN + HOLD1);
     const t = ms < HOLD0 ? 0 : ms < HOLD0 + RUN ? (ms - HOLD0) / RUN : 1;
-    figs.forEach(([v, f]) => { f.innerHTML = DESIGNS[v](t) + `<figcaption>Návrh ${v}</figcaption>`; });
+    figs.forEach(([v, f]) => { f.innerHTML = fitted(v, t) + `<figcaption>Verzia ${v}</figcaption>`; });
     requestAnimationFrame(tick);
   })(t0);
 }

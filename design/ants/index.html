@@ -25,8 +25,8 @@
 </style>
 <body class="page">
 <div class="wrap2">
-  <h1>Kuchynka Ants · návrhy loga</h1>
-  <p class="lead">Štyri návrhy v štýle ostatných tímov (hranaté plochy, čierna linka, krémový obrys). Animácia sa hrá ako pri ostatných logách: chvíľu stojí, potom tykadlá myknú, rozsvietia sa oči a ožije predmet z kuchyne, na konci chvíľu ostane. Farba tímu v ukážke: zelená.</p>
+  <h1>Kuchynka Ants · logo</h1>
+  <p class="lead">Podľa predlohy (koncept vpravo hore) bez šesťuholníka, s predmetom z kuchyne vedľa hlavy ako zvonček pri Rangers. Animácia: chvíľu stojí, mykne tykadlami, cvakne kusadlami, potom zamáva obracačkou alebo zgúľa valček a na konci chvíľu ostane. Farba tímu z predlohy: oranžová <code>#EE6A12</code>, tmavá <code>#6E2A05</code>, text <code>#111111</code>.</p>
   <div class="bar" role="group" aria-label="Zobrazenie">
     <button type="button" data-k="anim" aria-pressed="true">Animované (WebP)</button>
     <button type="button" data-k="png" aria-pressed="false">Statické (PNG)</button>
@@ -35,12 +35,12 @@
 </div>
 <script>
 const OPTS = [
-  ["Návrh 1 · Valček", "Hlava mravca s pohľadom ako golem v Giants, valček na cesto vpravo dole (ako zvonček pri Rangers). Valček sa na konci zablysne."],
-  ["Návrh 2 · Varecha + obracačka", "Skrížené náradie za hlavou ako erb. Na konci prejde cez hlavu odlesk."],
-  ["Návrh 3 · Kuchár", "Kuchárska čiapka a obracačka v ruke. Obracačka švihne, akoby obracala palacinku, čiapka podskočí."],
-  ["Návrh 4 · Písmeno A", "Ako R pri Rangers a B pri Brewers: písmeno A s tykadlami a valčekom. Odlesk, mykne tykadlami, valček poskočí."],
+  ["Verzia 1 · Obracačka", "Presne podľa popisu: hlava, kusadlá a tykadlá bez spodného pravého dielika. Na konci zamáva obracačkou."],
+  ["Verzia 2 · Valček", "Presne podľa popisu, s valčekom. Na konci sa valček zgúľa tam a späť."],
+  ["Verzia 3 · Plná hlava + obracačka", "Moja úprava: spodný dielik je zlúčený s vrchom hlavy (hlava je plnšia, kusadlá vynikajú). Oku sa zablysne, obracačka zamáva."],
+  ["Verzia 4 · Plná hlava + valček", "Moja úprava: zlúčená hlava, valček sa zgúľa a zvíri trochu múky."],
 ];
-const C = "--c:#74BC3C;--d:#1F4D16;--ink:#111111";
+const C = "--c:#EE6A12;--d:#6E2A05;--ink:#111111";
 let mode = "anim";
 function draw() {
   const ext = mode === "anim" ? "webp" : "png";

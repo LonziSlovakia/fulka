@@ -24,7 +24,7 @@ Stav k 19. 11. 2026.
   Zápis povoľuje RLS cez `public.is_admin('fulka')`. Budík proti uspaniu databázy beží v repozitári `laura`.
 - Spustené SQL: `supabase/1-fulka.sql` (tabuľky, pravidlá, štartovacie dáta), `supabase/2-loga-webp.sql` (logá víťazov vo WebP),
   `supabase/3-zalohy.sql` (ručné zálohy + poistka; spustené a Lonzim otestované 3. 11. 2026), `supabase/4-terminy-sezony.sql` (termíny sezóny; spustené 19. 11. 2026).
-  **Čaká na spustenie:** `supabase/5-demo-ants.sql` (demo tím Kuchynka Ants `ant` + hráči Jožko Mrkvička, Anna Petržlenová v l27; logo prázdne, Lonzi nahrá jeden z návrhov v `design/ants/`).
+  Demo tím Kuchynka Ants si Lonzi vytvorí sám v admine (SQL na to **nechce**); grafiku má v `design/ants/`.
 - Sezóny: Zimná 2026 `z26` (pilotná, skončená), Letná 2027 `l27` (pripravujeme). Tímy Veľká sála Giants, Libresso Brewers, Recepcia Rangers, Kaplnka Saints.
 
 ## Súbory
@@ -46,7 +46,7 @@ Stav k 19. 11. 2026.
 | `tests/*.test.js` | `node --test tests/*.test.js` (84 testov: `logic` 52, `upece` 7, `board` 25; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
-| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) · `design/ants/` návrhy loga Ants (`index.html` náhľad, `zdroj.html` kresba) |
+| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) · `design/ants/` logo Kuchynka Ants (`index.html` náhľad, `zdroj.html` kresba, `predloha/` Lonziho koncept) |
 
 ## Nastavenia (`fulka_settings.data`, admin → Nastavenia)
 
@@ -119,8 +119,11 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - **Odobratie tímu zo sezóny** zmaže iba riadok `fulka_season_teams` – tím, hráči aj súpiska (`fulka_roster`) ostanú v DB a po opätovnom pridaní sa súpiska vráti.
   Tím sa dá pridať do akejkoľvek sezóny. Varovanie pri odobratí ostáva (Lonzi: „je pekné“).
 - **Logá tímov** (štýl): hranaté plochy, čierna linka, krémový obrys `#FCF6E8`, animácia = pauza → efekt → pauza (napr. oči Giants, odlesk + zvonček Rangers).
-  Návrhy Ants sa kreslia v `design/ants/zdroj.html` (funkcia času) a `node tools/logo-render.js [1,2,3,4]` z nich vyrobí `ants-N.png` + `ants-N.webp`
-  (fázy animácie idú po sebe, aby sa naraz menila malá časť → ~100 kB).
+  **Kuchynka Ants** (20. 11. 2026): podľa Lonziho predlohy `design/ants/predloha/koncepty.png` (koncept vpravo hore) – hlava mravca z profilu, kusadlá, tykadlá,
+  **bez šesťuholníka/emblému** a bez spodného pravého dielika (verzie 1–2) alebo s ním zlúčeným do hlavy (3–4), vedľa obracačka (1, 3) alebo valček (2, 4) ako zvonček pri Rangers.
+  Farba z predlohy: `#EE6A12` / tmavá `#6E2A05` / text `#111111`. Prvé zelené návrhy Lonzi zamietol – nevracať.
+  Kreslí sa v `design/ants/zdroj.html` (funkcia času, logo sa samo zmenší, aby sa zmestilo vo všetkých polohách) a `node tools/logo-render.js [1,2,3,4]`
+  vyrobí `ants-N.png` + `ants-N.webp` (32 × 50 ms; tykadlá → kusadlá → predmet idú po sebe; ~200 kB).
 - Potvrdzovacie okno (`ask()` v `admin.js`) je **iba pri mazaní, pri zálohách a pri ukončení zápasu na tabuli**. Potvrdenie pred každou bežnou úpravou Lonzi **nechce**
   (raz som ho pridal, vrátil som to) – nepridávať.
 - Góly sa ukladajú bez mazania vopred: upsert podľa `match_id,seq`, potom zmazať iba `seq > počet` (predtým sa najprv všetko zmazalo → pri výpadku by góly zmizli).
