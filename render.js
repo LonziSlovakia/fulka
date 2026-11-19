@@ -632,10 +632,9 @@
       <a class="up-link" href="${U.CALENDAR}" target="_blank" rel="noopener">Celý kalendár ${arrow}</a>
       ${items ? `<div class="up-news"><span class="up-lbl">Novinky z UPeCe</span>${items}</div>` : ""}</div>`;
   }
-  // všetky tímy, ktoré kedy hrali (v akejkoľvek sezóne), s menom miesta v UPeCe
+  // všetky tímy z databázy (aj nový tím, ktorý ešte nie je v sezóne), s menom miesta v UPeCe; poradie ako v DB (podľa mena)
   function upTeams(c) {
-    const ids = [...new Set(c.v.teamIds.concat(c.d.season_teams.map((x) => x.team_id)))];
-    const list = ids.map((id) => c.T[id]).filter(Boolean);
+    const list = c.d.teams.map((t) => c.T[t.id]).filter(Boolean);
     if (!list.length) return "";
     return `<div class="up-teams"><span>Tímy FULky nesú mená miest v UPeCe:</span><span class="up-tlist">${list.map((t) =>
       `<span class="up-team"><img src="${esc(t.svg)}" alt="">${esc(t.pre || t.name)}</span>`).join("")}</span></div>`;

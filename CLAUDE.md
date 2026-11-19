@@ -91,7 +91,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     ktorý nie je v tabuľke, sa doplní ako riadok. „… do D. M.“ je uzávierka, nie akcia.
   - Novinky: 2 posledné príspevky z **Aktuality (165)** bez Oznamov. Odkazy iba na `https://www.upcba.sk/…`, texty sa escapujú.
   - „Celý kalendár“ → upcba.sk/kalendar/ (curl dostane 403 od Cloudflare, prehliadač je OK) · „Všetko, čo ponúkame“ → upcba.sk/o-upece/.
-  - Ponuka: zoznam z nastavení (`upeceOffer`) + všetky tímy, ktoré kedy hrali, s menom miesta (`venue`).
+  - Ponuka: zoznam z nastavení (`upeceOffer`) + **všetky tímy z databázy** (aj tie, ktoré ešte nie sú v žiadnej sezóne), s menom miesta (`venue`), poradie podľa mena.
   - Ak sa zmení šablóna oznamov na upcba.sk, program sa ukáže prázdny („ešte nie je zverejnený“) – oprava v `upece.js` + test.
 - **Výsledková tabuľa** (admin → Tabuľa, súbory `board*.js`, `tabula.html`; vyžiadal Lonzi 17. 11. 2026, nasadené 17. 11. 2026):
   - Tok: vybrať neodohraný zápas (iba s oboma známymi tímami) → počet častí (1 / 2 polčasy / 3 tretiny / 4 štvrtiny) × minúty → jedna alebo dve obrazovky → ovládanie.
