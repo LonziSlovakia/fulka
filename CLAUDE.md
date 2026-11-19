@@ -7,7 +7,7 @@ Stav k 19. 11. 2026.
 
 ## Pravidlá projektu
 
-- Statická stránka: HTML/CSS/JS, **bez buildu, frameworku a servera**, bez `supabase-js` (iba `fetch`). **Iba relatívne cesty** (web beží v `/fulka/`).
+- Statická stránka: HTML/CSS/JS, **bez buildu, frameworku a servera**, bez `supabase-js` (iba `fetch`). **Iba relatívne cesty** (web beží na `ful.upcba.sk/`, lokálne v `/fulka/`).
 - Kód v malých samostatných funkciách. Výpočty patria do `logic.js` (čisté funkcie + testy), vykresľovanie do `render.js` / `admin.js`.
 - Fotky a dáta patria do Supabase (bucket a tabuľky `fulka`), nie do repozitára.
 - SQL skripty (`supabase/N-nazov.sql`) iba pripravíš; Lonzi ich spustí v Supabase → SQL Editor. Povedz mu aj, ako to overiť.
@@ -18,7 +18,7 @@ Stav k 19. 11. 2026.
 
 ## Čo beží
 
-- Web: https://lonzislovakia.github.io/fulka/ · admin: `…/fulka/?edit` (prihlásenie e-mail + heslo; admini sú dvaja, oba účty sú Lonziho: hlavný a sekundárny „Jozef“, pridaný ručne cez Add user + `public.admins`; registrácia je vypnutá).
+- Web: **https://ful.upcba.sk/** (vlastná doména od 20. 11. 2026, súbor `CNAME`; stará https://lonzislovakia.github.io/fulka/ presmeruje) · admin: `…/?edit` (prihlásenie e-mail + heslo; admini sú dvaja, oba účty sú Lonziho: hlavný a sekundárny „Jozef“, pridaný ručne cez Add user + `public.admins`; registrácia je vypnutá).
 - Repozitár `LonziSlovakia/fulka` (verejný), u Lonziho `~/projects/fulka`, vetva `main` = to, čo je na webe.
 - Dáta, fotky, prihlásenie: Supabase projekt `lonzi-weby` (spoločný s `laura`), tabuľky `fulka_*`, bucket `fulka`.
   Zápis povoľuje RLS cez `public.is_admin('fulka')`. Budík proti uspaniu databázy beží v repozitári `laura`.
@@ -160,7 +160,7 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fa
 - GitHub Pages: repozitár → Settings → Pages → „Deploy from a branch: `main` / root“. `.nojekyll` = nič negenerovať, iba skopírovať.
 - `git push` na `main` → workflow „pages build and deployment“ (záložka Actions) nahrá web za 1–2 min.
 - Overenie: `gh api repos/LonziSlovakia/fulka/pages/builds/latest --jq .status` → `built`, potom
-  `curl -s "https://lonzislovakia.github.io/fulka/<súbor>?x=$(date +%s)"`.
+  `curl -s "https://ful.upcba.sk/<súbor>?x=$(date +%s)"`. `CNAME` nemazať (inak doména prestane fungovať).
 - Pri výpadku GitHubu (githubstatus.com) iba počkať, build nespúšťať znova.
 
 ## Bezpečnosť (kontrola 18. 10. 2026)
