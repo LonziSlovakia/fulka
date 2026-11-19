@@ -248,14 +248,7 @@
             <span class="note" style="color:#EDEDED">${esc(day.note)}</span>
           </div>${team(A)}</div>
         ${notes ? `<span class="mnote">${notes}</span>` : ""}
-      </div><div class="teeth" aria-hidden="true"></div></section>${futureTeams(c)}`;
-  }
-  // tímy pripravovanej sezóny (pribúdajú postupne): logo, pod ním miesto menším a názov väčším
-  function futureTeams(c) {
-    if (!c.v.teamIds.length) return "";
-    const cards = c.v.teamIds.map((id) => c.T[id] || NOTEAM).map((t) => `<div class="ft" style="${vars(t)}"><span class="fill grad" aria-hidden="true"></span><span class="fill stripes" aria-hidden="true"></span>
-      <img src="${esc(t.svg)}" alt=""><span class="ft-txt">${t.pre ? `<small>${esc(t.pre)}</small>` : ""}<b>${esc(t.name)}</b></span></div>`).join("");
-    return `<section id="timy" class="sec wrap ft-sec">${secHead("Tímy", `${c.v.teamIds.length} ${plural(c.v.teamIds.length, "tím", "tímy", "tímov")} v sezóne`)}<div class="ft-list">${cards}</div></section>`;
+      </div><div class="teeth" aria-hidden="true"></div></section>`;
   }
 
   function heroMulti(ups, c, day, kicker) {
@@ -279,14 +272,7 @@
       <div class="fill stripes-light" aria-hidden="true"></div>
       <div class="wrap hero-in"><span class="kicker">${kicker}</span>${head}
         <div class="cards" style="grid-template-columns:repeat(auto-fit, minmax(min(100%, ${sz.minCol}), 1fr))">${cards.join("")}</div>
-      </div><div class="teeth" aria-hidden="true"></div></section>${futureTeams(c)}`;
-  }
-  // tímy pripravovanej sezóny (pribúdajú postupne): logo, pod ním miesto menším a názov väčším
-  function futureTeams(c) {
-    if (!c.v.teamIds.length) return "";
-    const cards = c.v.teamIds.map((id) => c.T[id] || NOTEAM).map((t) => `<div class="ft" style="${vars(t)}"><span class="fill grad" aria-hidden="true"></span><span class="fill stripes" aria-hidden="true"></span>
-      <img src="${esc(t.svg)}" alt=""><span class="ft-txt">${t.pre ? `<small>${esc(t.pre)}</small>` : ""}<b>${esc(t.name)}</b></span></div>`).join("");
-    return `<section id="timy" class="sec wrap ft-sec">${secHead("Tímy", `${c.v.teamIds.length} ${plural(c.v.teamIds.length, "tím", "tímy", "tímov")} v sezóne`)}<div class="ft-list">${cards}</div></section>`;
+      </div><div class="teeth" aria-hidden="true"></div></section>`;
   }
 
   /* ---------- Výsledky ---------- */
@@ -519,14 +505,7 @@
         <div class="champ-txt"><span class="kicker dark" style="padding:6px 16px">Šampión · ${esc(c.cur.name)}</span>
           <span class="champ-name">${esc(ch.name)}</span><span class="champ-sub">${ch.pre ? `${esc(ch.pre)} · ` : ""}víťaz finále</span></div>
         <div class="champ-final"><div class="box-head"><span>Finále</span><span>${esc(dayLabel(f))}</span></div>${rows}</div>
-      </div><div class="teeth" aria-hidden="true"></div></section>${futureTeams(c)}`;
-  }
-  // tímy pripravovanej sezóny (pribúdajú postupne): logo, pod ním miesto menším a názov väčším
-  function futureTeams(c) {
-    if (!c.v.teamIds.length) return "";
-    const cards = c.v.teamIds.map((id) => c.T[id] || NOTEAM).map((t) => `<div class="ft" style="${vars(t)}"><span class="fill grad" aria-hidden="true"></span><span class="fill stripes" aria-hidden="true"></span>
-      <img src="${esc(t.svg)}" alt=""><span class="ft-txt">${t.pre ? `<small>${esc(t.pre)}</small>` : ""}<b>${esc(t.name)}</b></span></div>`).join("");
-    return `<section id="timy" class="sec wrap ft-sec">${secHead("Tímy", `${c.v.teamIds.length} ${plural(c.v.teamIds.length, "tím", "tímy", "tímov")} v sezóne`)}<div class="ft-list">${cards}</div></section>`;
+      </div><div class="teeth" aria-hidden="true"></div></section>`;
   }
 
   function placesSec(c) {
