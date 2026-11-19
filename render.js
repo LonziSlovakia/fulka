@@ -533,7 +533,8 @@
         return `<span class="po-side${w && w !== id ? " lost" : ""}" style="${vars(t)}"><i aria-hidden="true"></i><img src="${esc(w === id ? t.gif : t.svg)}" alt="">
           <span class="nm">${esc(t.name)}</span><span class="sc">${done ? n : ""}</span></span>`;
       };
-      return `<div class="po${m.stage === "F" ? " f" : ""}${isOpen ? " open" : ""}">
+      const W = m.stage === "F" && w ? c.T[w] || NOTEAM : null; // finále vo farbách víťaza
+      return `<div class="po${m.stage === "F" ? " f" : ""}${W ? " won" : ""}${isOpen ? " open" : ""}"${W ? ` style="${vars(W)}"` : ""}>
         <button type="button" class="po-btn" data-act="open" data-id="${esc(m.id)}" aria-expanded="${isOpen}">
           <span class="po-head"><b>${STAGE[m.stage]}</b><span>${esc(dayLabel(m))}</span></span>${side(m.home_id, sc.h)}${side(m.away_id, sc.a)}
           <span class="po-foot">${isOpen ? "Skryť góly" : "Kto dal góly"}${chev()}</span></button>${isOpen ? goalsList(m, c) : ""}</div>`;
@@ -583,8 +584,10 @@
 
   /* ---------- Pripravovaná sezóna ---------- */
   function futureBody(c) {
-    const steps = L.seasonSteps(c.cur).map((s, i) =>
-      `<div class="step${s.date ? " set" : ""}"><span class="outline-num" style="font-size:52px">${i + 1}</span><span><b>${s.label}</b><small>${L.stepDate(s.date)}</small></span></div>`).join("");
+    const all = L.seasonSteps(c.cur);
+    const next = L.nextStep(all, today());
+    const steps = all.map((s, i) =>
+      `<div class="step${s.date ? (s.key === next ? " set next" : s.date < today() ? " set past" : " set") : ""}"><span class="outline-num" style="font-size:52px">${i + 1}</span><span><b>${s.label}</b><small>${L.stepDate(s.date)}</small></span></div>`).join("");
     return `<section class="hero" aria-label="Pripravovaná sezóna">
       <div class="fill" aria-hidden="true" style="background:linear-gradient(150deg, #2A2A2A 0%, #0E0E0E 70%);clip-path:polygon(0 0, 46% 0, 34% 48%, 40% 52%, 26% 100%, 0 100%)"></div>
       <div class="fill" aria-hidden="true" style="background:linear-gradient(210deg, #2A2A2A 0%, #0E0E0E 70%);clip-path:polygon(70% 0, 100% 0, 100% 100%, 82% 100%, 90% 54%, 84% 50%)"></div>

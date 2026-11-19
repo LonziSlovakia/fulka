@@ -565,3 +565,12 @@ test("pripravovaná sezóna: termíny (prázdne = čoskoro) a 0 tímov", () => {
   assert.match(L.seasonTeamsError("done", 0), /aspoň 2/);
   assert.equal(L.seasonTeamsError("live", 2), "");
 });
+
+test("pripravovaná sezóna: pulzuje najbližší termín od dnes", () => {
+  const steps = L.seasonSteps({ signup_date: "2027-02-14", draft_date: "2027-02-15", start_date: null });
+  assert.equal(L.nextStep(steps, "2027-01-01"), "signup_date");
+  assert.equal(L.nextStep(steps, "2027-02-14"), "signup_date"); // v ten deň ešte pulzuje
+  assert.equal(L.nextStep(steps, "2027-02-15"), "draft_date");
+  assert.equal(L.nextStep(steps, "2027-02-16"), ""); // všetko prešlo, prvý zápas bez dátumu
+  assert.equal(L.nextStep(L.seasonSteps({ signup_date: "2027-03-01", draft_date: "2027-02-20" }), "2027-01-01"), "draft_date"); // podľa dátumu, nie poradia
+});

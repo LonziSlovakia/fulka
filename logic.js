@@ -436,6 +436,8 @@
   const SEASON_STEPS = [["signup_date", "Prihlasovanie"], ["draft_date", "Draft tímov"], ["start_date", "Prvý zápas"]];
   const isDate = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
   const seasonSteps = (s) => SEASON_STEPS.map(([key, label]) => ({ key, label, date: isDate(s && s[key]) ? s[key] : "" }));
+  // najbližší termín od dnes (vrátane dneška) → ten na webe pulzuje; keď prejde, pulzuje ďalší. Žiadny = ""
+  const nextStep = (steps, today) => (steps.filter((x) => x.date && x.date >= today).sort((a, b) => (a.date < b.date ? -1 : 1))[0] || {}).key || "";
   // "2027-01-12" → "Ut 12. 1. 2027", prázdne → "čoskoro"
   const stepDate = (date) => (isDate(date) ? `${shortDate(date)} ${date.slice(0, 4)}` : "čoskoro");
   // pripravovaná sezóna smie mať 0 tímov (pribúdajú postupne), prebiehajúca a skončená potrebuje aspoň 2
@@ -454,7 +456,7 @@
     rounds, byTime, nextMatches, matchState,
     validateMatch, compareData, initials, settingsOf,
     draftOf, rowOf, goalRowsOf, slug, playerId, shortName, shiftTime, longDate, monthDays,
-    SEASON_STEPS, seasonSteps, stepDate, seasonTeamsError,
+    SEASON_STEPS, seasonSteps, nextStep, stepDate, seasonTeamsError,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Logic;
   else window.Logic = Logic;

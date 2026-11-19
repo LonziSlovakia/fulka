@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="sk">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kuchynka Ants – návrhy loga</title>
+<!-- Otvor: http://127.0.0.1:8770/fulka/design/ants/  · zdroj kresby: zdroj.html · súbory: ants-N.png (statické) + ants-N.webp (animované) -->
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700;800&family=Saira+Extra+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { padding: 24px 16px 64px; }
+  .wrap2 { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+  h1 { margin: 0; font-family: var(--fc); font-weight: 900; font-size: clamp(40px, 7vw, 72px); line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg); }
+  .lead { margin: 0; color: var(--fg-2); max-width: 720px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; }
+  .bar button { min-height: 44px; padding: 0 16px; background: var(--card); color: var(--fg); border: 1px solid var(--line-2); font: 700 14px "Saira", sans-serif; cursor: pointer; }
+  .bar button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; }
+  .opt { display: flex; flex-direction: column; gap: 12px; }
+  .opt h2 { margin: 0; font-family: var(--fc); font-weight: 800; font-size: 26px; text-transform: uppercase; }
+  .opt p { margin: 0; font-size: 14px; color: var(--fg-2); }
+  .ft { flex: none; max-width: none; } .ft img { width: 190px; height: 190px; }
+  .small { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: var(--card); border: 1px solid var(--line); }
+  .small img { width: 40px; height: 40px; } .small b { font-family: var(--fc); font-weight: 800; font-size: 22px; text-transform: uppercase; }
+  .files { font-size: 13px; color: var(--fg-3); } .files a { color: var(--teal); }
+</style>
+<body class="page">
+<div class="wrap2">
+  <h1>Kuchynka Ants · návrhy loga</h1>
+  <p class="lead">Štyri návrhy v štýle ostatných tímov (hranaté plochy, čierna linka, krémový obrys). Animácia sa hrá ako pri ostatných logách: chvíľu stojí, potom tykadlá myknú, rozsvietia sa oči a ožije predmet z kuchyne, na konci chvíľu ostane. Farba tímu v ukážke: zelená.</p>
+  <div class="bar" role="group" aria-label="Zobrazenie">
+    <button type="button" data-k="anim" aria-pressed="true">Animované (WebP)</button>
+    <button type="button" data-k="png" aria-pressed="false">Statické (PNG)</button>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+<script>
+const OPTS = [
+  ["Návrh 1 · Valček", "Hlava mravca s pohľadom ako golem v Giants, valček na cesto vpravo dole (ako zvonček pri Rangers). Valček sa na konci zablysne."],
+  ["Návrh 2 · Varecha + obracačka", "Skrížené náradie za hlavou ako erb. Na konci prejde cez hlavu odlesk."],
+  ["Návrh 3 · Kuchár", "Kuchárska čiapka a obracačka v ruke. Obracačka švihne, akoby obracala palacinku, čiapka podskočí."],
+  ["Návrh 4 · Písmeno A", "Ako R pri Rangers a B pri Brewers: písmeno A s tykadlami a valčekom. Odlesk, mykne tykadlami, valček poskočí."],
+];
+const C = "--c:#74BC3C;--d:#1F4D16;--ink:#111111";
+let mode = "anim";
+function draw() {
+  const ext = mode === "anim" ? "webp" : "png";
+  document.getElementById("grid").innerHTML = OPTS.map(([name, about], i) => {
+    const src = `ants-${i + 1}.${ext}?v=${Date.now()}`;
+    return `<section class="opt"><h2>${name}</h2>
+      <div class="ft" style="${C}"><span class="fill grad" aria-hidden="true"></span><span class="fill stripes" aria-hidden="true"></span>
+        <img src="${src}" alt=""><span class="ft-txt"><small>Kuchynka</small><b>Ants</b></span></div>
+      <div class="small"><img src="${src}" alt=""><b>Ants</b></div>
+      <p>${about}</p>
+      <span class="files">Na nahratie: <a href="ants-${i + 1}.png" download>ants-${i + 1}.png</a> (logo) · <a href="ants-${i + 1}.webp" download>ants-${i + 1}.webp</a> (animované)</span></section>`;
+  }).join("");
+}
+document.querySelector(".bar").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  mode = b.dataset.k;
+  document.querySelectorAll(".bar button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  draw();
+});
+draw();
+</script>
+</body>
+</html>

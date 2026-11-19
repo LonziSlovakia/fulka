@@ -23,8 +23,8 @@ Stav k 19. 11. 2026.
 - Dáta, fotky, prihlásenie: Supabase projekt `lonzi-weby` (spoločný s `laura`), tabuľky `fulka_*`, bucket `fulka`.
   Zápis povoľuje RLS cez `public.is_admin('fulka')`. Budík proti uspaniu databázy beží v repozitári `laura`.
 - Spustené SQL: `supabase/1-fulka.sql` (tabuľky, pravidlá, štartovacie dáta), `supabase/2-loga-webp.sql` (logá víťazov vo WebP),
-  `supabase/3-zalohy.sql` (ručné zálohy + poistka; spustené a Lonzim otestované 3. 11. 2026).
-  **Čaká na spustenie:** `supabase/4-terminy-sezony.sql` (3 stĺpce termínov v `fulka_seasons` + približné termíny z26). Web aj admin fungujú aj bez neho (admin ukáže upozornenie).
+  `supabase/3-zalohy.sql` (ručné zálohy + poistka; spustené a Lonzim otestované 3. 11. 2026), `supabase/4-terminy-sezony.sql` (termíny sezóny; spustené 19. 11. 2026).
+  **Čaká na spustenie:** `supabase/5-demo-ants.sql` (demo tím Kuchynka Ants `ant` + hráči Jožko Mrkvička, Anna Petržlenová v l27; logo prázdne, Lonzi nahrá jeden z návrhov v `design/ants/`).
 - Sezóny: Zimná 2026 `z26` (pilotná, skončená), Letná 2027 `l27` (pripravujeme). Tímy Veľká sála Giants, Libresso Brewers, Recepcia Rangers, Kaplnka Saints.
 
 ## Súbory
@@ -43,10 +43,10 @@ Stav k 19. 11. 2026.
 | `board-admin.js` | admin → záložka „Tabuľa“ (ovládanie); načíta ho `render.js` s `?edit` pred `admin.js` |
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
-| `tests/*.test.js` | `node --test tests/*.test.js` (83 testov: `logic` 51, `upece` 7, `board` 25; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (84 testov: `logic` 52, `upece` 7, `board` 25; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
-| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF |
+| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) · `design/ants/` návrhy loga Ants (`index.html` náhľad, `zdroj.html` kresba) |
 
 ## Nastavenia (`fulka_settings.data`, admin → Nastavenia)
 
@@ -108,11 +108,19 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - Potvrdenie pri „Ukončiť zápas“ je zámerné (zverejňuje výsledok); pri bežných akciách tabule žiadne potvrdenie nie je.
   - Lonzi **nechce** zvukovú sirénu ani realtime na iné zariadenia. Nie je (nápady): počítanie času nahor, predĺženie, čas gólu v DB.
 - **Stránka „Pripravujeme“** (sezóna `soon`, vyžiadal Lonzi 19. 11. 2026): tri termíny Prihlasovanie / Draft tímov / Prvý zápas = stĺpce `signup_date`, `draft_date`, `start_date`
-  (typ `date`, prázdne = „čoskoro“, vyplnený = „Po 1. 2. 2027“ bielou). V admine Sezóny → sezóna → „Termíny na webe“ (iba pri stave Pripravujeme; × vymaže).
+  (typ `date`, prázdne = „čoskoro“, vyplnený = „Po 1. 2. 2027“ v tyrkysovej UPeCe `--teal`; **najbližší termín od dnes pulzuje** (`L.nextStep`, v ten deň ešte pulzuje, potom ďalší), prešlé stlmené). V admine Sezóny → sezóna → „Termíny na webe“ (iba pri stave Pripravujeme; × vymaže).
   Pod banerom sekcia „Tímy“ (nadpis so zigzagom) s kartami vybratých tímov: logo na tímovej farbe, pod ním miesto menším, názov väčším; vedľa seba, na mobile pod sebou.
   Pripravovaná sezóna smie mať **0 tímov** (`L.seasonTeamsError`; prebieha/skončená aspoň 2) a nová sezóna začína bez tímov – pribúdajú postupne.
-  Animované logo FULky (`assets/anim/ful.webp`, iba tu): 440 ms úvod, snímky 64 ms (pôvodne 40 = 1,6× pomalšie), posledná snímka 2,5 s, potom znova.
-  Zmena: `python3 tools/webp-timing.py assets/anim/ful.webp <prvá> <ostatné> <posledná>` (bez čísel vypíše časy).
+  Animované logo FULky (`assets/anim/ful.webp`, iba tu): pomalšie a plynulé – medzi každé 2 pôvodné snímky je dopočítaná 1 medzisnímka (prelínanie), 32 ms na snímku
+  (~64 ms na pôvodný krok, pôvodne 40), úvod 440 ms, posledná snímka 2,5 s. Vyrobené: `python3 tools/webp-smooth.py assets/gif/ful.gif assets/anim/ful.webp 1 32 440 2500`
+  (pôvodné snímky bezstratovo, medzisnímky stratovo → 232 kB; 2 medzisnímky po 22 ms = 336 kB). Iba časy bez medzisnímok: `tools/webp-timing.py`.
+- **Finále v archíve** (karta v Playoff): po odohraní vo farbe víťaza – prechod z `--c` do dopočítaného tmavšieho odtieňa (`color-mix`, nie `color_dark`), text `ink`,
+  porazený riadok tmavý a stlmený ako v ostatných kartách (Lonzimu sa nepáčila biela karta). Neodohrané finále = tmavá karta s bielym rámom.
+- **Odobratie tímu zo sezóny** zmaže iba riadok `fulka_season_teams` – tím, hráči aj súpiska (`fulka_roster`) ostanú v DB a po opätovnom pridaní sa súpiska vráti.
+  Tím sa dá pridať do akejkoľvek sezóny. Varovanie pri odobratí ostáva (Lonzi: „je pekné“).
+- **Logá tímov** (štýl): hranaté plochy, čierna linka, krémový obrys `#FCF6E8`, animácia = pauza → efekt → pauza (napr. oči Giants, odlesk + zvonček Rangers).
+  Návrhy Ants sa kreslia v `design/ants/zdroj.html` (funkcia času) a `node tools/logo-render.js [1,2,3,4]` z nich vyrobí `ants-N.png` + `ants-N.webp`
+  (fázy animácie idú po sebe, aby sa naraz menila malá časť → ~100 kB).
 - Potvrdzovacie okno (`ask()` v `admin.js`) je **iba pri mazaní, pri zálohách a pri ukončení zápasu na tabuli**. Potvrdenie pred každou bežnou úpravou Lonzi **nechce**
   (raz som ho pridal, vrátil som to) – nepridávať.
 - Góly sa ukladajú bez mazania vopred: upsert podľa `match_id,seq`, potom zmazať iba `seq > počet` (predtým sa najprv všetko zmazalo → pri výpadku by góly zmizli).
@@ -140,6 +148,8 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fa
 - Pripravujeme: `tools/future-demo.html` (http://127.0.0.1:8770/fulka/tools/future-demo.html, `?timy=1` = iba 1 tím) ukáže pripravovanú sezónu s 2 ukážkovými termínmi bez zápisu;
   krok `tools/future-demo.js` pre `shot.js`, admin tok termínov `tools/season-dates.js` (po `fake-login.js RELOAD mock-db.js`).
 - Chromium je Playwright headless shell; chýbajúce knižnice sú v `tools/.cache/libroot` (bez sudo, gitignore).
+- Nástroje WebP (`img2webp`, `anim_dump`, `webpmux`…) sú v `tools/.cache/webproot` (gitignore): `apt-get -o Acquire::ForceIPv4=true download webp libwebp7 libwebpmux3 libwebpdemux2 libsharpyuv0 libjpeg8 libjpeg-turbo8 libtiff6 libgif7 libpng16-16t64`
+  do `tools/.cache/webp-debs` a `dpkg -x` každého do `webproot`; spúšťať s `LD_LIBRARY_PATH=tools/.cache/webproot/usr/lib/x86_64-linux-gnu`. Zmazanie = celý `tools/.cache`.
 - Port 8765 používa iný projekt – nezabíjať.
 
 ## Nasadenie
