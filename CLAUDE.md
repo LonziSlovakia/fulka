@@ -185,6 +185,10 @@ ochrana admina pred vložením do cudzej stránky (clickjacking) – zatiaľ ner
 
 - Budík proti uspaniu (`keepalive.yml` v repozitári `laura`) pinguje iba raz za 3 dni, kým docs Supabase uvádzajú „niekoľko požiadaviek denne“. Lonzi ho zatiaľ nechce meniť, lebo to funguje.
   Ak príde varovný e-mail od Supabase alebo sa projekt uspí: zmeniť cron na každých 6 hodín (`17 */6 * * *`, 4× denne).
+- **Vetva `refactor` (táto) – čo ešte treba:** 19 nálezov z ultra review v `docs/review-ultra-2026-11-20.md` (aj s poradím; A2 = spätná zmena playoff –
+  spýtať sa Lonziho, ako to chce) opraviť tu, otestovať, potom na Lonziho „áno“ zlúčiť do `main` (`tools/verzia.sh`, push, overiť web).
+  Po zlúčení zatvoriť PR #2–#4 (pomocné na review, „NEZLUČOVAŤ“) a zmazať vetvy `review/*` lokálne aj na GitHube.
+  Demo loga Ants je na lokálnej vetve `demo-ants` (kópia `tools/.cache/demo`), nepushovať.
 - **Testovanie siete a Cloudflare**: plán v `docs/plan-testovania-siete.md` (presmerovania/HTTPS, cache, pripojenia, výpadky, bezpečnostné hlavičky, automatizácia) – zatiaľ iba plán.
 - Clickjacking ochrana (ak Lonzi bude chcieť) – cez Cloudflare hlavičky, pozri plán vyššie.
 - Text pri Supabase v päte prípadne zmeniť na „Vybudované s pomocou Supabase“ (ak Lonzi bude chcieť).
