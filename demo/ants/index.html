@@ -2,8 +2,9 @@
 <html lang="sk">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow"> <!-- demo: iba cez priamu adresu, vyhľadávače ho nemajú indexovať -->
 <title>Kuchynka Ants – návrhy loga</title>
-<!-- Otvor: http://127.0.0.1:8770/fulka/design/ants/  · zdroj kresby: zdroj.html · súbory: ants-N.png (statické) + ants-N.webp (animované) -->
+<!-- Demo pre Lonziho: https://ful.upcba.sk/demo/ants/ (na webe nikde neodkazované). Celé demo = priečinok demo/ – zmazať jedným git rm -r demo. -->
 <link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700;800&family=Saira+Extra+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../styles.css">
 <style>
@@ -26,7 +27,7 @@
 <body class="page">
 <div class="wrap2">
   <h1>Kuchynka Ants · logo</h1>
-  <p class="lead">Podľa predlohy (koncept vpravo hore) bez šesťuholníka, s predmetom z kuchyne vedľa hlavy ako zvonček pri Rangers. Animácia: chvíľu stojí, mykne tykadlami, cvakne kusadlami, potom zamáva obracačkou alebo zgúľa valček a na konci chvíľu ostane. Farba tímu z predlohy: oranžová <code>#EE6A12</code>, tmavá <code>#6E2A05</code>, text <code>#111111</code>.</p>
+  <p class="lead">Mravec prevedený do vektora priamo z predlohy, bez šesťuholníka, s predmetom z kuchyne vedľa hlavy ako zvonček pri Rangers. Animácia: chvíľu stojí, mykne tykadlami, cvakne kusadlami, potom zamáva obracačkou alebo zgúľa valček a na konci chvíľu ostane. Farba tímu z predlohy: oranžová <code>#EE6A12</code>, tmavá <code>#6E2A05</code>, text <code>#111111</code>.</p>
   <div class="bar" role="group" aria-label="Zobrazenie">
     <button type="button" data-k="anim" aria-pressed="true">Animované (WebP)</button>
     <button type="button" data-k="png" aria-pressed="false">Statické (PNG)</button>
@@ -35,10 +36,14 @@
 </div>
 <script>
 const OPTS = [
-  ["Verzia 1 · Obracačka", "Presne podľa popisu: hlava, kusadlá a tykadlá bez spodného pravého dielika. Na konci zamáva obracačkou."],
-  ["Verzia 2 · Valček", "Presne podľa popisu, s valčekom. Na konci sa valček zgúľa tam a späť."],
-  ["Verzia 3 · Mravec z predlohy + obracačka", "Mravec prevedený do vektora priamo z predlohy (koncept vľavo hore), spodný dielik zlúčený s hlavou. Tykadlá myknú, kusadlá cvaknú, obracačka zamáva."],
-  ["Verzia 4 · Mravec z predlohy + valček", "Ten istý mravec z predlohy, valček sa zgúľa a zvíri trochu múky."],
+  ["Verzia 1 · Obracačka", "Mravec z predlohy bez spodného pravého dielika, čisté jednofarebné plochy. Tykadlá myknú, kusadlá cvaknú, obracačka zamáva."],
+  ["Verzia 2 · Valček", "Ten istý mravec, valček sa zgúľa a zvíri trochu múky."],
+  ["Verzia 3 · Zlúčený dielik + obracačka", "Spodný dielik zlúčený s hlavou (plnšia hlava), obracačka zamáva."],
+  ["Verzia 4 · Zlúčený dielik + valček", "Zlúčená hlava, valček sa zgúľa."],
+  ["Verzia 5 · Rovné čiary + obracačka", "Verzia 1 prekreslená rovnými čiarami, hrubší a oblejší spodok hlavy, dve tykadlá – zadné je celé za predným (kĺb vľavo, hrot pri čele), tmavšie."],
+  ["Verzia 6 · Rovné čiary + valček", "Verzia 2 s novým mravcom, valček 1,2× väčší, bližšie k hlave a viac vpravo."],
+  ["Verzia 7 · Oblá obracačka", "Rovnaký mravec ako 5; rúčka obracačky je oblá (farebný prechod ako valec), s kovovým krúžkom a zaobleným koncom."],
+  ["Verzia 8 · Valček ako valec", "Rovnaký mravec ako 6; užší valček s farebným prechodom (vyzerá ako valec), tmavšie lemy a jednofarebné rúčky s krčkom a guľatou hlavicou."],
 ];
 const C = "--c:#EE6A12;--d:#6E2A05;--ink:#111111";
 let mode = "anim";

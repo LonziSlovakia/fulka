@@ -26,7 +26,7 @@ Stav k 19. 11. 2026.
   Zápis povoľuje RLS cez `public.is_admin('fulka')`. Budík proti uspaniu databázy beží v repozitári `laura`.
 - Spustené SQL: `supabase/1-fulka.sql` (tabuľky, pravidlá, štartovacie dáta), `supabase/2-loga-webp.sql` (logá víťazov vo WebP),
   `supabase/3-zalohy.sql` (ručné zálohy + poistka; spustené a Lonzim otestované 3. 11. 2026), `supabase/4-terminy-sezony.sql` (termíny sezóny; spustené 19. 11. 2026).
-  Demo tím Kuchynka Ants si Lonzi vytvorí sám v admine (SQL na to **nechce**); grafiku má v `design/ants/`.
+  Demo tím Kuchynka Ants si Lonzi vytvorí sám v admine (SQL na to **nechce**); logá sú v `demo/ants/`.
 - Sezóny: Zimná 2026 `z26` (pilotná, skončená), Letná 2027 `l27` (pripravujeme). Tímy Veľká sála Giants, Libresso Brewers, Recepcia Rangers, Kaplnka Saints.
 
 ## Súbory
@@ -48,7 +48,8 @@ Stav k 19. 11. 2026.
 | `tests/*.test.js` | `node --test tests/*.test.js` (84 testov: `logic` 52, `upece` 7, `board` 25; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
-| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) · `design/ants/` logo Kuchynka Ants (`index.html` náhľad, `zdroj.html` kresba, `predloha/` Lonziho koncept) |
+| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
+| `demo/` | dočasné ukážky (napr. `demo/ants/`), na webe iba cez priamu adresu; zmazať celé naraz |
 
 ## Nastavenia (`fulka_settings.data`, admin → Nastavenia)
 
@@ -122,15 +123,10 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - **Odobratie tímu zo sezóny** zmaže iba riadok `fulka_season_teams` – tím, hráči aj súpiska (`fulka_roster`) ostanú v DB a po opätovnom pridaní sa súpiska vráti.
   Tím sa dá pridať do akejkoľvek sezóny. Varovanie pri odobratí ostáva (Lonzi: „je pekné“).
 - **Logá tímov** (štýl): hranaté plochy, čierna linka, krémový obrys `#FCF6E8`, animácia = pauza → efekt → pauza (napr. oči Giants, odlesk + zvonček Rangers).
-  **Kuchynka Ants** (20. 11. 2026): podľa Lonziho predlohy `design/ants/predloha/koncepty.png` (koncept vpravo hore) – hlava mravca z profilu, kusadlá, tykadlá,
-  **bez šesťuholníka/emblému** a bez spodného pravého dielika (verzie 1–2) alebo s ním zlúčeným do hlavy (3–4), vedľa obracačka (1, 3) alebo valček (2, 4) ako zvonček pri Rangers.
-  Farba z predlohy: `#EE6A12` / tmavá `#6E2A05` / text `#111111`. Prvé zelené návrhy Lonzi zamietol – nevracať.
-  Verzie 1–2: mravec ručne obkreslený (Lonzi ich chce nechať). **Verzie 3–4: mravec prevedený do vektora priamo z predlohy** (Lonzi: 1–2 sa predlohe nepodobali):
-  `python3 tools/trace-logo.py design/ants/predloha/koncepty.png 40 105 280 310 3 design/ants/traced-zlucene.js design/ants/zlucit.json`
-  (farby → vrstvy → potrace; `zlucit.json` prefarbí čiernu medzeru pod hlavou = zlúčený dielik). Tykadlá a kusadlá sú výrezy (`TPARTS` v `zdroj.html`)
-  otáčané okolo kĺbu; obrys verzií 3–4 robí SVG filter (rozšírenie celého tvaru), aby sa pri pohybe neroztrhol. Kusadlá sa iba zatvárajú (pri otvorení diera).
-  Kreslí sa v `design/ants/zdroj.html` (funkcia času, logo sa samo zmenší, aby sa zmestilo vo všetkých polohách) a `node tools/logo-render.js [1,2,3,4]`
-  vyrobí `ants-N.png` + `ants-N.webp` (32 × 50 ms; tykadlá → kusadlá → predmet idú po sebe; ~180–200 kB).
+- **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).
+  Na webe iba cez priamu adresu (nikde neodkazované, `noindex`). Teraz: **https://ful.upcba.sk/demo/ants/** – návrhy loga Kuchynka Ants (8 verzií, PNG + WebP).
+  Zdroje a nástroje loga (kresba `zdroj.html`, vektory z predlohy, `logo-render.js`, `trace-logo.py`) sú **iba lokálne na vetve `demo-ants`** (nepushovať).
+  Farby tímu Ants: `#EE6A12` / tmavá `#6E2A05` / text `#111111`.
 - Potvrdzovacie okno (`ask()` v `admin.js`) je **iba pri mazaní, pri zálohách a pri ukončení zápasu na tabuli**. Potvrdenie pred každou bežnou úpravou Lonzi **nechce**
   (raz som ho pridal, vrátil som to) – nepridávať.
 - Góly sa ukladajú bez mazania vopred: upsert podľa `match_id,seq`, potom zmazať iba `seq > počet` (predtým sa najprv všetko zmazalo → pri výpadku by góly zmizli).
@@ -160,7 +156,7 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fa
   krok `tools/future-demo.js` pre `shot.js`, admin tok termínov `tools/season-dates.js` (po `fake-login.js RELOAD mock-db.js`).
 - Chromium je Playwright headless shell; chýbajúce knižnice sú v `tools/.cache/libroot` (bez sudo, gitignore).
 - Nástroje WebP (`img2webp`, `anim_dump`, `webpmux`…) sú v `tools/.cache/webproot` (gitignore): `apt-get -o Acquire::ForceIPv4=true download webp libwebp7 libwebpmux3 libwebpdemux2 libsharpyuv0 libjpeg8 libjpeg-turbo8 libtiff6 libgif7 libpng16-16t64`
-  do `tools/.cache/webp-debs` a `dpkg -x` každého do `webproot` (aj `potrace libpotrace0` pre `tools/trace-logo.py`); spúšťať s `LD_LIBRARY_PATH=tools/.cache/webproot/usr/lib/x86_64-linux-gnu`. Zmazanie = celý `tools/.cache`.
+  do `tools/.cache/webp-debs` a `dpkg -x` každého do `webproot` (aj `potrace libpotrace0` pre `trace-logo.py` na vetve `demo-ants`); spúšťať s `LD_LIBRARY_PATH=tools/.cache/webproot/usr/lib/x86_64-linux-gnu`. Zmazanie = celý `tools/.cache`.
 - Port 8765 používa iný projekt – nezabíjať.
 
 ## Nasadenie
