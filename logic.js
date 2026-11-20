@@ -383,6 +383,8 @@
      Porovnávajú sa iba stĺpce, ktoré má aj cur (časy vytvorenia/úpravy nie). Vráti { tabuľka: { added, removed, changed } }
      z pohľadu návratu: added = pribudne, removed = zmizne, changed = zmení sa. */
   const BACKUP_KEYS = { seasons: ["id"], teams: ["id"], season_teams: ["season_id", "team_id"], players: ["id"], roster: ["season_id", "player_id"], matches: ["id"], goals: ["match_id", "seq"] };
+  // časové pečiatky sa menia pri každom uložení, nie sú to dáta (sezóny sa načítavajú cez select=*)
+  const STAMPS = new Set(["created_at", "updated_at"]);
   function compareData(cur, snap) {
     const out = {};
     Object.keys(BACKUP_KEYS).forEach((t) => {
@@ -393,7 +395,7 @@
       then.forEach((row, k) => {
         const c = now.get(k);
         if (!c) { r.added++; return; }
-        if (Object.keys(c).some((f) => JSON.stringify(c[f] === undefined ? null : c[f]) !== JSON.stringify(row[f] === undefined ? null : row[f]) && !sameTime(c[f], row[f]))) r.changed++;
+        if (Object.keys(c).some((f) => !STAMPS.has(f) && JSON.stringify(c[f] === undefined ? null : c[f]) !== JSON.stringify(row[f] === undefined ? null : row[f]) && !sameTime(c[f], row[f]))) r.changed++;
       });
       now.forEach((row, k) => { if (!then.has(k)) r.removed++; });
       out[t] = r;
@@ -443,6 +445,10 @@
   // pripravovaná sezóna smie mať 0 tímov (pribúdajú postupne), prebiehajúca a skončená potrebuje aspoň 2
   const seasonTeamsError = (state, n) => (state !== "soon" && n < 2 ? "Prebiehajúca alebo skončená sezóna potrebuje aspoň 2 tímy." : "");
 
+  // sezóny, v ktorých je tím (podľa season_teams), zoradené podľa sort (staršie prvé)
+  const teamSeasons = (d, teamId) => d.seasons.filter((x) => d.season_teams.some((st) => st.season_id === x.id && st.team_id === teamId))
+    .sort((a, b) => a.sort - b.sort);
+
   /* ---------- Drobnosti ---------- */
   const initials = (name) => name.split(" ").filter(Boolean).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
   const settingsOf = (data) => Object.assign({}, DEFAULTS, data || {});
@@ -456,7 +462,7 @@
     rounds, byTime, nextMatches, matchState,
     validateMatch, compareData, initials, settingsOf,
     draftOf, rowOf, goalRowsOf, slug, playerId, shortName, shiftTime, longDate, monthDays,
-    SEASON_STEPS, seasonSteps, nextStep, stepDate, seasonTeamsError,
+    SEASON_STEPS, seasonSteps, nextStep, stepDate, seasonTeamsError, teamSeasons,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Logic;
   else window.Logic = Logic;

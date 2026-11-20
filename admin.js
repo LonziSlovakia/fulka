@@ -78,13 +78,14 @@
     };
   }
 
-  function ctx() {
+  // seasonId: kontext pre konkrétnu sezónu (napr. tabuľa ukladá do sezóny svojho zápasu), inak sezóna vybratá v admine
+  function ctx(seasonId) {
     const d = S.data;
     const T = teamsOf(d);
     const P = Object.fromEntries(d.players.map((p) => [p.id, p]));
     const live = d.seasons.find((s) => s.state === "live");
-    const s = d.seasons.find((x) => x.id === S.season) || live || d.seasons[0];
-    if (s) S.season = s.id;
+    const s = (seasonId && d.seasons.find((x) => x.id === seasonId)) || d.seasons.find((x) => x.id === S.season) || live || d.seasons[0];
+    if (s && !seasonId) S.season = s.id;
     return Object.assign({ d, T, P, live }, s ? seasonData(d, s, P) : { s: null });
   }
 
@@ -249,7 +250,7 @@
   }
   // text chyby, keď by sa výsledok z tabule nedal uložiť (napr. remíza v playoff), inak ""
   function checkBoard(st) {
-    const c = ctx();
+    const c = ctx(st.seasonId);
     const b = draftFromBoard(st, c);
     if (!b) return "Tento zápas sa v databáze nenašiel (možno bol medzitým vymazaný).";
     if (!b.own) {
@@ -263,7 +264,7 @@
   function saveFromBoard(st, after) {
     const err = checkBoard(st);
     if (err) return err;
-    const c = ctx();
+    const c = ctx(st.seasonId);
     const { d, saved } = draftFromBoard(st, c);
     const row = L.rowOf(d, saved, c.s.seed_mode);
     const goals = L.goalRowsOf(d, saved.id);
@@ -378,6 +379,7 @@
     if (![d.color, d.color_dark, d.ink].every((x) => HEX.test(x))) return fail("Farby musia byť v tvare #RRGGBB.");
     const isNew = d.id === "new";
     const id = isNew ? newTeamId(abbr, name) : d.id;
+    const toSeason = isNew && S.teamScope !== "all"; // v „Všetky tímy“ nie je vybratá sezóna → nový tím ostane mimo sezón
     run(async () => {
       const v = Date.now().toString(36);
       const url = async (kind, file) => {
@@ -389,9 +391,9 @@
       if (d.files.logo) row.logo = await url("logo", d.files.logo);
       if (d.files.anim) row.logo_anim = await url("anim", d.files.anim);
       await DB.upsert("teams", row);
-      if (isNew) await DB.upsert("season_teams", { season_id: c.s.id, team_id: id }, "season_id,team_id");
-    }, isNew ? `Tím ${name} je pridaný do sezóny ${c.s.name}. Teraz mu pridaj hráčov.` : `Tím ${name} je uložený.`,
-    () => { S.teamDraft = null; S.teamSel = id; });
+      if (toSeason) await DB.upsert("season_teams", { season_id: c.s.id, team_id: id }, "season_id,team_id");
+    }, toSeason ? `Tím ${name} je pridaný do sezóny ${c.s.name}. Teraz mu pridaj hráčov.` : isNew ? `Tím ${name} je vytvorený. Do sezóny ho pridáš tlačidlom „Pridať do sezóny“.` : `Tím ${name} je uložený.`,
+    () => { S.teamDraft = null; S.teamSel = id; S.seasonDraft = null; });
   }
 
   function teamForm(c) {
@@ -882,7 +884,7 @@
   // tímy v zozname: iba upravovaná sezóna, alebo všetky tímy z databázy (aj tie, ktoré nie sú v žiadnej sezóne)
   const listedTeams = (c) => (S.teamScope === "all" ? c.d.teams.map((t) => t.id) : c.teamIds);
   // krátke mená sezón, v ktorých tím je (napr. „Leto 2027, Zima 2026“)
-  const teamSeasons = (c, id) => c.d.seasons.filter((x) => c.d.season_teams.some((st) => st.season_id === x.id && st.team_id === id)).map((x) => x.short || x.name);
+  const teamSeasons = (c, id) => L.teamSeasons(c.d, id).map((x) => x.short || x.name);
   function teamList(c) {
     const n = c.roster.length;
     const all = S.teamScope === "all";
@@ -1093,7 +1095,7 @@
     const cards = shown.map((m) => {
       const H = c.T[m.home_id] || NOTEAM;
       const A = c.T[m.away_id] || NOTEAM;
-      const day = m.starts_at ? `${L.shortDate(L.matchDate(m))} · ${m.stage === "R" ? `K${m.round}` : STAGE_SHORT[m.stage]}` : `týždeň ${L.dShort(m.window_from)}`;
+      const day = m.starts_at ? `${L.shortDate(L.matchDate(m))} · ${m.stage === "R" ? `K${m.round}` : STAGE_SHORT[m.stage]}` : m.window_from ? `týždeň ${L.dShort(m.window_from)}` : "termín sa doplní";
       return `<div class="a-prev-card"><span class="fill" aria-hidden="true" style="background:linear-gradient(150deg, ${H.c}, ${H.d})"></span>
         <span class="fill" aria-hidden="true" style="background:linear-gradient(150deg, ${A.c}, ${A.d});clip-path:polygon(60% 0, 100% 0, 100% 100%, 40% 100%)"></span>
         <img src="${esc(H.svg)}" alt=""><span class="t"><b>${m.starts_at ? L.matchTime(m) : "vs"}</b><span>${esc(day)}</span></span><img src="${esc(A.svg)}" alt=""></div>`;
@@ -1329,7 +1331,7 @@
   /* ---------- Udalosti ---------- */
   const ACTIONS = {
     logout: () => { DB.signOut(); render(); },
-    tab: (el) => { S.tab = el.dataset.id; S.toast = ""; S.error = ""; S.moving = null; S.teamDraft = null; if (S.tab !== "matches" && S.tab !== "playoff") { S.sel = null; S.draft = null; } if (S.tab === "settings") S.setDraft = null; render(); if (S.tab === "backups") loadBackups(); },
+    tab: (el) => { if (el.dataset.id === "seasons" && S.tab !== "seasons") { S.seasonDraft = null; S.seasonSel = null; } S.tab = el.dataset.id; S.toast = ""; S.error = ""; S.moving = null; S.teamDraft = null; if (S.tab !== "matches" && S.tab !== "playoff") { S.sel = null; S.draft = null; } if (S.tab === "settings") S.setDraft = null; render(); if (S.tab === "backups") loadBackups(); },
     season: (el) => { S.season = el.dataset.id; S.teamScope = "season"; S.teamDraft = null; S.sel = null; S.draft = null; S.teamSel = null; S.moving = null; S.filter = "all"; S.toast = ""; S.error = ""; render(); },
     filter: (el) => { S.filter = el.dataset.id; render(); },
     select: (el) => select(el.dataset.id),
@@ -1366,7 +1368,7 @@
     cancelTeam: () => { S.teamDraft = null; S.error = ""; render(); },
     saveTeam: () => saveTeam(),
     teamScope: (el) => { S.teamScope = el.dataset.id; S.teamDraft = null; S.moving = null; S.toast = ""; S.error = ""; if (!mobile() && !listedTeams(ctx()).includes(S.teamSel)) S.teamSel = null; render(); },
-    teamToSeason: (el) => { const c = ctx(); const id = el.dataset.id; run(() => DB.upsert("season_teams", { season_id: c.s.id, team_id: id }, "season_id,team_id"), `Tím ${(c.T[id] || NOTEAM).name} je v sezóne ${c.s.name}. Teraz mu môžeš pridať hráčov.`, () => { S.teamSel = id; }); },
+    teamToSeason: (el) => { const c = ctx(); const id = el.dataset.id; run(() => DB.upsert("season_teams", { season_id: c.s.id, team_id: id }, "season_id,team_id"), `Tím ${(c.T[id] || NOTEAM).name} je v sezóne ${c.s.name}. Teraz mu môžeš pridať hráčov.`, () => { S.teamSel = id; S.seasonDraft = null; }); },
     "team-sel": (el) => { S.teamDraft = null; S.teamSel = el.dataset.id; S.moving = null; S.newName = ""; S.toast = ""; S.error = ""; render(); },
     teamBack: () => { S.teamSel = null; S.moving = null; render(); },
     cap: (el) => toggleCaptain(el.dataset.id),

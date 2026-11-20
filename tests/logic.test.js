@@ -574,3 +574,19 @@ test("pripravovaná sezóna: pulzuje najbližší termín od dnes", () => {
   assert.equal(L.nextStep(steps, "2027-02-16"), ""); // všetko prešlo, prvý zápas bez dátumu
   assert.equal(L.nextStep(L.seasonSteps({ signup_date: "2027-03-01", draft_date: "2027-02-20" }), "2027-01-01"), "draft_date"); // podľa dátumu, nie poradia
 });
+
+test("zálohy: časové pečiatky created_at/updated_at nie sú zmena dát", () => {
+  const row = { id: "l27", name: "Letná sezóna 2027", state: "soon", created_at: "2026-11-17T23:34:27Z", updated_at: "2026-11-19T12:00:00Z" };
+  const snap = { seasons: [Object.assign({}, row)] };
+  const cur = { seasons: [Object.assign({}, row, { updated_at: "2026-11-20T08:00:00Z" })] };
+  assert.equal(L.compareData(cur, snap).seasons.changed, 0);
+  cur.seasons[0].name = "Leto";
+  assert.equal(L.compareData(cur, snap).seasons.changed, 1); // skutočná zmena sa stále hlási
+});
+
+test("tímy: v ktorých sezónach je tím", () => {
+  const d = { seasons: [{ id: "l27", sort: 20 }, { id: "z26", sort: 10 }], season_teams: [{ season_id: "l27", team_id: "gia" }, { season_id: "z26", team_id: "gia" }, { season_id: "z26", team_id: "bre" }] };
+  assert.deepEqual(L.teamSeasons(d, "gia").map((x) => x.id), ["z26", "l27"]);
+  assert.deepEqual(L.teamSeasons(d, "bre").map((x) => x.id), ["z26"]);
+  assert.deepEqual(L.teamSeasons(d, "ant"), []); // tím mimo sezón
+});

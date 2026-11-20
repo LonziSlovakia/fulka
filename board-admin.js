@@ -214,7 +214,7 @@
     const t = `${cur.title ? `${esc(cur.title)} · ` : ""}${esc(cur.home.name)} – ${esc(cur.away.name)}`;
     const body = cur.ended ? endedView() : `<div class="a-bd-ctl">${teamCol(c, cur.flip ? "a" : "h")}${centerCol()}${teamCol(c, cur.flip ? "h" : "a")}</div>`;
     return `<div class="a-ed-head"><span class="tt"><span class="lbl">Výsledková tabuľa</span><b>${t}</b></span>
-        <button type="button" class="a-ghost" data-b="cancel"${cur.ended && !cur.saved ? " disabled" : ""}>${cur.ended ? "Zavrieť" : "Zrušiť tabuľu"}</button></div>
+        <button type="button" class="a-ghost" data-b="${cur.saved ? "close" : "cancel"}"${cur.ended && !cur.saved ? " disabled" : ""}>${cur.ended ? "Zavrieť" : "Zrušiť tabuľu"}</button></div>
       ${A.msgs()}${U.err ? `<div class="a-error" role="alert">${A.icon.err}${esc(U.err)}</div>` : ""}
       <div class="a-body">
         <div class="a-bd-tools">${screensPicker(cur.twoScreens)}

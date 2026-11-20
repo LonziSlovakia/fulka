@@ -45,7 +45,7 @@ Stav k 19. 11. 2026.
 | `board-admin.js` | admin → záložka „Tabuľa“ (ovládanie); načíta ho `render.js` s `?edit` pred `admin.js` |
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
-| `tests/*.test.js` | `node --test tests/*.test.js` (84 testov: `logic` 52, `upece` 7, `board` 25; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (86 testov: `logic` 54, `upece` 7, `board` 25; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) · `design/ants/` logo Kuchynka Ants (`index.html` náhľad, `zdroj.html` kresba, `predloha/` Lonziho koncept) |
@@ -84,6 +84,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - Časy v admine: rýchle voľby 19:00 / 20:15 / 21:00 / 21:15 a ±15 min.
 - Admin → Tímy: v riadku sezón je navyše čip **„Všetky tímy (N)“** (`S.teamScope`; Lonzi ho chcel tam, nie v zozname). „Všetky tímy“ = všetky z DB aj s menami sezón; tím mimo upravovanej sezóny
   sa dá upraviť („Upraviť tím“) a tlačidlom „Pridať do sezóny …“ pridať (súpiska patrí k sezóne). Vyžiadal Lonzi 20. 11. 2026 – tím odobratý zo všetkých sezón sa inak nedal upraviť.
+  „Nový tím“ v režime „Všetky tímy“ sa **nepridá do žiadnej sezóny** (nie je vybratá). Po pridaní tímu do sezóny a pri otvorení záložky Sezóny sa editor sezóny postaví nanovo (`S.seasonDraft = null`).
 - Tlačidlo „hore“: plávajúce vpravo dole (biely štvorec so šípkou, zrezaný roh), ukáže sa po odscrollovaní o 400 px, iba na verejnom webe (nie v `?edit`).
   Je mimo `.page`, lebo `container-type` by inak bral `position: fixed` voči kontajneru.
 - **Sekcia „Z UPeCe“** (nad pätou, podľa návrhu z Claude Design, ktorý Lonzi poslal iba ako screenshot): tri stĺpce podpora → kalendár → ponuka, na úzkej obrazovke pod sebou.
@@ -108,7 +109,8 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - **Prenos na druhú obrazovku**: cez `localStorage` + udalosť `storage` → funguje iba v tom istom prehliadači na tom istom PC (Win + P a presunúť okno). Admin ukazuje „druhá obrazovka pripojená“ (ping každé 2 s). Na iné zariadenie by treba Supabase realtime – zatiaľ nerobené.
   - **Góly sa do databázy posielajú až na konci** (tlačidlo „Ukončiť zápas“ → potvrdenie → `writeMatch` v `admin.js`, rovnaký zápis ako „Uložiť zmeny“ zápasu). Dôvod: v DB nie je „rozohraný zápas“ (polovičný výsledok by sa na webe ukázal ako hotový) a pri výpadku internetu by sa nič nestratilo – stav je v `localStorage`.
     Remíza v playoff sa neuloží (rovnaká kontrola ako v editore). Zápas bez termínu dostane dnešný dátum a čas. Po neúspešnom uložení ostane „Uložiť výsledok na web“ / „Späť do zápasu“.
-  - Potvrdenie pri „Ukončiť zápas“ je zámerné (zverejňuje výsledok); pri bežných akciách tabule žiadne potvrdenie nie je.
+  - Potvrdenie pri „Ukončiť zápas“ je zámerné (zverejňuje výsledok); pri bežných akciách tabule žiadne potvrdenie nie je. Po uložení „Zavrieť“ zavrie bez otázky.
+  - Uloženie z tabule ide do **sezóny zápasu na tabuli** (`ctx(st.seasonId)`), aj keď je admin medzitým prepnutý na inú sezónu.
   - Lonzi **nechce** zvukovú sirénu ani realtime na iné zariadenia. Nie je (nápady): počítanie času nahor, predĺženie, čas gólu v DB.
 - **Stránka „Pripravujeme“** (sezóna `soon`, vyžiadal Lonzi 19. 11. 2026): tri termíny Prihlasovanie / Draft tímov / Prvý zápas = stĺpce `signup_date`, `draft_date`, `start_date`
   (typ `date`, prázdne = „čoskoro“, vyplnený = „Po 1. 2. 2027“ v tyrkysovej UPeCe `--teal`; **najbližší termín od dnes pulzuje** (`L.nextStep`, v ten deň ešte pulzuje, potom ďalší), prešlé stlmené). V admine Sezóny → sezóna → „Termíny na webe“ (iba pri stave Pripravujeme; × vymaže).
@@ -137,7 +139,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - **Zálohy** (`supabase/3-zalohy.sql`, admin → Zálohy): **iba ručné** tlačidlom „Uložiť zálohu“ (Lonzi si zálohuje po kolách; automatické
   zálohy nechce – „spam“). Snímka všetkých 8 tabuliek v `fulka_backups` (~25 kB), vidí/vytvára/maže ich iba admin (zmazať sa dá v admine).
   Fotky sa nezálohujú (Lonzi: netreba).
-  Návrat: okno 1 = diff po tabuľkách (`L.compareData`) → „Pokračovať“ → okno 2 „Naozaj?“ + napísať **OBNOVIŤ** → až potom `fulka_restore`
+  Návrat: okno 1 = diff po tabuľkách (`L.compareData`, ignoruje `created_at`/`updated_at`) → „Pokračovať“ → okno 2 „Naozaj?“ + napísať **OBNOVIŤ** → až potom `fulka_restore`
   (v jednej transakcii, `fulka_apply`). Stav pred návratom = **jediná poistka** (`kind = 'undo'`, prepíše sa pri ďalšom návrate, nedá sa zmazať),
   tlačidlo „Vrátiť späť“ (`fulka_undo`) vymení aktuálny stav s poistkou. Stiahnutie do počítača (JSON `format: fulka-zaloha-1`) a návrat zo súboru.
 - Päta: odkaz na UPeCe Bratislava (upcba.sk, biele logo) a Supabase (supabase.com, „Dáta, fotky a prihlásenie bežia na Supabase“).
@@ -154,6 +156,7 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fa
 - Admin: `fake-login.js` podvrhne prihlásenie, `mock-db.js` presmeruje zápisy do pamäte (`__mem()`, `__writes`, zálohy `__backups()` s 2 ukážkovými).
   Potvrdzovacie okno je `.a-modal`: potvrdiť `[data-m=ok]`, zrušiť `[data-m=no]`, slovo do `[data-m=word]`.
 - Tabuľa: `tools/board-demo.html` (http://127.0.0.1:8770/fulka/tools/board-demo.html) otvorí admin s podvrhnutým prihlásením a zápismi iba do pamäte – dá sa skúšať bez zásahu do Supabase.
+  Opravy z code review 20. 11. 2026: `tools/refactor-checks.js` (`#sezona`, `#novytim`, `#tabula`, `#zatvorit` v URL; po `fake-login.js RELOAD mock-db.js`).
   Tímy mimo sezóny: `tools/team-scope.js` (krok pre `shot.js` po `fake-login.js RELOAD mock-db.js`; s `#pridat` v URL aj pridá tím do sezóny).
   Screenshoty/testy: `tools/board-demo.js` (ukážkový stav → `tabula.html`), `board-flow.js`, `board-flow2.js`, `board-end.js`, `board-sync.js` (kroky pre `shot.js` po `fake-login.js RELOAD mock-db.js`).
 - Pripravujeme: `tools/future-demo.html` (http://127.0.0.1:8770/fulka/tools/future-demo.html, `?timy=1` = iba 1 tím) ukáže pripravovanú sezónu s 2 ukážkovými termínmi bez zápisu;
