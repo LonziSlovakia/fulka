@@ -2,7 +2,7 @@
 
 Všeobecné pravidlá o Lonzim sú v `~/.claude/CLAUDE.md`. Tu je iba to, čo platí pre FULka.
 **Tento súbor udržiavaj živý:** po každej zmene, ktorá mení správanie alebo dohodu, ho uprav v tom istom commite.
-Neplatné veci zmaž, históriu nedumpuj. `HANDOFF.md` je pôvodné zadanie (pri rozpore platí tento súbor) – čítaj z neho iba časť, ktorú potrebuješ.
+Neplatné veci zmaž, históriu nedumpuj. (Pôvodné zadanie `HANDOFF.md` je zmazané 20. 11. 2026 – všetko podstatné je tu a v kóde.)
 Stav k 19. 11. 2026.
 
 ## Pravidlá projektu
@@ -54,16 +54,15 @@ Stav k 19. 11. 2026.
 
 `bannerCount` 1–4 · `pointsWin/Draw/Loss` 3/1/0 · `defaultTime` "21:15" (po sv. omši) · `photos` true/false ·
 `layout` "wide"/"narrow" (Lonzi má úzke) · `tableOrder` (predvolene `h2hPoints, h2hDiff, diff, gf`) ·
-`scorerOrder` (predvolene `goals`) · `scorerTies` "shared"/"alpha"/"team" (predvolene shared) · `headFont` sa ignoruje ·
+`scorerOrder` (predvolene `goals`) · `scorerTies` "shared"/"alpha"/"team" (predvolene shared) ·
 `upece` true/false (sekcia Z UPeCe) · `upeceHours` text pod názvom UPeCe · `upeceOffer` zoznam `{t, d}` pre „Viac než florbal“.
 
-Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|siroke`, `?upece=ano|nie`, `?pismo=monument` (iba lokálne).
+Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|siroke`, `?upece=ano|nie`.
 
 ## Rozhodnutia (dohodnuté s Lonzim)
 
 - **Farby tímov ostávajú podľa návrhu**, nie odtiene z plagátov (raz som ich zle zmenil, Lonzi chcel pôvodné – „tie farby na webe by som nič nemenil“).
-- **Písmo Saira.** PP Monument Extended je platený (na dafonte iba na osobné použitie) → súbory sú iba lokálne v `assets/fonts/` (gitignore),
-  prepína sa iba cez `?pismo=monument` a použije sa až po úspešnom načítaní písma. Prepínač písma v admine je skrytý.
+- **Písmo Saira.** Platené PP Monument Extended Lonzi zrušil (20. 11. 2026) – kód je z webu preč; súbory v `assets/fonts/` sú iba lokálne a v gitignore, nikdy ich necommitovať.
 - Banner: najbližšie neodohrané zápasy (počet `bannerCount`); zápas ostáva, kým ho admin neoznačí ako odohraný (bez časovej tolerancie).
   Bez presného termínu ukáže týždeň (`window_from–to`) a „termín sa doplní“. Playoff na banneri až keď sú tímy isté (`fixed`); sezóna bez zápasov
   základnej časti nemá „dohranú“ základnú časť (inak by sa SF nasadilo abecedne). Strelec ≠ asistent v tom istom góle (kontrola pri uložení).

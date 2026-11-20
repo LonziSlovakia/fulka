@@ -1032,8 +1032,8 @@
   }
 
   /* ---------- Nastavenia ---------- */
-  // rozpracované nastavenia (banner, fotky, písmo); null = také, aké sú uložené
-  const savedSet = (c) => ({ bannerCount: c.settings.bannerCount, photos: c.settings.photos !== false, headFont: "saira" /* Monument zatiaľ nie (licencia), prepínač je skrytý */, layout: c.settings.layout === "narrow" ? "narrow" : "wide",
+  // rozpracované nastavenia (banner, fotky, rozloženie, kritériá, Z UPeCe); null = také, aké sú uložené
+  const savedSet = (c) => ({ bannerCount: c.settings.bannerCount, photos: c.settings.photos !== false, layout: c.settings.layout === "narrow" ? "narrow" : "wide",
     tableOrder: L.validOrder(c.settings.tableOrder, L.TABLE_CRITERIA, L.DEFAULTS.tableOrder),
     scorerOrder: L.validOrder(c.settings.scorerOrder, L.SCORER_CRITERIA, L.DEFAULTS.scorerOrder),
     scorerTies: L.SCORER_TIES[c.settings.scorerTies] ? c.settings.scorerTies : "shared",
@@ -1401,7 +1401,9 @@
     bkAll: () => { S.bkAll = true; render(); },
     saveSettings: () => {
       const sd = setDraftOf(ctx());
-      run(() => DB.saveSettings(Object.assign({}, S.data.settings, sd)),
+      const data = Object.assign({}, S.data.settings, sd);
+      delete data.headFont; // staré nastavenie písma (Monument je zrušený) – pri uložení zmizne z DB
+      run(() => DB.saveSettings(data),
         `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, rozloženie ${sd.layout === "narrow" ? "úzke" : "široké"}, sekcia Z UPeCe ${sd.upece ? "zapnutá" : "skrytá"}, poradie tabuľky aj bodovania.`,
         () => { S.setDraft = null; });
     },

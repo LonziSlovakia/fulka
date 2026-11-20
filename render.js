@@ -6,7 +6,7 @@
   const L = window.Logic;
   const U = window.Upece;
   const app = document.getElementById("app");
-  const state = { data: null, season: null, open: undefined, menu: false, photos: true, font: "saira", layout: "wide", allPlayers: false };
+  const state = { data: null, season: null, open: undefined, menu: false, photos: true, layout: "wide", allPlayers: false };
 
   /* ---------- Drobnosti ---------- */
   const STAGE = { SF1: "Semifinále 1", SF2: "Semifinále 2", B3: "O 3. miesto", F: "Finále" };
@@ -77,29 +77,17 @@
   const dayLabel = (m) => (m.starts_at ? L.shortDate(L.matchDate(m)) : week(m));
   const photo = (p, key) => (state.photos && p && p[key] ? window.DB.photoUrl(p[key]) : "");
 
-  /* Fotky a písmo nadpisov: podľa nastavení z adminu, ale adresa ich vie dočasne prepnúť
-     na porovnanie (?fotky=ano|nie, ?pismo=saira|monument), nič sa tým neukladá. */
+  /* Fotky, rozloženie a Z UPeCe: podľa nastavení z adminu, ale adresa ich vie dočasne prepnúť
+     na porovnanie (?fotky=ano|nie, ?rozlozenie=uzke|siroke, ?upece=ano|nie), nič sa tým neukladá. */
   const URLP = new URLSearchParams(location.search);
   function viewOptions(settings) {
     const f = URLP.get("fotky");
-    const font = URLP.get("pismo");
     const lay = URLP.get("rozlozenie");
     state.photos = f === "ano" ? true : f === "nie" ? false : settings.photos !== false;
-    state.font = font === "monument" ? "monument" : "saira"; // Monument iba na skúšku cez ?pismo=monument (bez licencie nie je na webe)
     state.layout = lay === "uzke" ? "narrow" : lay === "siroke" ? "wide" : settings.layout === "narrow" ? "narrow" : "wide";
     const up = URLP.get("upece");
     state.upece = up === "ano" ? true : up === "nie" ? false : settings.upece !== false;
     document.documentElement.dataset.layout = state.layout;
-    applyFont(state.font);
-  }
-  // Monument sa zapne až keď sa písmo naozaj načíta (inak by ostalo Saira so zmenšenými veľkosťami)
-  function applyFont(font) {
-    const root = document.documentElement;
-    if (font !== "monument") { delete root.dataset.font; return; }
-    if (!document.fonts || !document.fonts.load) return;
-    document.fonts.load('900 20px "PP Monument Extended"').then((list) => {
-      if (list.length && state.font === "monument") root.dataset.font = "monument";
-    }, () => {});
   }
 
   // rozbalený zápas: kým ho nikto nezavrel, v prebiehajúcej sezóne je otvorený posledný výsledok

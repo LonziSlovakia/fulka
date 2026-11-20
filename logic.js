@@ -7,9 +7,9 @@
   const TZ = "Europe/Bratislava";
   const UNKNOWN = "?"; // v admine: strelec vybraný ako „Neznámy hráč“ (v databáze null)
   const STAGES = ["SF1", "SF2", "B3", "F"];
-  // defaultTime = predvolený čas zápasu v admine (po sv. omši); photos = ukazovať fotky hráčov; headFont = písmo nadpisov;
+  // defaultTime = predvolený čas zápasu v admine (po sv. omši); photos = ukazovať fotky hráčov;
   // layout = "wide" (ako návrh) alebo "narrow" (užšia stránka, štatistiky bližšie pri menách)
-  const DEFAULTS = { bannerCount: 2, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, defaultTime: "21:15", photos: true, headFont: "saira", layout: "wide",
+  const DEFAULTS = { bannerCount: 2, pointsWin: 3, pointsDraw: 1, pointsLoss: 0, defaultTime: "21:15", photos: true, layout: "wide",
     tableOrder: ["h2hPoints", "h2hDiff", "diff", "gf"], scorerOrder: ["goals"], scorerTies: "shared",
     // sekcia „Z UPeCe“ dole na stránke: zapnutá, otváracie hodiny a zoznam „Čo ponúka UPeCe“ (t = názov, d = popis)
     upece: true, upeceHours: "Otvorené denne 13:00 – 24:00",
