@@ -614,9 +614,9 @@
     const rows = raw ? U.program(raw.week, L.localParts(Date.now()).date) : [];
     const news = raw ? U.news(raw.news, 2) : [];
     const list = rows.length ? `<ul class="up-rows">${rows.map(upRow).join("")}</ul>`
-      : `<p class="up-empty">${raw ? "Program na tento týždeň ešte nie je zverejnený." : state.upFail ? "Program sa teraz nepodarilo načítať." : "Načítavam program…"}</p>`;
+      : `<p class="up-empty">${raw ? "Program na najbližšie dni ešte nie je zverejnený." : state.upFail ? "Program sa teraz nepodarilo načítať." : "Načítavam program…"}</p>`;
     const items = news.map((n) => `<a class="up-news-it" href="${esc(n.link)}" target="_blank" rel="noopener"><small>${esc(n.date)}</small><b>${esc(n.title)}</b><span>${esc(n.sub)}</span></a>`).join("");
-    return `<div class="up-card up-cal">${upChip("Kalendár UPeCe")}<h3 class="up-h">Čo sa deje tento týždeň</h3>${list}
+    return `<div class="up-card up-cal">${upChip("Kalendár UPeCe")}<h3 class="up-h">Čo sa najbližšie deje v UPeCe</h3>${list}
       <a class="up-link" href="${U.CALENDAR}" target="_blank" rel="noopener">Celý kalendár ${arrow}</a>
       ${items ? `<div class="up-news"><span class="up-lbl">Novinky z UPeCe</span>${items}</div>` : ""}</div>`;
   }

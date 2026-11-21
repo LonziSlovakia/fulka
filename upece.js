@@ -127,13 +127,15 @@
   // dátum o n dní neskôr (ISO)
   const addDays = (date, n) => { const [y, m, d] = date.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
 
-  // program na 7 dní od dnes: novší príspevok prepíše rovnaký deň zo staršieho;
-  // najviac max riadkov, ale výnimočné akcie sa neodrežú nikdy (namiesto nich vypadnú bežné riadky na konci)
-  function program(posts, today, max = 7) {
+  // program na najbližšie 2 týždne (DAYS dní od dnes): novší príspevok prepíše rovnaký deň zo staršieho;
+  // najviac max riadkov, ale výnimočné akcie sa neodrežú nikdy (namiesto nich vypadnú bežné riadky na konci).
+  // Ukáže sa iba to, čo je v zverejnených týždenných oznamoch (oznam na ďalší týždeň býva až ku koncu týždňa).
+  const DAYS = 14;
+  function program(posts, today, max = 10) {
     const days = {};
     (posts || []).slice().reverse().forEach((p) => parseWeek(p).forEach((d) => { days[d.date] = d; }));
     const all = [];
-    Object.keys(days).sort().filter((d) => d >= today && d < addDays(today, 7)).forEach((date) => {
+    Object.keys(days).sort().filter((d) => d >= today && d < addDays(today, DAYS)).forEach((date) => {
       days[date].rows.forEach((r) => all.push(Object.assign({ date, dn: dayShort(date), dd: dayNum(date) }, r)));
     });
     const room = Math.max(0, max - all.filter((r) => r.kind === "special").length);

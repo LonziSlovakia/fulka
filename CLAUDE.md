@@ -92,7 +92,8 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - **Sekcia „Z UPeCe“** (nad pätou, podľa návrhu z Claude Design, ktorý Lonzi poslal iba ako screenshot): tri stĺpce podpora → kalendár → ponuka, na úzkej obrazovke pod sebou.
   - Podpora: logo `assets/logos/upece-512.png` (z upcba.sk, čierne na bielom → na webe `invert` + `mix-blend-mode: screen`), „Zisti viac“ → upcba.sk.
   - Kalendár naživo z WordPress REST API upcba.sk (CORS povolený): posledné 2 príspevky kategórie **Oznamy (174)**, z tabuľky
-    `td.day/.liturgy/.mass/.events` sa skladá program na 7 dní od dnes (max 7 riadkov). iCal export kalendára CORS nemá, preto sa nepoužíva.
+    `td.day/.liturgy/.mass/.events` sa skladá program na **najbližšie 2 týždne** od dnes (max 10 riadkov; Lonzi 21. 11.), nadpis „Čo sa najbližšie deje v UPeCe“.
+    Ukáže sa iba to, čo už je v zverejnených týždenných oznamoch (oznam na ďalší týždeň býva až ku koncu týždňa). iCal export kalendára CORS nemá, preto sa nepoužíva.
   - **Výnimočná akcia** (zvýraznená tyrkysovou) = má v tom týždni vlastný oznam s dátumom (`notice-title` „Názov D. M.“). Oznam s dátumom a časom,
     ktorý nie je v tabuľke, sa doplní ako riadok. „… do D. M.“ je uzávierka, nie akcia.
   - Novinky: 2 posledné príspevky z **Aktuality (165)** bez Oznamov. Odkazy iba na `https://www.upcba.sk/…`, texty sa escapujú.

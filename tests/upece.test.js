@@ -63,13 +63,15 @@ test("akcia iba v oznamoch (nie v tabuľke) sa doplní, ak má čas", () => {
   ]);
 });
 
-test("program: od dnes na 7 dní, výnimočné akcie sa neodrežú", () => {
+test("program: od dnes na 2 týždne, výnimočné akcie sa neodrežú", () => {
   const rows = U.program([W1], "2026-10-22", 3);
   assert.equal(rows[0].date, "2026-10-22");
   assert.ok(rows.some((r) => r.title === "Nikodémova noc"));
   assert.equal(rows.length, 3);
   assert.deepEqual([rows[0].dn, rows[0].dd], ["Št", 22]);
-  assert.equal(U.program([W1], "2026-11-01").length, 0);
+  assert.equal(U.program([W1], "2026-11-09").length, 0); // 14 dní po konci týždňa už nič
+  assert.ok(U.program([W1], "2026-10-12").some((r) => r.date === "2026-10-25")); // 13 dní dopredu ešte áno
+  assert.equal(U.program([W1], "2026-10-11").filter((r) => r.date === "2026-10-25").length, 0); // 14. deň už nie
 });
 
 test("novinky: dátum, nadpis s entitami, skrátený úvod, odkazy iba na upcba.sk", () => {
