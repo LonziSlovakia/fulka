@@ -44,21 +44,24 @@ const OPTS = [
   ["Verzia 6 · Rovné čiary + valček", "Verzia 2 s novým mravcom, valček 1,2× väčší, bližšie k hlave a viac vpravo."],
   ["Verzia 7 · Oblá obracačka", "Rovnaký mravec ako 5; rúčka obracačky je oblá (farebný prechod ako valec), s kovovým krúžkom a zaobleným koncom."],
   ["Verzia 8 · Valček ako valec", "Rovnaký mravec ako 6; užší valček s farebným prechodom (vyzerá ako valec), tmavšie lemy a jednofarebné rúčky s krčkom a guľatou hlavicou."],
-  ["Verzia 9 · Tykadlá na temene + obracačka", "Ako 7, tie isté tykadlá, iba posunuté viac dozadu na temeno, mierne zväčšené a naklonené: svetlé predné vpravo, tmavé zadné vľavo, články idú dopredu."],
-  ["Verzia 10 · Nové tykadlá + valček", "Ako 8 s tykadlami z verzie 9."],
+  ["Verzia 9 old · Tykadlá na temene + obracačka", "Predošlá 9: tie isté tykadlá ako 7, posunuté dozadu na temeno, mierne zväčšené a naklonené. Medzi tykadlami ostal čierny fľak.", "9-old"],
+  ["Verzia 10 old · Tykadlá na temene + valček", "Predošlá 10 (ako 8 s tykadlami z 9 old), s čiernym fľakom.", "10-old"],
+  ["Verzia 9 · Tykadlá na temene + obracačka", "Ako 9 old, ale bez čierneho fľaku medzi tykadlami (z obidvoch tykadiel je vyrezaná čierna plocha pod článkom, biely lesk pri prednom ostal).", "9"],
+  ["Verzia 10 · Tykadlá na temene + valček", "Ako 8 s tykadlami z verzie 9.", "10"],
 ];
 const C = "--c:#EE6A12;--d:#6E2A05;--ink:#111111";
 let mode = "anim";
 function draw() {
   const ext = mode === "anim" ? "webp" : "png";
-  document.getElementById("grid").innerHTML = OPTS.map(([name, about], i) => {
-    const src = `ants-${i + 1}.${ext}?v=${Date.now()}`;
+  document.getElementById("grid").innerHTML = OPTS.map(([name, about, file], i) => {
+    const f = file || String(i + 1); // názov súboru ants-<f>.png/.webp (napr. 9-old)
+    const src = `ants-${f}.${ext}?v=${Date.now()}`;
     return `<section class="opt"><h2>${name}</h2>
       <div class="ft" style="${C}"><span class="fill grad" aria-hidden="true"></span><span class="fill stripes" aria-hidden="true"></span>
         <img src="${src}" alt=""><span class="ft-txt"><small>Kuchynka</small><b>Ants</b></span></div>
       <div class="small"><img src="${src}" alt=""><b>Ants</b></div>
       <p>${about}</p>
-      <span class="files">Na nahratie: <a href="ants-${i + 1}.png" download>ants-${i + 1}.png</a> (logo) · <a href="ants-${i + 1}.webp" download>ants-${i + 1}.webp</a> (animované)</span></section>`;
+      <span class="files">Na nahratie: <a href="ants-${f}.png" download>ants-${f}.png</a> (logo) · <a href="ants-${f}.webp" download>ants-${f}.webp</a> (animované)</span></section>`;
   }).join("");
 }
 document.querySelector(".bar").addEventListener("click", (e) => {
