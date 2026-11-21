@@ -116,3 +116,10 @@ test("karta hráča dňa: najnovšia odohraná sezóna pred pripravovanou", () =
   const c = C.latestCard(C.buildCards(D), "p-ana");
   assert.equal(c.season.id, "s1");
 });
+
+test("modlitba dňa: každý deň ďalšia, po poslednej znova prvá", () => {
+  const days = ["2026-11-21", "2026-11-22", "2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26"].map((d) => C.pick(5, d));
+  assert.deepEqual(days.slice(1, 5).map((x, i) => (x - days[i] + 5) % 5), [1, 1, 1, 1]);
+  assert.equal(days[5], days[0]);
+  assert.equal(C.pick(0, "2026-11-21"), 0);
+});

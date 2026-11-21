@@ -13,7 +13,7 @@
     get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
   };
-  const S = { data: null, cards: [], byId: {}, T: {}, P: {}, save: C.readSave(ls.get(KEY)), prayer: "otce", filter: "all", season: "all", busy: false };
+  const S = { data: null, cards: [], byId: {}, T: {}, P: {}, save: C.readSave(ls.get(KEY)), filter: "all", season: "all", busy: false };
   const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ---------- Modlitby ---------- */
@@ -21,15 +21,14 @@
     { id: "otce", name: "Otče náš", text: [
       "Otče náš, ktorý si na nebesiach,", "posväť sa meno tvoje,", "príď kráľovstvo tvoje,", "buď vôľa tvoja ako v nebi, tak i na zemi.",
       "Chlieb náš každodenný daj nám dnes", "a odpusť nám naše viny,", "ako i my odpúšťame svojim vinníkom,", "a neuveď nás do pokušenia,", "ale zbav nás zlého.", "Amen."] },
-    { id: "zdravas", name: "Zdravas Mária", text: [
-      "Zdravas, Mária, milosti plná, Pán s tebou.", "Požehnaná si medzi ženami", "a požehnaný je plod života tvojho, Ježiš.",
+    { id: "zdravas", name: "Zdravas’ Mária", text: [
+      "Zdravas’, Mária, milosti plná, Pán s tebou.", "Požehnaná si medzi ženami", "a požehnaný je plod života tvojho, Ježiš.",
       "Svätá Mária, Matka Božia,", "pros za nás hriešnych", "teraz i v hodinu smrti našej.", "Amen."] },
     { id: "slava", name: "Sláva Otcu", text: [
       "Sláva Otcu i Synu i Duchu Svätému,", "ako bolo na počiatku, tak nech je i teraz i vždycky", "i na veky vekov.", "Amen."] },
     { id: "ochrana", name: "Pod tvoju ochranu", text: [
-      "Pod tvoju ochranu sa utiekame, svätá Božia Rodička.", "Neodmietni naše prosby v našich potrebách,", "ale zbav nás vždy všetkých nebezpečenstiev,",
-      "Panna slávna a požehnaná.", "Naša Pani, naša Prostrednica, naša Orodovnica,", "so svojím Synom nás zmier,", "svojmu Synovi nás odporúčaj,",
-      "k svojmu Synovi nás priveď.", "Amen."] },
+      "Pod tvoju ochranu sa utiekame, svätá Božia Rodička,", "neodvracaj zrak od našich prosieb,", "pomôž nám v núdzi",
+      "a z každého nebezpečenstva nás vysloboď,", "ty Panna slávna a požehnaná.", "Amen."] },
     { id: "verim", name: "Verím v Boha", text: [
       "Verím v Boha, Otca všemohúceho, Stvoriteľa neba i zeme.", "I v Ježiša Krista, jeho jediného Syna, nášho Pána,",
       "ktorý sa počal z Ducha Svätého, narodil sa z Márie Panny,", "trpel za Poncia Piláta, bol ukrižovaný, umrel a bol pochovaný.",
@@ -124,11 +123,12 @@
   function dayCard(p) {
     return C.latestCard(S.cards, p.id) || { id: "", kind: "player", rarity: "common", season: null, player_id: p.id, team_id: "", name: p.name, pos: 0, b: 0, g: 0, a: 0 };
   }
-  function prayerBox() {
-    const pr = PRAYERS.find((x) => x.id === S.prayer) || PRAYERS[0];
-    const tabs = PRAYERS.map((x) => `<button type="button" class="pr-tab" data-act="prayer" data-id="${x.id}" aria-pressed="${x.id === pr.id}">${esc(x.name)}</button>`).join("");
-    return `<div class="pr"><div class="pr-tabs" role="group" aria-label="Modlitba">${tabs}</div>
-      <div class="pr-text" aria-live="polite"><h3>${esc(pr.name)}</h3>${pr.text.map((l) => `<p${l === "Amen." ? ' class="amen"' : ""}>${esc(l)}</p>`).join("")}</div></div>`;
+  /* modlitba dňa (bez prepínania): všetky modlitby sú v jednej bunke mriežky na sebe, viditeľná je iba dnešná
+     → rámik má vždy výšku najdlhšej modlitby a stránka sa zo dňa na deň nenaťahuje */
+  function prayerBox(date) {
+    const today = PRAYERS[C.pick(PRAYERS.length, date)];
+    const one = (pr) => `<div class="pr-one"${pr === today ? "" : ' aria-hidden="true"'}><h3>${esc(pr.name)}</h3>${pr.text.map((l) => `<p${l === "Amen." ? ' class="amen"' : ""}>${esc(l)}</p>`).join("")}</div>`;
+    return `<div class="pr"><p class="pr-kick">Dnešná modlitba</p><div class="pr-text">${PRAYERS.map(one).join("")}</div></div>`;
   }
   function daySec() {
     const date = today();
@@ -136,8 +136,8 @@
     if (!p) return "";
     const c = dayCard(p);
     const t = teamOf(c);
-    return `<section id="dnes" class="day" style="${vars(t)}"><div class="fill day-shard grad"></div><div class="fill stripes"></div><div class="teeth"></div>
-      <div class="wrap day-in">
+    return `<section id="dnes" class="day" style="${vars(t)}"><div class="teeth"></div>
+      <div class="wrap day-in"><div class="day-shard" aria-hidden="true"></div>
         <div class="day-card">${cardHtml(c, "front", "big tilt")}</div>
         <div class="day-txt">
           <span class="kicker">${esc(L.dayName(date))} ${esc(L.dShort(date).replace(".", ". "))}</span>
@@ -145,8 +145,8 @@
           <p class="day-for">Dnes sa modlíme za</p>
           <p class="day-name">${esc(p.name)}</p>
           <p class="day-team"><img src="${esc(t.svg)}" alt="">${esc(t.name)}${t.pre ? ` · ${esc(t.pre)}` : ""}</p>
-          <p class="day-lead">Každý deň jeden hráč FULky. Vyber si modlitbu a venuj ju jemu – za zdravie, rodinu, štúdium aj za fair play na ihrisku i mimo neho.</p>
-          ${prayerBox()}
+          <p class="day-lead">Každý deň jeden hráč FULky a jedna modlitba. Venuj ju jemu – za zdravie, rodinu, štúdium aj za fair play na ihrisku i mimo neho.</p>
+          ${prayerBox(date)}
           <p class="day-next">Zajtra o polnoci príde ďalší hráč.</p>
         </div></div></section>`;
   }
@@ -361,8 +361,7 @@
     const el = e.target.closest("[data-act]");
     if (!el) return;
     const act = el.dataset.act;
-    if (act === "prayer") { S.prayer = el.dataset.id; const box = app.querySelector(".pr"); if (box) box.outerHTML = prayerBox(); }
-    else if (act === "open") openPack();
+    if (act === "open") openPack();
     else if (act === "show") showCard(el.dataset.id);
     else if (act === "filter") { S.filter = el.dataset.id; rerenderCollection(); }
     else if (act === "season") { S.season = el.dataset.id; rerenderCollection(); }
@@ -388,6 +387,21 @@
   }, 1000);
   // náklon veľkej karty hráča dňa (po každom vykreslení je nový prvok)
   new MutationObserver(() => { const el = app.querySelector(".day-card .fc:not([data-t])"); if (el) { el.dataset.t = "1"; tilt(el); } }).observe(app, { childList: true, subtree: true });
+
+  // tlačidlo „hore“ vpravo dole ako na hlavnom webe (styles.css .to-top), ukáže sa po 400 px
+  function toTopButton() {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "to-top";
+    btn.setAttribute("aria-label", "Späť hore");
+    btn.innerHTML = '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>';
+    btn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: REDUCED ? "auto" : "smooth" }));
+    document.body.appendChild(btn);
+    const update = () => btn.classList.toggle("show", window.scrollY > 400);
+    window.addEventListener("scroll", update, { passive: true });
+    update();
+  }
+  toTopButton();
 
   if (DB.cached) {
     setData(DB.cached);

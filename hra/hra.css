@@ -99,10 +99,14 @@ html.locked, html.locked body { overflow: hidden; }
 
 /* ---------- Hráč dňa ---------- */
 .day { position: relative; overflow: hidden; background: var(--bg); padding: 44px 0 84px; }
-.day-shard { clip-path: polygon(0 0, 35% 0, 30% 47%, 35% 51%, 25% 100%, 0 100%); opacity: 0.92; }
+/* podklad vo farbe tímu: viazaný na kartu (nie na šírku okna) → text vpravo je vždy na čiernom, aj na veľkom monitore */
+.day-shard { position: absolute; top: -44px; bottom: -84px; right: calc(100% - var(--pad) - var(--cw) - 56px); width: 100vw; opacity: 0.92;
+  background: repeating-linear-gradient(-62deg, rgba(0, 0, 0, 0.1) 0 2px, rgba(0, 0, 0, 0) 2px 16px), linear-gradient(150deg, var(--c), var(--d));
+  clip-path: polygon(0 0, 100% 0, calc(100% - 34px) 47%, calc(100% - 12px) 51%, calc(100% - 100px) 100%, 0 100%); }
 .day .teeth { z-index: 1; }
-.day-in { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 40px 64px; }
-.day-card { width: clamp(250px, 27cqi, 350px); animation: float 6s ease-in-out infinite; }
+.day-in { --cw: clamp(250px, 27cqi, 350px); position: relative; display: grid; grid-template-columns: var(--cw) minmax(0, 1fr); align-items: center; gap: 40px 100px; }
+.day-card { position: relative; width: var(--cw); animation: float 6s ease-in-out infinite; }
+.day-txt { position: relative; }
 @keyframes float { 50% { transform: translateY(-10px); } }
 .day-txt { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
 .day-txt h1 { margin: 16px 0 0; font-family: var(--fc); font-weight: 900; font-size: clamp(60px, 8cqi, 112px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg); }
@@ -113,12 +117,10 @@ html.locked, html.locked body { overflow: hidden; }
 .day-lead { margin: 16px 0 0; max-width: 600px; font-size: 15px; color: var(--fg-2); }
 .day-next { margin: 12px 0 0; font-size: 13px; color: var(--fg-3); }
 .pr { width: 100%; max-width: 680px; margin-top: 22px; }
-.pr-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
-.pr-tab { min-height: 40px; padding: 0 16px; background: transparent; border: 1px solid var(--line-3); font-family: var(--fc); font-weight: 800; font-size: 18px;
-  letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; cursor: pointer; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
-.pr-tab:hover { border-color: var(--fg); }
-.pr-tab[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-.pr-text { margin-top: 12px; padding: 20px 24px 22px; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--c); }
+.pr-kick { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-2); }
+.pr-text { display: grid; margin-top: 10px; padding: 20px 24px 22px; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--c); }
+.pr-one { grid-area: 1 / 1; }
+.pr-one[aria-hidden="true"] { visibility: hidden; }
 .pr-text h3 { margin: 0 0 12px; font-family: var(--fc); font-weight: 900; font-size: 30px; line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg); }
 .pr-text p { margin: 0; font-size: 17px; line-height: 1.55; color: #ececec; }
 .pr-text .amen { margin-top: 10px; font-family: var(--fc); font-weight: 900; font-size: 24px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--c); transform: skewX(-8deg); transform-origin: left; }
@@ -224,13 +226,12 @@ html.locked, html.locked body { overflow: hidden; }
 /* ---------- Úzka obrazovka ---------- */
 @container (max-width: 760px) {
   .day { padding: 28px 0 72px; }
-  .day-shard { clip-path: polygon(0 0, 100% 0, 100% 30%, 0 44%); }
-  .day-in { grid-template-columns: minmax(0, 1fr); justify-items: center; }
-  .day-card { width: min(290px, 74cqi); }
+  .day-in { --cw: min(290px, 74cqi); grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  .day-shard { top: -28px; bottom: auto; left: calc(-1 * var(--pad)); right: auto; width: calc(100% + 2 * var(--pad)); height: calc(var(--cw) * 1.05 + 28px);
+    clip-path: polygon(0 0, 100% 0, 100% 62%, 0 100%); }
   .day-txt { align-items: center; text-align: center; }
-  .pr-tabs { justify-content: center; }
   .pr-text { text-align: left; }
-  .pr-tab { font-size: 16px; padding: 0 12px; }
+  .pr-one[aria-hidden="true"] { display: none; } /* na mobile nie je nič vedľa → bez rezervy na najdlhšiu modlitbu */
   .pk-grid { grid-template-columns: minmax(0, 1fr); justify-items: center; }
   .pk-side { align-items: center; text-align: center; }
   .odds li { grid-template-columns: 8px 84px minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; text-align: left; }

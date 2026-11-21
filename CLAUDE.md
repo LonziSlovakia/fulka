@@ -46,7 +46,7 @@ Stav k 21. 11. 2026.
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
 | `hra/` | **Hra** `ful.upcba.sk/hra/` (iba priama adresa, `noindex`): `index.html`, `cards.js` (čisté funkcie kariet, testované), `hra.js` (vykreslenie, balík, modlitby), `hra.css` |
-| `tests/*.test.js` | `node --test tests/*.test.js` (93 testov: `logic` 52, `upece` 7, `board` 25, `hra` 9; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (94 testov: `logic` 52, `upece` 7, `board` 25, `hra` 10; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
@@ -126,7 +126,10 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - **Logá tímov** (štýl): hranaté plochy, čierna linka, krémový obrys `#FCF6E8`, animácia = pauza → efekt → pauza (napr. oči Giants, odlesk + zvonček Rangers).
 - **Hra `/hra/`** (vyžiadal Lonzi 21. 11. 2026, „hlavná vec je modlitba“): na webe **nikde neodkazovaná**, iba priama adresa. Dáta ligy iba číta (db.js, zdieľa cache `fulka-data-v1`), nič nezapisuje do DB.
   - **Hráč dňa** (hore, hlavná vec): všetci hráči z DB v pevnom zamiešanom poradí (`C.playerOfDay`, podľa dátumu v Bratislave) → každý raz za N dní, pre všetkých rovnaký. Jeho karta + „Dnes sa modlíme za …“ +
-    modlitby na prepínanie: Otče náš, Zdravas Mária, Sláva Otcu, Pod tvoju ochranu, Verím v Boha (texty v `hra.js` `PRAYERS`; Verím = „zostúpil k zosnulým“, Otče náš bez doxológie).
+    **jedna modlitba dňa, bez prepínania** (Lonzi tak chcel; `C.pick` = každý deň ďalšia z poolu): Otče náš, Zdravas’ Mária (s apostrofom), Sláva Otcu, Pod tvoju ochranu, Verím v Boha
+    (texty v `hra.js` `PRAYERS`, Lonzi ich skontroloval; „Pod tvoju ochranu“ je jeho krátke znenie „…neodvracaj zrak od našich prosieb…“; Verím = „zostúpil k zosnulým“, Otče náš bez doxológie).
+    Na širokom rozložení majú rámik výšku najdlhšej modlitby (všetky sú v jednej bunke mriežky, skryté `visibility: hidden`), aby sa ľavá časť s kartou nenaťahovala; na mobile bez rezervy.
+    Podklad vo farbe tímu (`.day-shard`) je viazaný na šírku karty (`--cw`), nie na šírku okna → text je vždy na čiernom aj na veľkom monitore. Tlačidlo „hore“ ako na hlavnom webe.
     **Modlitba nič nedáva a nič sa nepočíta ani neukladá** (Lonzi: „to je na zodpovednosti toho človeka… iba spásu na konci vekov“) – nepridávať odmeny ani počítadlá.
   - **Karty**: hráč × sezóna a tím × sezóna; tím mimo všetkých sezón (napr. Ants) má kartu bez sezóny („Nový tím“). Vzácnosť hráča = priečka v kanadskom bodovaní sezóny
     (1–5 legendary, 6–10 epic, 11–20 rare, inak common; **0 bodov = vždy common**). Tím: epic statická + legendary trblietavá s animovaným logom (`logo_anim`).

@@ -139,6 +139,9 @@
     return order[dayNumber(date) % order.length];
   }
 
+  // dnešná položka z n možností (napr. modlitba dňa): každý deň ďalšia, pre všetkých rovnaká
+  const pick = (n, date) => (n > 0 ? dayNumber(date) % n : 0);
+
   // karta hráča dňa: z najnovšej sezóny, v ktorej hrá (pripravovaná sezóna až keď inej niet – ešte nemá body)
   function latestCard(cards, playerId) {
     const mine = cards.filter((c) => c.kind === "player" && c.player_id === playerId);
@@ -149,7 +152,7 @@
   const Cards = {
     RARITY, RARITY_NAME, ODDS, TIERS, PACK,
     hash, cardId, rarityOf, buildCards, sortCards, rollRarity, openPack,
-    readSave, canOpen, addPack, dayNumber, nextDay, playerOfDay, latestCard,
+    readSave, canOpen, addPack, dayNumber, nextDay, playerOfDay, latestCard, pick,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Cards;
   else window.Cards = Cards;
