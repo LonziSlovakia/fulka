@@ -44,7 +44,7 @@
   // logo FULky a logo UFL (predchodca FULky); art = ktoré logo, poradie = poradie v kolekcii
   const MYTHICALS = [
     card("M:fulka", { kind: "myth", art: "ful", rarity: "mythical", name: "FULka", season: null, team_id: "" }),
-    card("M:ufl", { kind: "myth", art: "ufl", rarity: "mythical", name: "UFL", season: null, team_id: "" }),
+    card("M:ufl", { kind: "myth", art: "ufl", rarity: "mythical", name: "UFLka", season: null, team_id: "" }),
   ];
   const MYTHICAL = MYTHICALS[0];
 

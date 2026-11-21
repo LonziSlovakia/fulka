@@ -290,6 +290,6 @@ html.locked, html.locked body { overflow: hidden; }
 .fc.tilting .my-gold i { animation: none; transform: translateX(calc(var(--hx, 0) * 1.1%)); }
 @keyframes gold-shine { 0%, 35% { transform: translateX(-33%); } 100% { transform: translateX(33%); } }
 .my-front .fc-info { align-items: center; left: 4cqi; right: 4cqi; text-align: center; }
-.my-front .fc-name { font-size: 15cqi; }
+.my-front .fc-name { font-size: 15cqi; text-transform: none; } /* „FULka“, „UFLka“ – malé „ka“ ako v logu webu */
 .my-front .fc-pos { color: var(--r); -webkit-text-stroke: 0; }
 @media (prefers-reduced-motion: reduce) { .my-gold i { animation: none; } }

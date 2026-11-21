@@ -55,10 +55,11 @@
   const ARROW = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>';
   const CLOSE = '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 5l14 14M19 5L5 19"></path></svg>';
   const RNAME = Object.assign({ mythical: "Mythical" }, C.RARITY_NAME);
-  /* Tajná karta (mythical): nikde sa nespomína, v kolekcii je iba keď padla (hore ako prvá), nemení počty.
-     ?debug=mythical = iba na skúšanie: karta je v kolekcii, balík sa dá otvárať stále a vždy v ňom padne, nič sa neukladá. */
-  const MYTHS = C.MYTHICALS; // FULka, UFL
-  const DEBUG_MYTH = new URLSearchParams(location.search).get("debug") === "mythical";
+  /* Tajné karty (mythical): nikde sa nespomínajú, v kolekcii sú iba keď padli (hore ako prvé), nemenia počty.
+     ?debug=colors = na ladenie žiar: v balíku vždy po jednej karte z každej triedy (common → mythical), balík sa dá otvárať stále, nič sa neukladá. */
+  const MYTHS = C.MYTHICALS; // FULka, UFLka
+  const DEBUG_COLORS = new URLSearchParams(location.search).get("debug") === "colors";
+  const any = (list) => list[Math.floor(Math.random() * list.length)];
   const RLONG = { legendary: "Top 5 hráčov sezóny + trblietavé tímy s animovaným logom", epic: "6. – 10. hráč v kanadskom bodovaní",
     rare: "11. – 20. hráč v kanadskom bodovaní", common: "Ostatní hráči zo súpisky" };
 
@@ -71,7 +72,7 @@
     return T;
   }
   const teamOf = (c) => S.T[c.team_id] || FUL;
-  const owned = (id) => S.save.c[id] || (DEBUG_MYTH && MYTHS.some((m) => m.id === id) ? 1 : 0);
+  const owned = (id) => S.save.c[id] || 0;
   const store = () => ls.set(KEY, S.save);
 
   /* ---------- Karta ---------- */
@@ -191,7 +192,7 @@
     return `<ul class="odds${full ? "" : " short"}">${rows}</ul>`;
   }
   function packSec() {
-    const open = DEBUG_MYTH || C.canOpen(S.save, today());
+    const open = DEBUG_COLORS || C.canOpen(S.save, today());
     const last = S.save.l.map((id) => S.byId[id]).filter(Boolean);
     const side = open
       ? `<p class="pk-lead">Dnešný balík čaká. Päť kariet, aspoň jedna je <b class="t-rare">Rare</b> alebo lepšia.</p>
@@ -293,14 +294,15 @@
 
   const RAYS = '<div class="rays" aria-hidden="true"></div>';
   async function openPack() {
-    if (S.busy || !(DEBUG_MYTH || C.canOpen(S.save, today())) || !S.cards.length) return;
+    if (S.busy || !(DEBUG_COLORS || C.canOpen(S.save, today())) || !S.cards.length) return;
     S.busy = true;
     const had = Object.assign({}, S.save.c); // počty pred balíkom → „Nová karta“ / „×2“
     const seen = Object.assign({}, had);
-    const pack = C.openPack(S.cards, Math.random, MYTHS);
-    if (DEBUG_MYTH) MYTHS.forEach((m, i) => { if (!pack.includes(m)) pack[pack.length - MYTHS.length + i] = m; }); // skúšanie: obe tajné karty (na konci)
+    const pack = DEBUG_COLORS // ladenie žiar: jedna karta z každej triedy
+      ? C.RARITY.map((r) => S.cards.filter((c) => c.rarity === r)).filter((l) => l.length).map(any).concat(any(MYTHS))
+      : C.openPack(S.cards, Math.random, MYTHS);
     const next = C.addPack(S.save, pack.map((c) => c.id), today());
-    if (!DEBUG_MYTH) { S.save = next; store(); } // uložené hneď: obnovenie stránky balík neotvorí znova (pri skúšaní nič)
+    if (!DEBUG_COLORS) { S.save = next; store(); } // uložené hneď: obnovenie stránky balík neotvorí znova (pri ladení nič)
     let skip = false;
     showLayer(`<div class="op" data-stage="pack"><button type="button" class="op-skip" data-op="skip">Odkryť všetky</button>
       <div class="op-stage">${RAYS}<div class="op-pack pack">${PACK_ART}</div><div class="op-card"></div></div>

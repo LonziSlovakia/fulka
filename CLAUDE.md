@@ -144,13 +144,14 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - **Výkon (slabšie mobily, 21. 11. 2026):** animovať iba `transform` a `opacity` (lesk, trblietky, lúče, žiara = rozmazaný kruh s meniacou sa priehľadnosťou).
     Nepoužívať animovaný `filter`, `background-position`, `mix-blend-mode`, `@property` ani `backdrop-filter` – na slabšom mobile to sekalo.
     Karty mimo obrazovky stoja (`.vis` cez IntersectionObserver). Meranie: `THROTTLE=4 node tools/shot.js … @tools/hra-fps.js` (pred: kolekcia 26 / detail 19 / balík 35 FPS, po: 58 / 59 / 60).
-  - **Tajné karty (mythical, 21. 11. 2026):** `C.MYTHICALS` = FULka (`M:fulka`) a UFL (`M:ufl`, predchodca FULky), každá má šancu `C.MYTH_ODDS` 0,5 % v každom z prvých 4 slotov balíka.
+  - **Tajné karty (mythical, 21. 11. 2026):** `C.MYTHICALS` = FULka (`M:fulka`) a UFLka (`M:ufl`, predchodca FULky), každá má šancu `C.MYTH_ODDS` 0,5 % v každom z prvých 4 slotov balíka.
     Na stránke sa nikde nespomínajú (nie sú v `buildCards`, šanciach, lištách, počtoch ani medzi chýbajúcimi); keď padnú, sú v kolekcii hore ako prvé (počty nemenia).
     Kto číta kód, ich nájde – Lonzimu to nevadí. Vzhľad: logo s leskom, ktorý sa hýbe s náklonom (`--hx`), cez masku lesklých častí (`--mask`):
     FULka = `ful_bez_pozadia.svg` (zlaté časti), UFL = `ufl-lesk.svg` (oranžový okraj, písmená, dráha, loptička; užší a slabší lesk, lebo sú to veľké plochy).
     `ufl.svg` je obkreslené z obrázka (532 px) nástrojom `tools/ufl-trace.py` na vetve `demo-ants` (zdroj `design/ufl/ufl-src.png`): štít a loptička sú nakreslené čisto
     (krivky dorovnané podľa nameraných okrajov), písmená, dráha, krídla a znak UPeCe obkreslené potrace.
-    **`?debug=mythical`** (dočasne, na skúšanie): obe karty v kolekcii, balík sa dá otvárať stále a vždy v ňom padnú obe, nič sa neukladá – po odladení zmazať (`DEBUG_MYTH` v `hra.js`).
+    Názvy kariet „FULka“ a „UFLka“ (malé „ka“, `text-transform: none`). `?debug=mythical` je zmazaný (21. 11.).
+  - **`?debug=colors`** (ladenie žiar, Lonzi ho chce nechať): v balíku vždy po jednej karte z každej triedy (common → mythical), balík sa dá otvárať stále, nič sa neukladá (`DEBUG_COLORS` v `hra.js`).
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
   - Zmazaný hráč z DB z hry zmizne aj z kolekcie (ID v localStorage, ku ktorému karta už nie je, sa ignoruje).
 - **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).
