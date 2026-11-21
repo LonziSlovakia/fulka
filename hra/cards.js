@@ -41,10 +41,11 @@
 
   const card = (key, rest) => Object.assign({ id: cardId(key), key }, rest);
   // tajné karty (mythical): nie sú v buildCards → nemenia počty kariet, triedy ani chýbajúce karty
-  // logo FULky a logo UFL (predchodca FULky); art = ktoré logo, poradie = poradie v kolekcii
+  // logo FULky, logo UFL (predchodca FULky) a zlaté logo verbistov (SVD); art = ktoré logo, poradie = poradie v kolekcii
   const MYTHICALS = [
     card("M:fulka", { kind: "myth", art: "ful", rarity: "mythical", name: "FULka", season: null, team_id: "" }),
     card("M:ufl", { kind: "myth", art: "ufl", rarity: "mythical", name: "UFLka", season: null, team_id: "" }),
+    card("M:svd", { kind: "myth", art: "svd", rarity: "mythical", name: "VERBISTI", season: null, team_id: "" }),
   ];
   const MYTHICAL = MYTHICALS[0];
 

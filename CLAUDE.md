@@ -49,7 +49,7 @@ Stav k 21. 11. 2026.
 | `tests/*.test.js` | `node --test tests/*.test.js` (96 testov: `logic` 52, `upece` 7, `board` 25, `hra` 12; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
-| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg`, `ufl.svg` + `ufl-lesk.svg` (logo UFL obkreslené pre tajnú kartu, lesk = maska lesklých častí) · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
+| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg`, `ufl.svg` + `ufl-lesk.svg` (logo UFL obkreslené pre tajnú kartu, lesk = maska lesklých častí), `verbisti.svg` (zlaté logo verbistov pre tajnú kartu) · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
 | `demo/` | dočasné ukážky (napr. `demo/ants/`), na webe iba cez priamu adresu; zmazať celé naraz |
 
 ## Nastavenia (`fulka_settings.data`, admin → Nastavenia)
@@ -144,13 +144,14 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - **Výkon (slabšie mobily, 21. 11. 2026):** animovať iba `transform` a `opacity` (lesk, trblietky, lúče, žiara = rozmazaný kruh s meniacou sa priehľadnosťou).
     Nepoužívať animovaný `filter`, `background-position`, `mix-blend-mode`, `@property` ani `backdrop-filter` – na slabšom mobile to sekalo.
     Karty mimo obrazovky stoja (`.vis` cez IntersectionObserver). Meranie: `THROTTLE=4 node tools/shot.js … @tools/hra-fps.js` (pred: kolekcia 26 / detail 19 / balík 35 FPS, po: 58 / 59 / 60).
-  - **Tajné karty (mythical, 21. 11. 2026):** `C.MYTHICALS` = FULka (`M:fulka`) a UFLka (`M:ufl`, predchodca FULky), každá má šancu `C.MYTH_ODDS` 0,5 % v každom z prvých 4 slotov balíka.
+  - **Tajné karty (mythical, 21. 11. 2026):** `C.MYTHICALS` = FULka (`M:fulka`), UFLka (`M:ufl`, predchodca FULky) a VERBISTI (`M:svd`, pridaná 21. 11.), každá má šancu `C.MYTH_ODDS` 0,5 % v každom z prvých 4 slotov balíka.
     Na stránke sa nikde nespomínajú (nie sú v `buildCards`, šanciach, lištách, počtoch ani medzi chýbajúcimi); keď padnú, sú v kolekcii hore ako prvé (počty nemenia).
     Kto číta kód, ich nájde – Lonzimu to nevadí. Vzhľad: logo s leskom, ktorý sa hýbe s náklonom (`--hx`), cez masku lesklých častí (`--mask`):
-    FULka = `ful_bez_pozadia.svg` (zlaté časti), UFL = `ufl-lesk.svg` (oranžový okraj, písmená, dráha, loptička; užší a slabší lesk, lebo sú to veľké plochy).
+    FULka = `ful_bez_pozadia.svg` (zlaté časti), UFL = `ufl-lesk.svg` (oranžový okraj, písmená, dráha, loptička; užší a slabší lesk, lebo sú to veľké plochy),
+    VERBISTI = `verbisti.svg` (zlaté logo verbistov nakreslené ručne ako maska podľa predlohy 300×300, je zároveň maskou lesku) na verbistickej modrej `#1F5AA6`.
     `ufl.svg` je obkreslené z obrázka (532 px) nástrojom `tools/ufl-trace.py` na vetve `demo-ants` (zdroj `design/ufl/ufl-src.png`): štít a loptička sú nakreslené čisto
     (krivky dorovnané podľa nameraných okrajov), písmená, dráha, krídla a znak UPeCe obkreslené potrace.
-    Názvy kariet „FULka“ a „UFLka“ (malé „ka“, `text-transform: none`). Ladiace režimy `?debug=mythical` a `?debug=colors` sú zmazané (21. 11., Lonzi: „sme komplet dotestovaní“); hra je finálna.
+    Názvy kariet „FULka“, „UFLka“ (malé „ka“, `text-transform: none`) a „VERBISTI“. Ladiace režimy `?debug=mythical` a `?debug=colors` sú zmazané (21. 11., Lonzi: „sme komplet dotestovaní“); hra je finálna.
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
   - Zmazaný hráč z DB z hry zmizne aj z kolekcie (ID v localStorage, ku ktorému karta už nie je, sa ignoruje).
 - **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).

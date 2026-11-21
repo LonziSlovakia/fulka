@@ -290,6 +290,10 @@ html.locked, html.locked body { overflow: hidden; }
 .fc.tilting .my-gold i { animation: none; transform: translateX(calc(var(--hx, 0) * 1.1%)); }
 @keyframes gold-shine { 0%, 35% { transform: translateX(-33%); } 100% { transform: translateX(33%); } }
 .my-front .fc-info { align-items: center; left: 4cqi; right: 4cqi; text-align: center; }
+/* verbisti: zlaté logo na verbistickej modrej, lesk po celom logu (užší, aby veľké zlaté plochy nevybledli) */
+.my-svd .my-logo { top: 12%; width: 70cqi; filter: drop-shadow(0 2cqi 3cqi rgba(0, 0, 0, 0.4)); }
+.my-svd .my-bg { background: repeating-linear-gradient(-62deg, rgba(240, 193, 70, 0.08) 0 0.8cqi, rgba(0, 0, 0, 0) 0.8cqi 6.5cqi), radial-gradient(circle at 50% 36%, #2F6FC0, #1F5AA6 50%, #123A70); }
+.my-svd .my-gold i { background: linear-gradient(110deg, rgba(255, 255, 255, 0) 41%, rgba(255, 250, 225, 0.7) 47%, #fff 50%, rgba(255, 250, 225, 0.7) 53%, rgba(255, 255, 255, 0) 59%); }
 .my-front .fc-name { font-size: 15cqi; text-transform: none; } /* „FULka“, „UFLka“ – malé „ka“ ako v logu webu */
 .my-front .fc-pos { color: var(--r); -webkit-text-stroke: 0; }
 @media (prefers-reduced-motion: reduce) { .my-gold i { animation: none; } }

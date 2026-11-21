@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+<!-- Logo verbistov (SVD), nakreslené podľa predlohy 300×300 pre tajnú kartu hry, zlaté. Tvar = maska: „C“ (medzikružie odrezané hore a vpravo hore),
+     kríž, glóbus; čierne = medzery (rovník cez glóbus aj pravú stranu „C“, zvislá čiara a poludníky glóbusu). -->
+<defs>
+  <linearGradient id="vg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#FFE9A8"/><stop offset="0.35" stop-color="#F0C146"/><stop offset="0.72" stop-color="#C38F2A"/><stop offset="1" stop-color="#F6D474"/>
+  </linearGradient>
+  <clipPath id="vc"><path d="M0 42H164V168H300V300H0Z"/></clipPath>
+  <mask id="vm" maskUnits="userSpaceOnUse" x="0" y="0" width="300" height="300">
+    <g clip-path="url(#vc)"><path fill="#fff" fill-rule="evenodd" d="M0 168a131 131 0 1 0 262 0a131 131 0 1 0 -262 0Z M49 168a82 82 0 1 0 164 0a82 82 0 1 0 -164 0Z"/></g>
+    <rect x="213" y="5" width="50" height="163" fill="#fff"/>
+    <rect x="177" y="42" width="123" height="46" fill="#fff"/>
+    <circle cx="132.5" cy="169" r="62.5" fill="#fff"/>
+    <rect x="52" y="165" width="161" height="7" fill="#000"/>
+    <rect x="200" y="165" width="100" height="12" fill="#000"/>
+    <rect x="126.5" y="100" width="9" height="136" fill="#000"/>
+    <ellipse cx="131" cy="168" rx="34" ry="62.5" fill="none" stroke="#000" stroke-width="7.5"/>
+  </mask>
+</defs>
+<rect width="300" height="300" fill="url(#vg)" mask="url(#vm)"/>
+</svg>

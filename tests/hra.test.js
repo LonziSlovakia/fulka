@@ -142,13 +142,14 @@ test("tajná karta: padne iba so šancou, je posledná v balíku a nie je medzi 
   assert.ok(n / 20000 > 0.012 && n / 20000 < 0.03, `balíkov s tajnou kartou ${n / 20000}`); // 1 − 0,995⁴ ≈ 2 %
 });
 
-test("dve tajné karty: každá má vlastnú šancu, padne tá podľa náhody", () => {
+test("tri tajné karty: každá má vlastnú šancu, padne tá podľa náhody", () => {
   const cards = C.RARITY.flatMap((r) => [1, 2, 3, 4, 5, 6].map((i) => ({ id: `${r}${i}`, rarity: r })));
-  assert.equal(C.MYTHICALS.length, 2);
-  assert.notEqual(C.MYTHICALS[0].id, C.MYTHICALS[1].id);
+  assert.equal(C.MYTHICALS.length, 3);
+  assert.equal(new Set(C.MYTHICALS.map((m) => m.id)).size, 3);
   const first = C.openPack(cards, seq(0.004, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5), C.MYTHICALS);
   const second = C.openPack(cards, seq(0.007, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5), C.MYTHICALS);
   assert.ok(first.includes(C.MYTHICALS[0]) && !first.includes(C.MYTHICALS[1]));
   assert.ok(second.includes(C.MYTHICALS[1]) && !second.includes(C.MYTHICALS[0]));
-  assert.ok(!C.openPack(cards, () => 0.011, C.MYTHICALS).some((c) => c.rarity === "mythical")); // 1,1 % > 2 × 0,5 %
+  assert.ok(C.openPack(cards, seq(0.012, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5), C.MYTHICALS).includes(C.MYTHICALS[2]));
+  assert.ok(!C.openPack(cards, () => 0.016, C.MYTHICALS).some((c) => c.rarity === "mythical")); // 1,6 % > 3 × 0,5 %
 });

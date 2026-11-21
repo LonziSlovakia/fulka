@@ -56,7 +56,7 @@
   const CLOSE = '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 5l14 14M19 5L5 19"></path></svg>';
   const RNAME = Object.assign({ mythical: "Mythical" }, C.RARITY_NAME);
   // tajné karty (mythical): nikde sa nespomínajú, v kolekcii sú iba keď padli (hore ako prvé), nemenia počty
-  const MYTHS = C.MYTHICALS; // FULka, UFLka
+  const MYTHS = C.MYTHICALS; // FULka, UFLka, VERBISTI
   const RLONG = { legendary: "Top 5 hráčov sezóny + trblietavé tímy s animovaným logom", epic: "6. – 10. hráč v kanadskom bodovaní",
     rare: "11. – 20. hráč v kanadskom bodovaní", common: "Ostatní hráči zo súpisky" };
 
@@ -83,11 +83,13 @@
     return `<span class="fc-stats team">${c.place === 1 ? '<i class="cup" aria-hidden="true"></i>' : ""}<span>${place}</span></span>`;
   }
 
-  // tajné karty: logo FULky (lesknú sa zlaté časti) a logo UFL, predchodcu FULky (leskne sa oranžový okraj, písmená, dráha a loptička);
+  // tajné karty: logo FULky (lesknú sa zlaté časti), logo UFL, predchodcu FULky (leskne sa oranžový okraj, písmená, dráha a loptička)
+  // a zlaté logo verbistov na verbistickej modrej (leskne sa celé);
   // lesk = vrstva v tvare lesklých častí loga (maska), ktorá sa hýbe s náklonom karty
   const MYTH_ART = {
     ful: { logo: "../assets/logos/ful.svg", mask: "../assets/logos/ful_bez_pozadia.svg", framed: true, sub: "Florbalová UPeCe liga" },
     ufl: { logo: "../assets/logos/ufl.svg", mask: "../assets/logos/ufl-lesk.svg", framed: false, sub: "Odtiaľto FULka pokračuje" },
+    svd: { logo: "../assets/logos/verbisti.svg", mask: "../assets/logos/verbisti.svg", framed: false, sub: "Spoločnosť Božieho Slova" },
   };
   function mythFront(c) {
     const a = MYTH_ART[c.art] || MYTH_ART.ful;
