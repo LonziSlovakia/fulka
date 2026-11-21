@@ -232,11 +232,10 @@
       const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
       el.style.setProperty("--ry", `${(x - 0.5) * 22}deg`);
       el.style.setProperty("--rx", `${(0.5 - y) * 18}deg`);
-      el.style.setProperty("--mx", `${x * 100}%`);
-      el.style.setProperty("--my", `${y * 100}%`);
+      el.style.setProperty("--hx", ((0.5 - x) * 60).toFixed(1)); // posun zlatého lesku pri náklone
       el.classList.add("tilting");
     };
-    const leave = () => { el.classList.remove("tilting"); ["--rx", "--ry", "--mx", "--my"].forEach((k) => el.style.removeProperty(k)); };
+    const leave = () => { el.classList.remove("tilting"); ["--rx", "--ry", "--hx"].forEach((k) => el.style.removeProperty(k)); };
     el.addEventListener("pointermove", move);
     el.addEventListener("pointerleave", leave);
     el.addEventListener("pointercancel", leave);
@@ -391,8 +390,15 @@
     const clock = app.querySelector("[data-clock]");
     if (clock) clock.textContent = countdown();
   }, 1000);
-  // náklon veľkej karty hráča dňa (po každom vykreslení je nový prvok)
-  new MutationObserver(() => { const el = app.querySelector(".day-card .fc:not([data-t])"); if (el) { el.dataset.t = "1"; tilt(el); } }).observe(app, { childList: true, subtree: true });
+  // animácie bežia iba na kartách, ktoré vidno (slabšie mobily); trieda .vis spúšťa animácie v CSS
+  const seen = "IntersectionObserver" in window
+    ? new IntersectionObserver((list) => list.forEach((x) => x.target.classList.toggle("vis", x.isIntersecting)), { rootMargin: "120px" }) : null;
+  // po každom vykreslení: náklon veľkej karty hráča dňa a sledovanie kariet v kolekcii
+  new MutationObserver(() => {
+    const el = app.querySelector(".day-card .fc:not([data-t])");
+    if (el) { el.dataset.t = "1"; tilt(el); }
+    app.querySelectorAll(".cl-card:not([data-o]), .mini:not([data-o])").forEach((x) => { x.dataset.o = "1"; if (seen) seen.observe(x); else x.classList.add("vis"); });
+  }).observe(app, { childList: true, subtree: true });
 
   // tlačidlo „hore“ vpravo dole ako na hlavnom webe (styles.css .to-top), ukáže sa po 400 px
   function toTopButton() {

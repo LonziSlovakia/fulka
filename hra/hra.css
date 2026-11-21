@@ -13,7 +13,6 @@ html.locked, html.locked body { overflow: hidden; }
 .t-rare { color: var(--teal); }
 
 /* ---------- Karta ---------- */
-@property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 .fc { --cut: 10cqi; position: relative; width: 100%; aspect-ratio: 5 / 7; container-type: inline-size; perspective: 900px; text-align: left; }
 .fc-in { position: absolute; inset: 0; background: linear-gradient(150deg, #6a6a6a, #262626);
   clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
@@ -22,8 +21,12 @@ html.locked, html.locked body { overflow: hidden; }
 .fc.tilting .fc-in { transition-duration: 0.08s; }
 .fc.r-rare .fc-in { background: linear-gradient(150deg, #5fe6ee, #006870); }
 .fc.r-epic .fc-in { background: linear-gradient(150deg, #dcb3ff, #5b1cb0); }
-.fc.r-legendary .fc-in { background: conic-gradient(from var(--a), var(--gold), #fff4c8, var(--gold-d), var(--gold), #fff4c8, var(--gold-d), var(--gold)); animation: spin-a 4s linear infinite; }
-@keyframes spin-a { to { --a: 360deg; } }
+/* Výkon (slabšie mobily): animuje sa iba transform a opacity – to robí grafický čip bez prekresľovania.
+   Žiadne animované filter, background-position, mix-blend-mode ani @property (tie sa prekresľujú v každej snímke). */
+.fc.r-legendary:not(.missing):not(.back) .fc-in { background: conic-gradient(from 20deg, var(--gold), #fff4c8, var(--gold-d), var(--gold), #fff4c8, var(--gold-d), var(--gold)); }
+.fc.r-legendary:not(.back):not(.missing) .fc-in::before { content: ""; position: absolute; top: -25%; left: 0; width: 45%; height: 150%; pointer-events: none; will-change: transform;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0)); animation: glint 3.2s linear infinite; }
+@keyframes glint { from { transform: translateX(-120%) rotate(18deg); } to { transform: translateX(340%) rotate(18deg); } }
 .fc-face { position: absolute; inset: 2.2cqi; overflow: hidden; background: var(--d);
   clip-path: polygon(0 0, calc(100% - var(--cut) + 1cqi) 0, 100% calc(var(--cut) - 1cqi), 100% 100%, calc(var(--cut) - 1cqi) 100%, 0 calc(100% - var(--cut) + 1cqi)); }
 .fc-face .stripes { background: repeating-linear-gradient(-62deg, rgba(0, 0, 0, 0.12) 0 0.8cqi, rgba(0, 0, 0, 0) 0.8cqi 6.5cqi); }
@@ -53,19 +56,20 @@ html.locked, html.locked body { overflow: hidden; }
 .fc-stats .cup { width: 7cqi; height: 7cqi; background: var(--gold); clip-path: polygon(10% 0, 90% 0, 86% 40%, 62% 62%, 62% 78%, 78% 88%, 78% 100%, 22% 100%, 22% 88%, 38% 78%, 38% 62%, 14% 40%); }
 
 /* lesk: legendary = trblietavá zlatá fólia (pohne sa aj s náklonom), epic = prechádzajúci odlesk */
-.fc-holo { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: overlay;
-  background: linear-gradient(115deg, rgba(255, 255, 255, 0) 25%, rgba(255, 236, 170, 0.75) 42%, rgba(255, 255, 255, 0.9) 50%, rgba(240, 193, 70, 0.7) 58%, rgba(255, 255, 255, 0) 75%),
-    repeating-linear-gradient(62deg, rgba(255, 255, 255, 0.0) 0 3cqi, rgba(255, 244, 200, 0.22) 3cqi 3.6cqi);
-  background-size: 300% 300%, 100% 100%; animation: holo 4.5s linear infinite; }
-.fc.tilting .fc-holo { animation: none; background-position: var(--mx, 50%) var(--my, 50%), 0 0; }
-@keyframes holo { from { background-position: 100% 100%, 0 0; } to { background-position: 0% 0%, 0 0; } }
+.fc-holo { position: absolute; top: 0; bottom: 0; left: -100%; width: 300%; pointer-events: none; will-change: transform;
+  background: linear-gradient(115deg, rgba(255, 240, 190, 0) 36%, rgba(255, 236, 170, 0.34) 45%, rgba(255, 255, 255, 0.5) 50%, rgba(240, 193, 70, 0.32) 55%, rgba(255, 240, 190, 0) 64%);
+  animation: holo 4.5s linear infinite; }
+.fc-face::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(62deg, rgba(255, 255, 255, 0) 0 3cqi, rgba(255, 244, 200, 0.1) 3cqi 3.6cqi); opacity: 0; }
+.fc.r-legendary .fc-front::after { opacity: 1; } /* jemná trblietavá fólia (statická) */
+.fc.tilting .fc-holo { animation: none; transform: translateX(calc(var(--hx, 0) * 1%)); }
+@keyframes holo { from { transform: translateX(-30%); } to { transform: translateX(30%); } }
 .fc .sp { position: absolute; left: var(--x); top: var(--y); width: 5cqi; height: 5cqi; background: #fff; pointer-events: none;
   clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
-  filter: drop-shadow(0 0 1.5cqi #fff4c8); animation: twinkle 2.4s var(--t) ease-in-out infinite; transform: scale(0); }
+  will-change: transform, opacity; animation: twinkle 2.4s var(--t) ease-in-out infinite; transform: scale(0); }
 @keyframes twinkle { 0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; } 40% { transform: scale(1) rotate(45deg); opacity: 1; } 60% { transform: scale(0.7) rotate(70deg); opacity: 0.8; } }
-.fc-sheen { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg, rgba(255, 255, 255, 0) 40%, rgba(230, 200, 255, 0.4) 50%, rgba(255, 255, 255, 0) 60%);
-  background-size: 300% 100%; mix-blend-mode: screen; animation: sheen 3.6s ease-in-out infinite; }
-@keyframes sheen { 0%, 45% { background-position: 120% 0; } 100% { background-position: -20% 0; } }
+.fc-sheen, .pk-shine { position: absolute; top: 0; bottom: 0; left: -100%; width: 100%; pointer-events: none; will-change: transform;
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0) 20%, rgba(230, 200, 255, 0.34) 50%, rgba(255, 255, 255, 0) 80%); animation: sheen 3.6s ease-in-out infinite; }
+@keyframes sheen { 0%, 45% { transform: translateX(0); } 100% { transform: translateX(200%); } }
 
 /* rub karty: modrá a zlatá z loga FULky */
 .fc.back .fc-in { background: linear-gradient(150deg, var(--gold), var(--gold-d)); }
@@ -90,14 +94,20 @@ html.locked, html.locked body { overflow: hidden; }
 .fc-miss .fc-rar { opacity: 0.55; }
 
 /* žiara podľa vzácnosti (filter na .fc, lebo .fc-in má clip-path) */
-.fc.big.r-epic:not(.back) { filter: drop-shadow(0 0 18px rgba(179, 107, 255, 0.55)); }
-.fc.big.r-legendary:not(.back) { filter: drop-shadow(0 0 26px rgba(240, 193, 70, 0.6)); }
-.fc.tease-rare { animation: tease-rare 1.6s ease-in-out infinite; }
-.fc.tease-epic { animation: tease-epic 1.2s ease-in-out infinite; }
-.fc.tease-legendary { animation: tease-leg 0.9s ease-in-out infinite; }
-@keyframes tease-rare { 50% { filter: drop-shadow(0 0 16px rgba(0, 168, 181, 0.75)); } }
-@keyframes tease-epic { 50% { filter: drop-shadow(0 0 24px rgba(179, 107, 255, 0.9)); } }
-@keyframes tease-leg { 0%, 100% { filter: drop-shadow(0 0 14px rgba(240, 193, 70, 0.6)); transform: rotate(0deg); } 25% { transform: rotate(-1.2deg); } 50% { filter: drop-shadow(0 0 38px rgba(255, 220, 120, 1)); } 75% { transform: rotate(1.2deg); } }
+/* žiara = rozmazaný kruh za kartou, mení sa iba jeho priehľadnosť (nie filter na karte) */
+.fc.big { isolation: isolate; }
+.fc.big::before { content: ""; position: absolute; inset: -16% -22%; z-index: -1; pointer-events: none; opacity: 0;
+  background: radial-gradient(closest-side, var(--glow, rgba(0, 0, 0, 0)) 0%, rgba(0, 0, 0, 0) 100%); }
+.fc.big.r-rare { --glow: rgba(0, 168, 181, 0.8); }
+.fc.big.r-epic { --glow: rgba(179, 107, 255, 0.85); }
+.fc.big.r-legendary { --glow: rgba(255, 210, 100, 0.95); }
+.fc.big.r-epic:not(.back)::before, .fc.big.r-legendary:not(.back)::before { opacity: 0.6; }
+.fc.tease-rare::before { animation: glow 1.6s ease-in-out infinite; }
+.fc.tease-epic::before { animation: glow 1.2s ease-in-out infinite; }
+.fc.tease-legendary::before { animation: glow 0.9s ease-in-out infinite; }
+.fc.tease-legendary { animation: shake 0.9s ease-in-out infinite; }
+@keyframes glow { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes shake { 25% { transform: rotate(-1.2deg); } 75% { transform: rotate(1.2deg); } }
 
 /* ---------- Hráč dňa ---------- */
 .day { position: relative; overflow: hidden; background: var(--bg); padding: 44px 0 84px; }
@@ -129,7 +139,8 @@ html.locked, html.locked body { overflow: hidden; }
 
 /* ---------- Balík ---------- */
 .pack { position: relative; display: block; width: clamp(230px, 24cqi, 300px); aspect-ratio: 5 / 7.6; padding: 0; border: 0; background: none; cursor: pointer; container-type: inline-size;
-  filter: drop-shadow(0 22px 30px rgba(0, 0, 0, 0.6)); transition: transform 0.25s cubic-bezier(0.2, 1.3, 0.4, 1); }
+  transition: transform 0.25s cubic-bezier(0.2, 1.3, 0.4, 1); isolation: isolate; }
+.pack::before { content: ""; position: absolute; left: 6%; right: 6%; bottom: -7%; height: 18%; z-index: -1; background: radial-gradient(closest-side, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0)); }
 .pack:not(:disabled):hover { transform: translateY(-8px) rotate(-2deg); }
 .pack:disabled { cursor: default; filter: grayscale(0.85) brightness(0.55); }
 .pk-body { position: absolute; top: 7%; bottom: 7%; left: 0; right: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3cqi;
@@ -141,8 +152,7 @@ html.locked, html.locked body { overflow: hidden; }
 .pk-title { position: relative; margin-top: 4cqi; font-family: var(--fc); font-weight: 900; font-size: 13cqi; line-height: 0.85; color: #fff; text-transform: uppercase; transform: skewX(-8deg); }
 .pk-sub { position: relative; padding: 0.6cqi 3cqi; background: var(--gold); color: var(--navy-3); font-family: var(--fc); font-weight: 800; font-size: 5.4cqi; letter-spacing: 0.1em; text-transform: uppercase; transform: skewX(-10deg); }
 .pk-body .bk-logo img { width: 42cqi; height: 42cqi; }
-.pk-shine { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(110deg, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.28) 50%, rgba(255, 255, 255, 0) 60%);
-  background-size: 300% 100%; animation: sheen 3.2s ease-in-out infinite; }
+.pk-shine { z-index: 2; background: linear-gradient(110deg, rgba(255, 255, 255, 0) 20%, rgba(255, 255, 255, 0.26) 50%, rgba(255, 255, 255, 0) 80%); animation-duration: 3.2s; }
 .pack:disabled .pk-shine { display: none; }
 .pk-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 32px 56px; }
 .pk-side { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
@@ -186,7 +196,7 @@ html.locked, html.locked body { overflow: hidden; }
 .hra .foot { margin-top: 96px; }
 
 /* ---------- Otvorenie balíka a detail karty (celá obrazovka) ---------- */
-.layer { position: fixed; inset: 0; z-index: 100; background: rgba(5, 5, 5, 0.95); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); overflow: auto; }
+.layer { position: fixed; inset: 0; z-index: 100; background: rgba(5, 5, 5, 0.97); overflow: auto; } /* bez backdrop-filter: rozmazanie pozadia je na slabých mobiloch drahé */
 .layer[hidden] { display: none; }
 .op { --cw: min(340px, 74vw, calc((100dvh - 230px) * 5 / 7)); position: relative; min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 20px; padding: 64px 16px 110px; overflow: hidden; user-select: none; -webkit-user-select: none; cursor: pointer; }
@@ -195,9 +205,10 @@ html.locked, html.locked body { overflow: hidden; }
 .op-stage > * { grid-area: 1 / 1; }
 .op-card { width: var(--cw); }
 .op .pack { width: calc(var(--cw) * 0.92); cursor: pointer; }
-.rays { position: absolute; left: 50%; top: 50%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+/* lúče: menšia plocha (pamäť grafického čipu), otáča sa iba transform */
+.rays { position: absolute; left: 50%; top: 50%; width: 140vmax; height: 140vmax; margin: -70vmax 0 0 -70vmax; pointer-events: none; opacity: 0; transition: opacity 0.4s; will-change: transform;
   background: repeating-conic-gradient(from 0deg, var(--ray, rgba(240, 193, 70, 0.2)) 0 7deg, rgba(0, 0, 0, 0) 7deg 18deg);
-  -webkit-mask: radial-gradient(circle, #000 0, rgba(0, 0, 0, 0.6) 12%, rgba(0, 0, 0, 0) 30%); mask: radial-gradient(circle, #000 0, rgba(0, 0, 0, 0.6) 12%, rgba(0, 0, 0, 0) 30%);
+  -webkit-mask: radial-gradient(circle, #000 0, rgba(0, 0, 0, 0.6) 19%, rgba(0, 0, 0, 0) 47%); mask: radial-gradient(circle, #000 0, rgba(0, 0, 0, 0.6) 19%, rgba(0, 0, 0, 0) 47%);
   animation: rays 24s linear infinite; }
 @keyframes rays { to { transform: rotate(360deg); } }
 .op[data-rarity="legendary"] .rays, .op.detail .rays { opacity: 1; }
@@ -248,8 +259,11 @@ html.locked, html.locked body { overflow: hidden; }
   .mini { width: 58px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .day-card, .fc-holo, .fc .sp, .fc-sheen, .pk-shine, .rays, .fc.r-legendary .fc-in, .fc[class*="tease-"] { animation: none; }
+  .day-card, .fc-holo, .fc .sp, .fc-sheen, .pk-shine, .rays, .fc.r-legendary .fc-in::before, .fc[class*="tease-"], .fc[class*="tease-"]::before { animation: none; }
 }
 .cl-bar.all { --r: var(--fg); }
 .fc-fade { background: linear-gradient(180deg, rgba(5, 5, 5, 0) 52%, rgba(5, 5, 5, 0.85) 100%); }
 .pack:disabled .pk-crimp.top { visibility: hidden; } /* použitý balík = roztrhnutý */
+/* karty mimo obrazovky stoja (kolekcia, posledný balík) – hýbu sa iba tie, ktoré vidno (.vis z IntersectionObserver v hra.js) */
+.cl-card .fc *, .cl-card .fc *::before, .mini .fc *, .mini .fc *::before { animation-play-state: paused; }
+.cl-card.vis .fc *, .cl-card.vis .fc *::before, .mini.vis .fc *, .mini.vis .fc *::before { animation-play-state: running; }

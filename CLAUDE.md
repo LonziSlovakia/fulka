@@ -141,6 +141,9 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Otvorenie: ťuk → roztrhnutie → karty rubom (žiara podľa vzácnosti) → ťuk = otočenie (2 polovičky cez WAAPI, nie backface-visibility – spoľahlivé na Safari) → zhrnutie. „Odkryť všetky“ preskočí.
   - **localStorage iba `fulka-hra-v1`** = `{ d: deň posledného balíka, c: { idKarty: počet }, l: [ID posledného balíka] }` (Lonzi chcel ukladať čo najmenej). ID karty = FNV-1a hash textu
     `p:<sezóna>:<hráč>` / `t:…` (epic tím) / `T:…` (legendary tím) v sústave 36 → stále rovnaké, aj keď pribudnú hráči. Kolekcia ~0,5 kB. Zmazanie dát prehliadača = kolekcia preč (iné zariadenie = iná kolekcia).
+  - **Výkon (slabšie mobily, 21. 11. 2026):** animovať iba `transform` a `opacity` (lesk, trblietky, lúče, žiara = rozmazaný kruh s meniacou sa priehľadnosťou).
+    Nepoužívať animovaný `filter`, `background-position`, `mix-blend-mode`, `@property` ani `backdrop-filter` – na slabšom mobile to sekalo.
+    Karty mimo obrazovky stoja (`.vis` cez IntersectionObserver). Meranie: `THROTTLE=4 node tools/shot.js … @tools/hra-fps.js` (pred: kolekcia 26 / detail 19 / balík 35 FPS, po: 58 / 59 / 60).
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
   - Zmazaný hráč z DB z hry zmizne aj z kolekcie (ID v localStorage, ku ktorému karta už nie je, sa ignoruje).
 - **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).
@@ -177,6 +180,7 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fa
 - Chromium je Playwright headless shell; chýbajúce knižnice sú v `tools/.cache/libroot` (bez sudo, gitignore).
 - Nástroje WebP (`img2webp`, `anim_dump`, `webpmux`…) sú v `tools/.cache/webproot` (gitignore): `apt-get -o Acquire::ForceIPv4=true download webp libwebp7 libwebpmux3 libwebpdemux2 libsharpyuv0 libjpeg8 libjpeg-turbo8 libtiff6 libgif7 libpng16-16t64`
   do `tools/.cache/webp-debs` a `dpkg -x` každého do `webproot` (aj `potrace libpotrace0` pre `trace-logo.py` na vetve `demo-ants`); spúšťať s `LD_LIBRARY_PATH=tools/.cache/webproot/usr/lib/x86_64-linux-gnu`. Zmazanie = celý `tools/.cache`.
+- `shot.js` s `THROTTLE=4` spomalí procesor 4× (ako slabší mobil); `tools/hra-fps.js` zmeria FPS hry (`window.HRA_FPS='kolekcia|detail|balik'`).
 - Hra: `tools/hra-pack.js` (krok pre `shot.js`: otvorí balík, `window.HRA_STOP='pack|back|front|sum'`, `window.HRA_LUCK=0.99` = samé legendary),
   `tools/hra-all.js` (+ `RELOAD`: naplní kolekciu všetkými kartami na pozretie). Bez prihlásenia, nič nezapisuje do DB.
 - Port 8765 používa iný projekt – nezabíjať.

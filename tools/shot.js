@@ -1,7 +1,7 @@
 /* Screenshot + chyby z konzoly cez headless Chromium (Playwright), bez knižníc.
    node tools/shot.js <url> <šírka> <výstup.png> [krok…]
    krok = JS výraz (vráti hodnotu → vypíše sa), alebo "RELOAD"; súbor s krokom: "@tools/mock-db.js"
-   CLIP=x,y,w,h → iba výrez. Najprv spusti bash tools/setup.sh */
+   CLIP=x,y,w,h → iba výrez, THROTTLE=4 → 4× pomalší procesor. Najprv spusti bash tools/setup.sh */
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -35,6 +35,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   });
   const send = (method, params = {}) => new Promise((r) => { pending[++id] = r; ws.send(JSON.stringify({ id, method, params })); });
   await send("Runtime.enable"); await send("Network.enable"); await send("Page.enable");
+  if (process.env.THROTTLE) await send("Emulation.setCPUThrottlingRate", { rate: +process.env.THROTTLE }); // THROTTLE=4 → procesor 4× pomalší (slabší mobil)
   await send("Emulation.setDeviceMetricsOverride", { width: +width, height: 900, deviceScaleFactor: 1, mobile: +width < 600 });
   await send("Page.navigate", { url });
   await sleep(3500);
