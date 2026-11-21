@@ -131,12 +131,17 @@
     soon: [],
   };
 
+  // veniec z hry (/hra/): hráč má celú kolekciu kariet → okolo loga v hlavičke (iba v jeho prehliadači)
+  function hasWreath() {
+    try { return (JSON.parse(localStorage.getItem("fulka-hra-v1")) || {}).w === 1; } catch (e) { return false; }
+  }
+
   function header(c) {
     const s = c.cur;
     const st = STATE[s.state];
     const nav = NAV[s.state].map(([href, txt]) => `<a href="${href}">${txt}</a>`).join("");
     return `<header class="top"><div class="wrap top-in">
-      <a class="brand" href="#top" data-act="home" aria-label="FULka — domov"><img src="assets/logos/ful-mark-white.png" alt="">
+      <a class="brand${hasWreath() ? " wreath" : ""}" href="#top" data-act="home" aria-label="FULka — domov"><img src="assets/logos/ful-mark-white.png" alt="">
         <span class="brand-name"><b>FULka</b><small>Florbalová Upece Liga</small></span></a>
       <button type="button" class="season-btn" data-act="menu" aria-expanded="${state.menu}" aria-label="Vybrať sezónu, teraz ${esc(s.name)}">
         <span class="dot" aria-hidden="true" style="background:${st.dot};border:1px ${st.line} ${st.dotBd}"></span>${esc(s.name)}${chev(14)}</button>

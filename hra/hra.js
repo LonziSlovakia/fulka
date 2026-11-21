@@ -57,6 +57,8 @@
   const RNAME = Object.assign({ mythical: "Mythical" }, C.RARITY_NAME);
   // tajné karty (mythical): nikde sa nespomínajú, v kolekcii sú iba keď padli (hore ako prvé), nemenia počty
   const MYTHS = C.MYTHICALS; // FULka, UFLka, VERBISTI
+  // ?debug=veniec = ladenie venca: kolekcia so všetkými kartami okrem jednej (iba v pamäti), balík s ňou a s VERBISTI → veniec; nič sa neukladá
+  const DEBUG_VENIEC = new URLSearchParams(location.search).get("debug") === "veniec";
   const RLONG = { legendary: "Top 5 hráčov sezóny + trblietavé tímy s animovaným logom", epic: "6. – 10. hráč v kanadskom bodovaní",
     rare: "11. – 20. hráč v kanadskom bodovaní", common: "Ostatní hráči zo súpisky" };
 
@@ -70,7 +72,7 @@
   }
   const teamOf = (c) => S.T[c.team_id] || FUL;
   const owned = (id) => S.save.c[id] || 0;
-  const store = () => ls.set(KEY, S.save);
+  const store = () => { if (!DEBUG_VENIEC) ls.set(KEY, S.save); };
 
   /* ---------- Karta ---------- */
   // trblietky na legendary (pozície sú v CSS cez --x/--y/--t)
@@ -132,7 +134,7 @@
   /* ---------- Hlavička a päta ---------- */
   function header() {
     return `<header class="top"><div class="wrap top-in">
-      <a class="brand" href="../" aria-label="FULka – späť na web"><img src="../assets/logos/ful-mark-white.png" alt="">
+      <a class="brand${S.save.w ? " wreath" : ""}" href="../" aria-label="FULka – späť na web"><img src="../assets/logos/ful-mark-white.png" alt="">
         <span class="brand-name"><b>FULka</b><small>Hra · karty a modlitba</small></span></a>
       <nav class="nav" aria-label="Hra"><a href="#dnes">Hráč dňa</a><a href="#balik">Balík</a><a href="#kolekcia">Kolekcia</a></nav></div></header>`;
   }
@@ -242,6 +244,10 @@
     S.P = Object.fromEntries(d.players.map((p) => [p.id, p]));
     S.cards = C.buildCards(d);
     S.byId = Object.fromEntries(S.cards.concat(MYTHS).map((c) => [c.id, c]));
+    if (DEBUG_VENIEC && !S.missing && S.cards.length) { // jedna náhodná karta chýba, ostatné „mám“ (iba v pamäti)
+      S.missing = S.cards[Math.floor(Math.random() * S.cards.length)];
+      S.save = { d: "", c: Object.fromEntries(S.cards.filter((c) => c !== S.missing).map((c) => [c.id, 1])), l: [], w: 0 };
+    }
     if (!S.busy) render();
   }
 
@@ -297,8 +303,14 @@
     S.busy = true;
     const had = Object.assign({}, S.save.c); // počty pred balíkom → „Nová karta“ / „×2“
     const seen = Object.assign({}, had);
-    const pack = C.openPack(S.cards, Math.random, MYTHS);
+    let pack = C.openPack(S.cards, Math.random, MYTHS);
+    if (DEBUG_VENIEC) { // ladenie: posledná chýbajúca karta + VERBISTI + tri ďalšie
+      const order = (c) => (c.rarity === "mythical" ? 9 : C.RARITY.indexOf(c.rarity));
+      pack = pack.filter((c) => c.rarity !== "mythical" && c !== S.missing).slice(0, 3).concat(S.missing, MYTHS[2]).sort((a, b) => order(a) - order(b));
+    }
     const next = C.addPack(S.save, pack.map((c) => c.id), today());
+    const won = !next.w && C.complete(S.cards, next); // posledná chýbajúca karta → veniec (natrvalo)
+    if (won) next.w = 1;
     S.save = next; // uložené hneď: obnovenie stránky balík neotvorí znova
     store();
     let skip = false;
@@ -345,7 +357,20 @@
       tray.insertAdjacentHTML("beforeend", `<span class="op-mini">${cardHtml(c, "front")}</span>`);
       await el.animate([{ transform: "none", opacity: 1 }, { transform: "translate(-40%, 50%) scale(.3) rotate(-8deg)", opacity: 0 }], { duration: REDUCED ? 60 : 320, easing: "ease-in", fill: "forwards" }).finished;
     }
+    if (won) await achievement();
     summary(pack, next.c, had);
+  }
+
+  // veniec za celú kolekciu: oslava po odkrytí posledného balíka, potom zhrnutie
+  function achievement() {
+    return new Promise((done) => {
+      showLayer(`<div class="op ach" data-rarity="legendary">${RAYS}<div class="ach-in">
+        <span class="ach-w" aria-hidden="true"><img src="../assets/logos/veniec.svg" alt=""><img class="ach-logo" src="../assets/logos/ful-mark-white.png" alt=""></span>
+        <span class="kicker">Celá kolekcia</span><h2 class="ach-h">Elite Ball Knowledge</h2>
+        <p class="ach-p">Máš všetkých ${S.cards.length} kariet FULky. Veniec ostane pri logu FULky na webe.</p>
+        <button type="button" class="btn-white big" data-op="ach">Pokračovať</button></div></div>`);
+      layer.querySelector("[data-op=ach]").addEventListener("click", (e) => { e.stopPropagation(); done(); });
+    });
   }
 
   function summary(pack, counts, had) {

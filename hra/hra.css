@@ -297,3 +297,16 @@ html.locked, html.locked body { overflow: hidden; }
 .my-front .fc-name { font-size: 15cqi; text-transform: none; } /* „FULka“, „UFLka“ – malé „ka“ ako v logu webu */
 .my-front .fc-pos { color: var(--r); -webkit-text-stroke: 0; }
 @media (prefers-reduced-motion: reduce) { .my-gold i { animation: none; } }
+/* ---------- Veniec „Elite Ball Knowledge“ (celá kolekcia) ---------- */
+.op.ach { cursor: default; text-align: center; }
+.ach-in { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 560px; }
+.ach-w { position: relative; width: min(260px, 62vw); aspect-ratio: 1; animation: ach-in 0.9s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+.ach-w img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ach-w .ach-logo { inset: 20%; width: 60%; height: 60%; }
+@keyframes ach-in { from { transform: scale(0.4) rotate(-25deg); opacity: 0; } }
+.ach-h { margin: 0; font-family: var(--fc); font-weight: 900; font-size: clamp(42px, 9vw, 84px); line-height: 0.88; text-transform: uppercase; transform: skewX(-8deg);
+  color: var(--gold); text-shadow: 0 4px 24px rgba(240, 193, 70, 0.35); animation: ach-txt 0.6s 0.35s both; }
+.ach-p { margin: 0; font-size: 16px; color: var(--fg-2); animation: ach-txt 0.6s 0.5s both; }
+@keyframes ach-txt { from { transform: translateY(16px) skewX(-8deg); opacity: 0; } }
+.ach .btn-white { animation: ach-txt 0.6s 0.65s both; }
+@media (prefers-reduced-motion: reduce) { .ach-w, .ach-h, .ach-p, .ach .btn-white { animation: none; } }

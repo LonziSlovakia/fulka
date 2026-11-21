@@ -95,10 +95,12 @@ test("šance: z 10 000 balíkov sedí podiel legendary okolo 4 %", () => {
 });
 
 test("uložený stav: pokazené dáta → prázdny, pridanie balíka zvýši počty", () => {
-  assert.deepEqual(C.readSave(null), { d: "", c: {}, l: [] });
-  assert.deepEqual(C.readSave({ d: 5, c: { a: "x", b: 2 }, l: [1, "b"] }), { d: "", c: { b: 2 }, l: ["b"] });
+  assert.deepEqual(C.readSave(null), { d: "", c: {}, l: [], w: 0 });
+  assert.deepEqual(C.readSave({ d: 5, c: { a: "x", b: 2 }, l: [1, "b"], w: "1" }), { d: "", c: { b: 2 }, l: ["b"], w: 0 });
+  assert.equal(C.readSave({ w: 1 }).w, 1);
   const s = C.addPack({ d: "2026-11-20", c: { a: 1 }, l: [] }, ["a", "b", "a"], "2026-11-21");
-  assert.deepEqual(s, { d: "2026-11-21", c: { a: 3, b: 1 }, l: ["a", "b", "a"] });
+  assert.deepEqual(s, { d: "2026-11-21", c: { a: 3, b: 1 }, l: ["a", "b", "a"], w: 0 });
+  assert.equal(C.addPack({ d: "", c: {}, l: [], w: 1 }, ["a"], "2026-11-21").w, 1); // veniec sa balíkom nestratí
   assert.equal(C.canOpen(s, "2026-11-21"), false);
   assert.equal(C.canOpen(s, "2026-11-22"), true);
 });
@@ -152,4 +154,15 @@ test("tri tajné karty: každá má vlastnú šancu, padne tá podľa náhody", 
   assert.ok(second.includes(C.MYTHICALS[1]) && !second.includes(C.MYTHICALS[0]));
   assert.ok(C.openPack(cards, seq(0.012, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5), C.MYTHICALS).includes(C.MYTHICALS[2]));
   assert.ok(!C.openPack(cards, () => 0.016, C.MYTHICALS).some((c) => c.rarity === "mythical")); // 1,6 % > 3 × 0,5 %
+});
+
+test("veniec: celá kolekcia = všetky karty z dát (tajné sa nerátajú)", () => {
+  const cards = C.buildCards(D);
+  const all = Object.fromEntries(cards.map((c) => [c.id, 1]));
+  assert.equal(C.complete(cards, { c: all }), true);
+  const one = Object.assign({}, all);
+  delete one[cards[0].id];
+  assert.equal(C.complete(cards, { c: one }), false);
+  assert.equal(C.complete(cards, { c: Object.assign({ [C.MYTHICAL.id]: 1 }, one) }), false); // tajná karta nenahradí chýbajúcu
+  assert.equal(C.complete([], { c: {} }), false);
 });

@@ -126,19 +126,21 @@
   }
 
   /* ---------- Uložený stav (localStorage) ---------- */
-  // { d: "2026-11-21" deň posledného balíka, c: { idKarty: počet }, l: [ID kariet posledného balíka] }
+  // { d: "2026-11-21" deň posledného balíka, c: { idKarty: počet }, l: [ID kariet posledného balíka], w: 1 = získaný veniec (natrvalo) }
   function readSave(raw) {
     const ok = raw && typeof raw === "object";
     const c = {};
     if (ok && raw.c && typeof raw.c === "object") Object.keys(raw.c).forEach((k) => { if (raw.c[k] > 0) c[k] = Math.floor(raw.c[k]); });
-    return { d: ok && typeof raw.d === "string" ? raw.d : "", c, l: ok && Array.isArray(raw.l) ? raw.l.filter((x) => typeof x === "string") : [] };
+    return { d: ok && typeof raw.d === "string" ? raw.d : "", c, l: ok && Array.isArray(raw.l) ? raw.l.filter((x) => typeof x === "string") : [], w: ok && raw.w === 1 ? 1 : 0 };
   }
   const canOpen = (save, today) => save.d !== today;
   function addPack(save, ids, today) {
     const c = Object.assign({}, save.c);
     ids.forEach((id) => { c[id] = (c[id] || 0) + 1; });
-    return { d: today, c, l: ids.slice() };
+    return { d: today, c, l: ids.slice(), w: save.w ? 1 : 0 };
   }
+  // celá kolekcia: hráč má všetky karty z dát (tajné sa nerátajú, tie v cards nie sú) → veniec „Elite Ball Knowledge“
+  const complete = (cards, save) => cards.length > 0 && cards.every((c) => (save.c[c.id] || 0) > 0);
 
   /* ---------- Hráč dňa ---------- */
   // dátum "2026-11-21" → poradové číslo dňa
@@ -177,7 +179,7 @@
   const Cards = {
     RARITY, RARITY_NAME, ODDS, TIERS, PACK, MYTH_ODDS, MYTHICAL, MYTHICALS,
     hash, cardId, rarityOf, buildCards, sortCards, rollRarity, openPack,
-    readSave, canOpen, addPack, dayNumber, nextDay, playerOfDay, latestCard, prayerOfDay,
+    readSave, canOpen, addPack, complete, dayNumber, nextDay, playerOfDay, latestCard, prayerOfDay,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Cards;
   else window.Cards = Cards;

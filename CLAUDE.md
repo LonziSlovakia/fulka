@@ -46,10 +46,10 @@ Stav k 21. 11. 2026.
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
 | `hra/` | **Hra** `ful.upcba.sk/hra/` (v menu webu „Hráč dňa“): `index.html`, `cards.js` (čisté funkcie kariet, testované), `hra.js` (vykreslenie, balík, modlitby), `hra.css` |
-| `tests/*.test.js` | `node --test tests/*.test.js` (96 testov: `logic` 52, `upece` 7, `board` 25, `hra` 12; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (97 testov: `logic` 52, `upece` 7, `board` 25, `hra` 13; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
-| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg`, `ufl.svg` + `ufl-lesk.svg` (logo UFL obkreslené pre tajnú kartu, lesk = maska lesklých častí), `verbisti.svg` (zlaté logo verbistov pre tajnú kartu) · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
+| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg`, `ufl.svg` + `ufl-lesk.svg` (logo UFL obkreslené pre tajnú kartu, lesk = maska lesklých častí), `verbisti.svg` (zlaté logo verbistov pre tajnú kartu), `veniec.svg` (veniec za celú kolekciu) · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
 | `demo/` | dočasné ukážky (napr. `demo/ants/`), na webe iba cez priamu adresu; zmazať celé naraz |
 
 ## Nastavenia (`fulka_settings.data`, admin → Nastavenia)
@@ -153,6 +153,11 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     `ufl.svg` je obkreslené z obrázka (532 px) nástrojom `tools/ufl-trace.py` na vetve `demo-ants` (zdroj `design/ufl/ufl-src.png`): štít a loptička sú nakreslené čisto
     (krivky dorovnané podľa nameraných okrajov), písmená, dráha, krídla a znak UPeCe obkreslené potrace.
     Názvy kariet „FULka“, „UFLka“ (malé „ka“, `text-transform: none`) a „VERBISTI“. Ladiace režimy `?debug=mythical` a `?debug=colors` sú zmazané (21. 11., Lonzi: „sme komplet dotestovaní“); hra je finálna.
+  - **Veniec „Elite Ball Knowledge“ (21. 11. 2026):** keď hráč má všetky karty z `buildCards` (tajné sa nerátajú, `C.complete`), po odkrytí balíka s poslednou chýbajúcou
+    kartou príde oslava (veniec + „Elite Ball Knowledge“, potom zhrnutie) a v `fulka-hra-v1` sa uloží `w: 1` – **natrvalo** (nové karty novej sezóny ho nezoberú).
+    Veniec (`assets/logos/veniec.svg`, zlatý vavrín) je potom okolo loga FULky v hlavičke webu aj hry (`.brand.wreath` v `styles.css`, `hasWreath()` v `render.js`).
+    **`?debug=veniec`** (ladenie): kolekcia so všetkými kartami okrem jednej (iba v pamäti), balík má chýbajúcu kartu + VERBISTI → oslava a veniec v hlavičke hry; nič sa neukladá.
+    Test: `node tools/shot.js "…/hra/?debug=veniec" 1440 out.png @tools/hra-veniec.js` (`window.HRA_STOP='ach'` = zastaví na oslave).
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
   - Zmazaný hráč z DB z hry zmizne aj z kolekcie (ID v localStorage, ku ktorému karta už nie je, sa ignoruje).
 - **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).
