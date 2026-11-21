@@ -59,7 +59,7 @@ Stav k 21. 11. 2026.
 `scorerOrder` (predvolene `goals`) · `scorerTies` "shared"/"alpha"/"team" (predvolene shared) ·
 `upece` true/false (sekcia Z UPeCe) · `upeceHours` text pod názvom UPeCe · `upeceOffer` zoznam `{t, d}` pre „Viac než florbal“.
 
-Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|siroke`, `?upece=ano|nie`.
+Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|siroke`, `?upece=ano|nie`; v hre `hra/?sance=nie|popis`.
 
 ## Rozhodnutia (dohodnuté s Lonzim)
 
@@ -136,6 +136,8 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Farba karty = farba tímu; fotka (`photo`, vystrihnutá postava) iba keď ju hráč má (kapitáni), inak veľké logo tímu. Rub: modrá + zlatá z loga FULky.
     Farby tried: common sivá, rare tyrkys UPeCe `--teal`, epic fialová `#B36BFF`, legendary zlatá FULky `#F0C146`.
   - **Balík raz denne** (deň v Bratislave): 5 kariet, šance 56/28/12/4 % (`C.ODDS`), aspoň 1 rare+, v balíku bez opakovania, odkrýva sa od najbežnejšej. Uloží sa **hneď pri otvorení** (obnovenie stránky balík neotvorí znova).
+    **Šance na webe** (Lonzi sa ešte rozhoduje, „veď to je tá sranda“): predvolene iba triedy so šancami **bez popisov**, čo do triedy patrí; prepínač v adrese
+    `?sance=nie` (nič) / `?sance=popis` (aj popisy + pravidlo vzácnosti v nadpise), nič sa neukladá. Po rozhodnutí nastaviť predvolené v `hra.js` `ODDS_VIEW`.
     Otvorenie: ťuk → roztrhnutie → karty rubom (žiara podľa vzácnosti) → ťuk = otočenie (2 polovičky cez WAAPI, nie backface-visibility – spoľahlivé na Safari) → zhrnutie. „Odkryť všetky“ preskočí.
   - **localStorage iba `fulka-hra-v1`** = `{ d: deň posledného balíka, c: { idKarty: počet }, l: [ID posledného balíka] }` (Lonzi chcel ukladať čo najmenej). ID karty = FNV-1a hash textu
     `p:<sezóna>:<hráč>` / `t:…` (epic tím) / `T:…` (legendary tím) v sústave 36 → stále rovnaké, aj keď pribudnú hráči. Kolekcia ~0,5 kB. Zmazanie dát prehliadača = kolekcia preč (iné zariadenie = iná kolekcia).

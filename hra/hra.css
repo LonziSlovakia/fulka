@@ -152,6 +152,8 @@ html.locked, html.locked body { overflow: hidden; }
 .mini:hover { transform: translateY(-4px); }
 .odds { width: 100%; max-width: 620px; margin: 24px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .odds li { display: grid; grid-template-columns: 10px 104px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 14px; background: var(--card); border: 1px solid var(--line); }
+.odds.short { max-width: 300px; }
+.odds.short li { grid-template-columns: 10px minmax(0, 1fr) auto; }
 .odds i { height: 26px; background: var(--r); transform: skewX(-14deg); }
 .odds b { font-family: var(--fc); font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--r); }
 .odds span { font-size: 13px; color: var(--fg-2); }
@@ -235,6 +237,7 @@ html.locked, html.locked body { overflow: hidden; }
   .pk-grid { grid-template-columns: minmax(0, 1fr); justify-items: center; }
   .pk-side { align-items: center; text-align: center; }
   .odds li { grid-template-columns: 8px 84px minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; text-align: left; }
+  .odds.short li { grid-template-columns: 8px minmax(0, 1fr) auto; }
   .odds b { font-size: 17px; }
   .odds span { font-size: 12px; }
   .cl-bars { grid-template-columns: repeat(2, minmax(0, 1fr)); }

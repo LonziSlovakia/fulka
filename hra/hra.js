@@ -15,6 +15,9 @@
   };
   const S = { data: null, cards: [], byId: {}, T: {}, P: {}, save: C.readSave(ls.get(KEY)), filter: "all", season: "all", busy: false };
   const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /* Šance pri balíku – Lonzi sa ešte rozhoduje, preto prepínač v adrese (nič sa neukladá):
+     predvolene triedy so šancami bez popisov, ?sance=nie = nič, ?sance=popis = aj čo do triedy patrí */
+  const ODDS_VIEW = ({ nie: "none", popis: "full" })[new URLSearchParams(location.search).get("sance")] || "short";
 
   /* ---------- Modlitby ---------- */
   const PRAYERS = [
@@ -162,7 +165,10 @@
     <span class="bk-logo"><img src="../assets/logos/ful.svg" alt=""></span><b class="pk-title">Karty FULky</b><span class="pk-sub">5 kariet · raz denne</span></div><div class="pk-crimp bot"></div>`;
 
   function odds() {
-    return C.RARITY.slice().reverse().map((r) => `<li class="r-${r}"><i></i><b>${RNAME[r]}</b><span>${RLONG[r]}</span><em>${C.ODDS[r]} %</em></li>`).join("");
+    if (ODDS_VIEW === "none") return "";
+    const full = ODDS_VIEW === "full";
+    const rows = C.RARITY.slice().reverse().map((r) => `<li class="r-${r}"><i></i><b>${RNAME[r]}</b>${full ? `<span>${RLONG[r]}</span>` : ""}<em>${C.ODDS[r]} %</em></li>`).join("");
+    return `<ul class="odds${full ? "" : " short"}">${rows}</ul>`;
   }
   function packSec() {
     const open = C.canOpen(S.save, today());
@@ -173,9 +179,9 @@
       : `<p class="pk-lead">Dnešný balík je otvorený. Ďalší bude o</p><p class="pk-clock" data-clock>${countdown()}</p>
          ${last.length ? `<div class="pk-last">${last.map((c) => `<button type="button" class="mini" data-act="show" data-id="${esc(c.id)}" aria-label="${esc(c.name)}">${cardHtml(c, "front")}</button>`).join("")}</div>` : ""}`;
     return `<section id="balik" class="sec"><div class="wrap">
-      <div class="sec-head"><h2>Denný balík</h2>${ZIG}<span class="sec-hint">Vzácnosť hráča = priečka v kanadskom bodovaní sezóny</span></div>
+      <div class="sec-head"><h2>Denný balík</h2>${ZIG}${ODDS_VIEW === "full" ? '<span class="sec-hint">Vzácnosť hráča = priečka v kanadskom bodovaní sezóny</span>' : ""}</div>
       <div class="pk-grid"><button type="button" class="pack${open ? "" : " used"}" data-act="open" ${open ? "" : "disabled"} aria-label="Otvoriť balík">${PACK_ART}</button>
-        <div class="pk-side">${side}<ul class="odds">${odds()}</ul></div></div></div></section>`;
+        <div class="pk-side">${side}${odds()}</div></div></div></section>`;
   }
 
   /* ---------- Kolekcia ---------- */
