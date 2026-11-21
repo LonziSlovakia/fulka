@@ -3,7 +3,7 @@
 Všeobecné pravidlá o Lonzim sú v `~/.claude/CLAUDE.md`. Tu je iba to, čo platí pre FULka.
 **Tento súbor udržiavaj živý:** po každej zmene, ktorá mení správanie alebo dohodu, ho uprav v tom istom commite.
 Neplatné veci zmaž, históriu nedumpuj. (Pôvodné zadanie `HANDOFF.md` je zmazané 20. 11. 2026 – všetko podstatné je tu a v kóde.)
-Stav k 19. 11. 2026.
+Stav k 21. 11. 2026.
 
 ## Pravidlá projektu
 
@@ -11,7 +11,7 @@ Stav k 19. 11. 2026.
 - Kód v malých samostatných funkciách. Výpočty patria do `logic.js` (čisté funkcie + testy), vykresľovanie do `render.js` / `admin.js`.
 - Fotky a dáta patria do Supabase (bucket a tabuľky `fulka`), nie do repozitára.
 - SQL skripty (`supabase/N-nazov.sql`) iba pripravíš; Lonzi ich spustí v Supabase → SQL Editor. Povedz mu aj, ako to overiť.
-- **Keď sa zmení JS alebo CSS: `bash tools/verzia.sh`** (dá `?v=<čas>` do `index.html` a `tabula.html`; admin a tabuľu `render.js` načíta s rovnakou verziou).
+- **Keď sa zmení JS alebo CSS: `bash tools/verzia.sh`** (dá `?v=<čas>` do `index.html`, `tabula.html` a `hra/index.html`; admin a tabuľu `render.js` načíta s rovnakou verziou).
   Dôvod: Cloudflare na `ful.upcba.sk` necháva prehliadač pamätať si JS/CSS 4 hodiny (HTML iba 10 min) – bez novej verzie Lonzi vidí starý admin.
 - Pred commitom: `node --test tests/*.test.js`; vizuálne zmeny over cez `tools/shot.js` (desktop 1440 aj mobil 390).
 - **Commit + push na `main` hneď po otestovaní je OK** (Lonzi to tak chce) a potom over nasadenie (nižšie).
@@ -45,7 +45,8 @@ Stav k 19. 11. 2026.
 | `board-admin.js` | admin → záložka „Tabuľa“ (ovládanie); načíta ho `render.js` s `?edit` pred `admin.js` |
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
-| `tests/*.test.js` | `node --test tests/*.test.js` (84 testov: `logic` 52, `upece` 7, `board` 25; `node --test tests/` na Node 22 nejde) |
+| `hra/` | **Hra** `ful.upcba.sk/hra/` (iba priama adresa, `noindex`): `index.html`, `cards.js` (čisté funkcie kariet, testované), `hra.js` (vykreslenie, balík, modlitby), `hra.css` |
+| `tests/*.test.js` | `node --test tests/*.test.js` (93 testov: `logic` 52, `upece` 7, `board` 25, `hra` 9; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
@@ -123,6 +124,19 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - **Odobratie tímu zo sezóny** zmaže iba riadok `fulka_season_teams` – tím, hráči aj súpiska (`fulka_roster`) ostanú v DB a po opätovnom pridaní sa súpiska vráti.
   Tím sa dá pridať do akejkoľvek sezóny. Varovanie pri odobratí ostáva (Lonzi: „je pekné“).
 - **Logá tímov** (štýl): hranaté plochy, čierna linka, krémový obrys `#FCF6E8`, animácia = pauza → efekt → pauza (napr. oči Giants, odlesk + zvonček Rangers).
+- **Hra `/hra/`** (vyžiadal Lonzi 21. 11. 2026, „hlavná vec je modlitba“): na webe **nikde neodkazovaná**, iba priama adresa. Dáta ligy iba číta (db.js, zdieľa cache `fulka-data-v1`), nič nezapisuje do DB.
+  - **Hráč dňa** (hore, hlavná vec): všetci hráči z DB v pevnom zamiešanom poradí (`C.playerOfDay`, podľa dátumu v Bratislave) → každý raz za N dní, pre všetkých rovnaký. Jeho karta + „Dnes sa modlíme za …“ +
+    modlitby na prepínanie: Otče náš, Zdravas Mária, Sláva Otcu, Pod tvoju ochranu, Verím v Boha (texty v `hra.js` `PRAYERS`; Verím = „zostúpil k zosnulým“, Otče náš bez doxológie).
+    **Modlitba nič nedáva a nič sa nepočíta ani neukladá** (Lonzi: „to je na zodpovednosti toho človeka… iba spásu na konci vekov“) – nepridávať odmeny ani počítadlá.
+  - **Karty**: hráč × sezóna a tím × sezóna; tím mimo všetkých sezón (napr. Ants) má kartu bez sezóny („Nový tím“). Vzácnosť hráča = priečka v kanadskom bodovaní sezóny
+    (1–5 legendary, 6–10 epic, 11–20 rare, inak common; **0 bodov = vždy common**). Tím: epic statická + legendary trblietavá s animovaným logom (`logo_anim`).
+    Farba karty = farba tímu; fotka (`photo`, vystrihnutá postava) iba keď ju hráč má (kapitáni), inak veľké logo tímu. Rub: modrá + zlatá z loga FULky.
+    Farby tried: common sivá, rare tyrkys UPeCe `--teal`, epic fialová `#B36BFF`, legendary zlatá FULky `#F0C146`.
+  - **Balík raz denne** (deň v Bratislave): 5 kariet, šance 56/28/12/4 % (`C.ODDS`), aspoň 1 rare+, v balíku bez opakovania, odkrýva sa od najbežnejšej. Uloží sa **hneď pri otvorení** (obnovenie stránky balík neotvorí znova).
+    Otvorenie: ťuk → roztrhnutie → karty rubom (žiara podľa vzácnosti) → ťuk = otočenie (2 polovičky cez WAAPI, nie backface-visibility – spoľahlivé na Safari) → zhrnutie. „Odkryť všetky“ preskočí.
+  - **localStorage iba `fulka-hra-v1`** = `{ d: deň posledného balíka, c: { idKarty: počet }, l: [ID posledného balíka] }` (Lonzi chcel ukladať čo najmenej). ID karty = FNV-1a hash textu
+    `p:<sezóna>:<hráč>` / `t:…` (epic tím) / `T:…` (legendary tím) v sústave 36 → stále rovnaké, aj keď pribudnú hráči. Kolekcia ~0,5 kB. Zmazanie dát prehliadača = kolekcia preč (iné zariadenie = iná kolekcia).
+  - V Lete 2027 sú na súpiske 3 hráči (Janko Mrkvička, Anna Petržlenová, John Doe) – vyzerajú testovacie; v hre sú ako common karty a môžu byť aj hráčom dňa.
 - **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).
   Na webe iba cez priamu adresu (nikde neodkazované, `noindex`). Teraz: **https://ful.upcba.sk/demo/ants/** – návrhy loga Kuchynka Ants (8 verzií, PNG + WebP).
   Zdroje a nástroje loga (kresba `zdroj.html`, vektory z predlohy, `logo-render.js`, `trace-logo.py`) sú **iba lokálne na vetve `demo-ants`** (nepushovať).
@@ -157,6 +171,8 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fa
 - Chromium je Playwright headless shell; chýbajúce knižnice sú v `tools/.cache/libroot` (bez sudo, gitignore).
 - Nástroje WebP (`img2webp`, `anim_dump`, `webpmux`…) sú v `tools/.cache/webproot` (gitignore): `apt-get -o Acquire::ForceIPv4=true download webp libwebp7 libwebpmux3 libwebpdemux2 libsharpyuv0 libjpeg8 libjpeg-turbo8 libtiff6 libgif7 libpng16-16t64`
   do `tools/.cache/webp-debs` a `dpkg -x` každého do `webproot` (aj `potrace libpotrace0` pre `trace-logo.py` na vetve `demo-ants`); spúšťať s `LD_LIBRARY_PATH=tools/.cache/webproot/usr/lib/x86_64-linux-gnu`. Zmazanie = celý `tools/.cache`.
+- Hra: `tools/hra-pack.js` (krok pre `shot.js`: otvorí balík, `window.HRA_STOP='pack|back|front|sum'`, `window.HRA_LUCK=0.99` = samé legendary),
+  `tools/hra-all.js` (+ `RELOAD`: naplní kolekciu všetkými kartami na pozretie). Bez prihlásenia, nič nezapisuje do DB.
 - Port 8765 používa iný projekt – nezabíjať.
 
 ## Nasadenie
