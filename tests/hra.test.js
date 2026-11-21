@@ -117,11 +117,15 @@ test("karta hráča dňa: najnovšia odohraná sezóna pred pripravovanou", () =
   assert.equal(c.season.id, "s1");
 });
 
-test("modlitba dňa: každý deň ďalšia, po poslednej znova prvá", () => {
-  const days = ["2026-11-21", "2026-11-22", "2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26"].map((d) => C.pick(5, d));
-  assert.deepEqual(days.slice(1, 5).map((x, i) => (x - days[i] + 5) % 5), [1, 1, 1, 1]);
-  assert.equal(days[5], days[0]);
-  assert.equal(C.pick(0, "2026-11-21"), 0);
+test("modlitba dňa: náhodná, nikdy nie tá istá ako včera, každá príde na rad, pre všetkých rovnaká", () => {
+  const days = [];
+  for (let d = C.dayNumber("2026-11-21"), i = 0; i < 400; i++) days.push(new Date((d + i) * 864e5).toISOString().slice(0, 10));
+  const p = days.map((d) => C.prayerOfDay(5, d));
+  p.forEach((x, i) => { assert.ok(x >= 0 && x < 5); if (i) assert.notEqual(x, p[i - 1], days[i]); });
+  assert.equal(new Set(p).size, 5);
+  assert.deepEqual(days.slice(0, 30).map((d) => C.prayerOfDay(5, d)), p.slice(0, 30)); // znova rovnako
+  assert.ok(p.slice(1).some((x, i) => x !== (p[i] + 1) % 5)); // nie je to obyčajné poradie dookola
+  assert.equal(C.prayerOfDay(1, "2026-11-21"), 0);
 });
 
 test("tajná karta: padne iba so šancou, je posledná v balíku a nie je medzi kartami z dát", () => {

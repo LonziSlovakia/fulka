@@ -127,7 +127,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - **Logá tímov** (štýl): hranaté plochy, čierna linka, krémový obrys `#FCF6E8`, animácia = pauza → efekt → pauza (napr. oči Giants, odlesk + zvonček Rangers).
 - **Hra `/hra/`** (vyžiadal Lonzi 21. 11. 2026, „hlavná vec je modlitba“): od 21. 11. 2026 **spustená**: v menu webu prvý odkaz „Hráč dňa“ (aj na mobile hneď viditeľný), indexovaná. Dáta ligy iba číta (db.js, zdieľa cache `fulka-data-v1`), nič nezapisuje do DB.
   - **Hráč dňa** (hore, hlavná vec): všetci hráči z DB v pevnom zamiešanom poradí (`C.playerOfDay`, podľa dátumu v Bratislave) → každý raz za N dní, pre všetkých rovnaký. Jeho karta + „Dnes sa modlíme za …“ +
-    **jedna modlitba dňa, bez prepínania** (Lonzi tak chcel; `C.pick` = každý deň ďalšia z poolu): Otče náš, Zdravas’ Mária (s apostrofom), Sláva Otcu, Pod tvoju ochranu, Verím v Boha
+    **jedna modlitba dňa, bez prepínania** (`C.prayerOfDay`: každý deň náhodná z piatich okrem včerajšej, pre všetkých rovnaká – ráta sa deň po dni od 1. 11. 2026): Otče náš, Zdravas’ Mária (s apostrofom), Sláva Otcu, Pod tvoju ochranu, Verím v Boha
     (texty v `hra.js` `PRAYERS`, Lonzi ich skontroloval; „Pod tvoju ochranu“ je jeho krátke znenie „…neodvracaj zrak od našich prosieb…“; Verím = „zostúpil k zosnulým“, Otče náš bez doxológie).
     Rámik modlitby má výšku podľa dnešnej modlitby (ukazuje sa iba jedna; predtým fixná na najdlhšiu – Lonzi chcel späť dynamickú).
     Podklad vo farbe tímu (`.day-shard`) je viazaný na šírku karty (`--cw`), nie na šírku okna → text je vždy na čiernom aj na veľkom monitore. Tlačidlo „hore“ ako na hlavnom webe.
@@ -150,8 +150,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     FULka = `ful_bez_pozadia.svg` (zlaté časti), UFL = `ufl-lesk.svg` (oranžový okraj, písmená, dráha, loptička; užší a slabší lesk, lebo sú to veľké plochy).
     `ufl.svg` je obkreslené z obrázka (532 px) nástrojom `tools/ufl-trace.py` na vetve `demo-ants` (zdroj `design/ufl/ufl-src.png`): štít a loptička sú nakreslené čisto
     (krivky dorovnané podľa nameraných okrajov), písmená, dráha, krídla a znak UPeCe obkreslené potrace.
-    Názvy kariet „FULka“ a „UFLka“ (malé „ka“, `text-transform: none`). `?debug=mythical` je zmazaný (21. 11.).
-  - **`?debug=colors`** (ladenie žiar, Lonzi ho chce nechať): v balíku vždy po jednej karte z každej triedy (common → mythical), balík sa dá otvárať stále, nič sa neukladá (`DEBUG_COLORS` v `hra.js`).
+    Názvy kariet „FULka“ a „UFLka“ (malé „ka“, `text-transform: none`). Ladiace režimy `?debug=mythical` a `?debug=colors` sú zmazané (21. 11., Lonzi: „sme komplet dotestovaní“); hra je finálna.
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
   - Zmazaný hráč z DB z hry zmizne aj z kolekcie (ID v localStorage, ku ktorému karta už nie je, sa ignoruje).
 - **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).

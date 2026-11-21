@@ -151,8 +151,20 @@
     return order[dayNumber(date) % order.length];
   }
 
-  // dnešná položka z n možností (napr. modlitba dňa): každý deň ďalšia, pre všetkých rovnaká
-  const pick = (n, date) => (n > 0 ? dayNumber(date) % n : 0);
+  // modlitba dňa: každý deň náhodná z n, ale nikdy nie tá istá ako včera; pre všetkých rovnaká (náhoda = hash dátumu).
+  // Ráta sa deň po dni od pevného začiatku, aby „včerajšia“ bola vždy tá, ktorá sa naozaj ukázala.
+  const PRAYER_START = "2026-11-01";
+  function prayerOfDay(n, date) {
+    if (n < 2) return 0;
+    const start = dayNumber(PRAYER_START);
+    const end = dayNumber(date);
+    let p = hash(`fulka-modlitba:${PRAYER_START}`) % n;
+    for (let d = start + 1; d <= end; d++) {
+      const k = hash(`fulka-modlitba:${d}`) % (n - 1); // jedna zo zvyšných n − 1
+      p = k >= p ? k + 1 : k;
+    }
+    return end < start ? hash(`fulka-modlitba:${end}`) % n : p;
+  }
 
   // karta hráča dňa: z najnovšej sezóny, v ktorej hrá (pripravovaná sezóna až keď inej niet – ešte nemá body)
   function latestCard(cards, playerId) {
@@ -164,7 +176,7 @@
   const Cards = {
     RARITY, RARITY_NAME, ODDS, TIERS, PACK, MYTH_ODDS, MYTHICAL, MYTHICALS,
     hash, cardId, rarityOf, buildCards, sortCards, rollRarity, openPack,
-    readSave, canOpen, addPack, dayNumber, nextDay, playerOfDay, latestCard, pick,
+    readSave, canOpen, addPack, dayNumber, nextDay, playerOfDay, latestCard, prayerOfDay,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Cards;
   else window.Cards = Cards;
