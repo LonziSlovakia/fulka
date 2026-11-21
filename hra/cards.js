@@ -11,6 +11,7 @@
   const ODDS = { common: 56, rare: 28, epic: 12, legendary: 4 }; // šanca jednej karty v balíku (%)
   const TIERS = [[5, "legendary"], [10, "epic"], [20, "rare"]]; // priečka v bodovaní do … → trieda
   const PACK = 5;
+  const MYTH_ODDS = 0.5; // tajná karta (%) v každom z prvých 4 slotov balíka; nikde sa neukazuje ani nepočíta
 
   // FNV-1a: z textu krátke číslo; ID karty = to číslo v sústave 36 (napr. "z26:p-urban-jozef" → "1k9x0q")
   function hash(text) {
@@ -22,7 +23,7 @@
 
   // priečka a body → trieda (bez bodu vždy common, aj keď majú všetci „1. miesto“ s nulou)
   const rarityOf = (pos, pts) => (pts > 0 && (TIERS.find(([max]) => pos <= max) || [])[1]) || "common";
-  const rank = (r) => RARITY.indexOf(r);
+  const rank = (r) => (r === "mythical" ? RARITY.length : RARITY.indexOf(r));
 
   // všetko o jednej sezóne, čo karty potrebujú: tímy, tabuľka, bodovanie, konečné poradie
   function seasonStats(d, s, P) {
@@ -39,6 +40,8 @@
   }
 
   const card = (key, rest) => Object.assign({ id: cardId(key), key }, rest);
+  // tajná karta FULky (mythical): nie je v buildCards → nemení počty kariet, triedy ani chýbajúce karty
+  const MYTHICAL = card("M:fulka", { kind: "myth", rarity: "mythical", name: "FULka", season: null, team_id: "" });
 
   function playerCards(s, st) {
     return st.list.map((x) => {
@@ -96,12 +99,13 @@
   }
 
   // 5 kariet (v jednom balíku sa karta neopakuje, kým je z čoho brať); aspoň jedna rare alebo lepšia;
-  // zoradené od najbežnejšej, aby najlepšia prišla na koniec
-  function openPack(cards, rng) {
+  // zoradené od najbežnejšej, aby najlepšia prišla na koniec; myth = tajná karta (šanca MYTH_ODDS v prvých 4 slotoch)
+  function openPack(cards, rng, myth) {
     const rnd = rng || Math.random;
     const pools = Object.fromEntries(RARITY.map((r) => [r, cards.filter((c) => c.rarity === r)]));
     const pick = [];
     for (let i = 0; i < PACK; i++) {
+      if (myth && i < PACK - 1 && rnd() < MYTH_ODDS / 100) { pick.push(myth); continue; }
       const guarantee = i === PACK - 1 && pick.every((c) => c.rarity === "common");
       const r = (guarantee && rollRarity(pools, rnd, 1)) || rollRarity(pools, rnd, 0);
       if (!r) break;
@@ -150,7 +154,7 @@
   }
 
   const Cards = {
-    RARITY, RARITY_NAME, ODDS, TIERS, PACK,
+    RARITY, RARITY_NAME, ODDS, TIERS, PACK, MYTH_ODDS, MYTHICAL,
     hash, cardId, rarityOf, buildCards, sortCards, rollRarity, openPack,
     readSave, canOpen, addPack, dayNumber, nextDay, playerOfDay, latestCard, pick,
   };

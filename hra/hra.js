@@ -53,7 +53,11 @@
   const ZIG = '<svg aria-hidden="true" width="132" height="18" viewBox="0 0 132 18"><polyline points="0,15 11,3 22,15 33,3 44,15 55,3 66,15 77,3 88,15 99,3 110,15 121,3 132,15" fill="none" stroke="#FFFFFF" stroke-width="3"></polyline></svg>';
   const ARROW = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>';
   const CLOSE = '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 5l14 14M19 5L5 19"></path></svg>';
-  const RNAME = C.RARITY_NAME;
+  const RNAME = Object.assign({ mythical: "Mythical" }, C.RARITY_NAME);
+  /* Tajná karta (mythical): nikde sa nespomína, v kolekcii je iba keď padla (hore ako prvá), nemení počty.
+     ?debug=mythical = iba na skúšanie: karta je v kolekcii, balík sa dá otvárať stále a vždy v ňom padne, nič sa neukladá. */
+  const MYTH = C.MYTHICAL;
+  const DEBUG_MYTH = new URLSearchParams(location.search).get("debug") === "mythical";
   const RLONG = { legendary: "Top 5 hráčov sezóny + trblietavé tímy s animovaným logom", epic: "6. – 10. hráč + tímové karty",
     rare: "11. – 20. hráč v kanadskom bodovaní", common: "Ostatní hráči zo súpisky" };
 
@@ -66,7 +70,7 @@
     return T;
   }
   const teamOf = (c) => S.T[c.team_id] || FUL;
-  const owned = (id) => S.save.c[id] || 0;
+  const owned = (id) => S.save.c[id] || (DEBUG_MYTH && id === MYTH.id ? 1 : 0);
   const store = () => ls.set(KEY, S.save);
 
   /* ---------- Karta ---------- */
@@ -80,7 +84,16 @@
     return `<span class="fc-stats team">${c.place === 1 ? '<i class="cup" aria-hidden="true"></i>' : ""}<span>${place}</span></span>`;
   }
 
+  // tajná karta: logo FULky, zlaté časti loga majú vlastnú vrstvu s leskom (maska v tvare zlatých častí), ktorá sa hýbe s náklonom
+  function mythFront() {
+    return `<div class="fc-face fc-front my-front"><div class="fill my-bg"></div>
+      <span class="my-logo"><img src="../assets/logos/ful.svg" alt=""><span class="my-gold"><i></i></span></span>
+      <div class="fc-top"><span class="fc-rar">${RNAME.mythical}</span><span class="fc-pos">✦</span></div>
+      <div class="fc-info"><b class="fc-name">FULka</b><span class="fc-sub">Florbalová UPeCe liga</span><span class="fc-stats team"><span>Tajná karta</span></span></div>${SPARKS}</div>`;
+  }
+
   function front(c) {
+    if (c.kind === "myth") return mythFront();
     const t = teamOf(c);
     const p = c.kind === "player" ? S.P[c.player_id] : null;
     const pic = p && p.photo ? DB.photoUrl(p.photo) : "";
@@ -171,7 +184,7 @@
     return `<ul class="odds${full ? "" : " short"}">${rows}</ul>`;
   }
   function packSec() {
-    const open = C.canOpen(S.save, today());
+    const open = DEBUG_MYTH || C.canOpen(S.save, today());
     const last = S.save.l.map((id) => S.byId[id]).filter(Boolean);
     const side = open
       ? `<p class="pk-lead">Dnešný balík čaká. Päť kariet, aspoň jedna je <b class="t-rare">Rare</b> alebo lepšia.</p>
@@ -200,14 +213,15 @@
     const chip = (id, name) => `<button type="button" class="cl-chip" data-act="season" data-id="${esc(id)}" aria-pressed="${S.season === id}">${esc(name)}</button>`;
     const chips = [chip("all", "Všetky sezóny")].concat(seasons.map((s) => chip(s.id, s.short || s.name)),
       S.cards.some((c) => !c.season) ? [chip("-", "Nové tímy")] : []).join("");
-    const grid = shown.map((c) => (owned(c.id)
+    const myth = owned(MYTH.id) ? [MYTH] : []; // tajná karta hore ako prvá (iba keď ju hráč má)
+    const grid = myth.concat(shown).map((c) => (owned(c.id)
       ? `<button type="button" class="cl-card" data-act="show" data-id="${esc(c.id)}" aria-label="${esc(c.name)}">${cardHtml(c, "front")}${owned(c.id) > 1 ? `<span class="cnt">×${owned(c.id)}</span>` : ""}</button>`
       : `<div class="cl-card off" aria-label="Chýbajúca karta ${RNAME[c.rarity]}">${cardHtml(c, "missing")}</div>`)).join("");
     return `<section id="kolekcia" class="sec"><div class="wrap">
       <div class="sec-head"><h2>Kolekcia</h2>${ZIG}<span class="sec-hint"><b class="cl-total">${have.length} / ${all.length}</b> kariet</span></div>
       <div class="cl-bars">${bars}<button type="button" class="cl-bar all" data-act="filter" data-id="all" aria-pressed="${S.filter === "all"}"><span><b>Všetky</b><em>${have.length} / ${all.length}</em></span><i style="--p:${all.length ? (have.length / all.length) * 100 : 0}%"></i></button></div>
       <div class="cl-chips">${chips}</div>
-      ${shown.length ? `<div class="cl-grid">${grid}</div>` : '<p class="empty">V tomto výbere nie sú žiadne karty.</p>'}
+      ${shown.length || myth.length ? `<div class="cl-grid">${grid}</div>` : '<p class="empty">V tomto výbere nie sú žiadne karty.</p>'}
       ${have.length ? "" : '<p class="cl-hint">Zatiaľ nemáš žiadnu kartu. Otvor dnešný balík vyššie.</p>'}</div></section>`;
   }
 
@@ -220,7 +234,7 @@
     S.T = teamsOf(d);
     S.P = Object.fromEntries(d.players.map((p) => [p.id, p]));
     S.cards = C.buildCards(d);
-    S.byId = Object.fromEntries(S.cards.map((c) => [c.id, c]));
+    S.byId = Object.fromEntries(S.cards.concat(MYTH).map((c) => [c.id, c]));
     if (!S.busy) render();
   }
 
@@ -272,13 +286,14 @@
 
   const RAYS = '<div class="rays" aria-hidden="true"></div>';
   async function openPack() {
-    if (S.busy || !C.canOpen(S.save, today()) || !S.cards.length) return;
+    if (S.busy || !(DEBUG_MYTH || C.canOpen(S.save, today())) || !S.cards.length) return;
     S.busy = true;
     const had = Object.assign({}, S.save.c); // počty pred balíkom → „Nová karta“ / „×2“
     const seen = Object.assign({}, had);
-    const pack = C.openPack(S.cards);
-    S.save = C.addPack(S.save, pack.map((c) => c.id), today()); // uložené hneď: obnovenie stránky balík neotvorí znova
-    store();
+    const pack = C.openPack(S.cards, Math.random, MYTH);
+    if (DEBUG_MYTH && !pack.includes(MYTH)) pack[pack.length - 1] = MYTH; // skúšanie: tajná karta vždy (posledná)
+    const next = C.addPack(S.save, pack.map((c) => c.id), today());
+    if (!DEBUG_MYTH) { S.save = next; store(); } // uložené hneď: obnovenie stránky balík neotvorí znova (pri skúšaní nič)
     let skip = false;
     showLayer(`<div class="op" data-stage="pack"><button type="button" class="op-skip" data-op="skip">Odkryť všetky</button>
       <div class="op-stage">${RAYS}<div class="op-pack pack">${PACK_ART}</div><div class="op-card"></div></div>
@@ -314,7 +329,7 @@
       await waitTap();
       if (skip) break;
       await flip(el, c);
-      if (c.rarity === "legendary" || c.rarity === "epic") op.dataset.rarity = c.rarity;
+      if (["mythical", "legendary", "epic"].includes(c.rarity)) op.dataset.rarity = c.rarity;
       tilt(el);
       seen[c.id] = (seen[c.id] || 0) + 1;
       cap.innerHTML = `<span class="op-tag r-${c.rarity}">${RNAME[c.rarity]}</span>${seen[c.id] === 1 ? '<span class="op-new">Nová karta</span>' : `<span class="op-dup">Už máš · ×${seen[c.id]}</span>`}`;
@@ -323,11 +338,12 @@
       tray.insertAdjacentHTML("beforeend", `<span class="op-mini">${cardHtml(c, "front")}</span>`);
       await el.animate([{ transform: "none", opacity: 1 }, { transform: "translate(-40%, 50%) scale(.3) rotate(-8deg)", opacity: 0 }], { duration: REDUCED ? 60 : 320, easing: "ease-in", fill: "forwards" }).finished;
     }
-    summary(pack, S.save.c, had);
+    summary(pack, next.c, had);
   }
 
   function summary(pack, counts, had) {
-    showLayer(`<div class="op done" data-rarity="${pack.some((c) => c.rarity === "legendary") ? "legendary" : ""}">
+    const top = ["mythical", "legendary"].find((r) => pack.some((c) => c.rarity === r)) || "";
+    showLayer(`<div class="op done" data-rarity="${top}">
       <h2 class="op-h">Dnešný balík</h2>
       <div class="op-sum">${pack.map((c, i) => `<button type="button" class="sum-card" data-act="show" data-id="${esc(c.id)}" style="--i:${i}">${cardHtml(c, "front")}
         <span class="sum-tags"><span class="op-tag r-${c.rarity}">${RNAME[c.rarity]}</span>${had[c.id] ? `<span class="op-dup">×${counts[c.id]}</span>` : '<span class="op-new">Nová</span>'}</span></button>`).join("")}</div>
@@ -340,10 +356,10 @@
     const c = S.byId[id];
     if (!c) return;
     const n = owned(id);
-    const where = c.kind === "player" ? `${c.season ? esc(c.season.name) : ""}${c.b > 0 ? ` · ${c.pos}. miesto v kanadskom bodovaní (${c.b} b)` : " · bez bodu v kanadskom bodovaní"}` : (c.season ? esc(c.season.name) : "Tím zatiaľ nie je v sezóne");
+    const where = c.kind === "myth" ? "Tajná karta FULky" : c.kind === "player" ? `${c.season ? esc(c.season.name) : ""}${c.b > 0 ? ` · ${c.pos}. miesto v kanadskom bodovaní (${c.b} b)` : " · bez bodu v kanadskom bodovaní"}` : (c.season ? esc(c.season.name) : "Tím zatiaľ nie je v sezóne");
     const wasBusy = S.busy;
-    const html = `<div class="op detail"><button type="button" class="op-x" data-op="x" aria-label="Zavrieť">${CLOSE}</button>
-      <div class="op-stage">${c.rarity === "legendary" ? RAYS : ""}<div class="op-card">${cardHtml(c, "front", "big tilt")}</div></div>
+    const html = `<div class="op detail" data-rarity="${c.rarity === "mythical" ? "mythical" : ""}"><button type="button" class="op-x" data-op="x" aria-label="Zavrieť">${CLOSE}</button>
+      <div class="op-stage">${c.rarity === "legendary" || c.rarity === "mythical" ? RAYS : ""}<div class="op-card">${cardHtml(c, "front", "big tilt")}</div></div>
       <p class="op-cap"><span class="op-tag r-${c.rarity}">${RNAME[c.rarity]}</span><span>${where}</span>${n ? `<span class="op-dup">Máš ×${n}</span>` : ""}</p></div>`;
     const prev = wasBusy ? layer.innerHTML : null;
     showLayer(html);

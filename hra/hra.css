@@ -10,6 +10,7 @@ html.locked, html.locked body { overflow: hidden; }
 .r-rare { --r: var(--teal); }
 .r-epic { --r: var(--epic); }
 .r-legendary { --r: var(--gold); }
+.r-mythical { --r: #7FE3FF; }
 .t-rare { color: var(--teal); }
 
 /* ---------- Karta ---------- */
@@ -24,7 +25,8 @@ html.locked, html.locked body { overflow: hidden; }
 /* Výkon (slabšie mobily): animuje sa iba transform a opacity – to robí grafický čip bez prekresľovania.
    Žiadne animované filter, background-position, mix-blend-mode ani @property (tie sa prekresľujú v každej snímke). */
 .fc.r-legendary:not(.missing):not(.back) .fc-in { background: conic-gradient(from 20deg, var(--gold), #fff4c8, var(--gold-d), var(--gold), #fff4c8, var(--gold-d), var(--gold)); }
-.fc.r-legendary:not(.back):not(.missing) .fc-in::before { content: ""; position: absolute; top: -25%; left: 0; width: 45%; height: 150%; pointer-events: none; will-change: transform;
+.fc.r-mythical:not(.back) .fc-in { background: conic-gradient(from 210deg, var(--gold), #fff4c8, var(--navy-2), #7FE3FF, #fff4c8, var(--gold-d), var(--gold)); }
+:is(.fc.r-legendary, .fc.r-mythical):not(.back):not(.missing) .fc-in::before { content: ""; position: absolute; top: -25%; left: 0; width: 45%; height: 150%; pointer-events: none; will-change: transform;
   background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0)); animation: glint 3.2s linear infinite; }
 @keyframes glint { from { transform: translateX(-120%) rotate(18deg); } to { transform: translateX(340%) rotate(18deg); } }
 .fc-face { position: absolute; inset: 2.2cqi; overflow: hidden; background: var(--d);
@@ -101,6 +103,10 @@ html.locked, html.locked body { overflow: hidden; }
 .fc.big.r-rare { --glow: rgba(0, 168, 181, 0.8); }
 .fc.big.r-epic { --glow: rgba(179, 107, 255, 0.85); }
 .fc.big.r-legendary { --glow: rgba(255, 210, 100, 0.95); }
+.fc.big.r-mythical { --glow: rgba(127, 227, 255, 0.95); }
+.fc.big.r-mythical:not(.back)::before { opacity: 0.75; }
+.fc.tease-mythical::before { animation: glow 0.6s ease-in-out infinite; }
+.fc.tease-mythical { animation: shake 0.6s ease-in-out infinite; }
 .fc.big.r-epic:not(.back)::before, .fc.big.r-legendary:not(.back)::before { opacity: 0.6; }
 .fc.tease-rare::before { animation: glow 1.6s ease-in-out infinite; }
 .fc.tease-epic::before { animation: glow 1.2s ease-in-out infinite; }
@@ -213,6 +219,7 @@ html.locked, html.locked body { overflow: hidden; }
 @keyframes rays { to { transform: rotate(360deg); } }
 .op[data-rarity="legendary"] .rays, .op.detail .rays { opacity: 1; }
 .op[data-rarity="epic"] .rays { opacity: 1; --ray: rgba(179, 107, 255, 0.2); }
+.op[data-rarity="mythical"] .rays { opacity: 1; --ray: rgba(127, 227, 255, 0.24); }
 .op-cap { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; min-height: 40px; margin: 0; max-width: 520px; text-align: center;
   font-family: var(--fc); font-weight: 800; font-size: 20px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-2); }
 .op.detail .op-cap { font-family: "Saira", system-ui, sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; }
@@ -267,3 +274,19 @@ html.locked, html.locked body { overflow: hidden; }
 /* karty mimo obrazovky stoja (kolekcia, posledný balík) – hýbu sa iba tie, ktoré vidno (.vis z IntersectionObserver v hra.js) */
 .cl-card .fc *, .cl-card .fc *::before, .mini .fc *, .mini .fc *::before { animation-play-state: paused; }
 .cl-card.vis .fc *, .cl-card.vis .fc *::before, .mini.vis .fc *, .mini.vis .fc *::before { animation-play-state: running; }
+/* ---------- Tajná karta (mythical): logo FULky, zlaté časti sa lesknú pri pohybe ---------- */
+.my-bg { background: repeating-linear-gradient(-62deg, rgba(240, 193, 70, 0.08) 0 0.8cqi, rgba(0, 0, 0, 0) 0.8cqi 6.5cqi), radial-gradient(circle at 50% 36%, var(--navy-2), var(--navy) 55%, var(--navy-3)); }
+.my-logo { position: absolute; left: 50%; top: 15%; width: 68cqi; padding: 2cqi; background: #fff; transform: translateX(-50%); clip-path: polygon(9% 0, 100% 0, 91% 100%, 0 100%); }
+.my-logo img { display: block; width: 100%; height: auto; clip-path: polygon(9% 0, 100% 0, 91% 100%, 0 100%); }
+/* vrstva v tvare zlatých častí loga (ful_bez_pozadia.svg = iba zlatá, rovnaký viewBox ako ful.svg) – po nej prechádza svetlý pás */
+.my-gold { position: absolute; inset: 2cqi; overflow: hidden; pointer-events: none;
+  -webkit-mask: url(../assets/logos/ful_bez_pozadia.svg) center / 100% 100% no-repeat; mask: url(../assets/logos/ful_bez_pozadia.svg) center / 100% 100% no-repeat; }
+.my-gold i { position: absolute; top: 0; bottom: 0; left: -100%; width: 300%; will-change: transform;
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0) 38%, rgba(255, 246, 210, 0.85) 46%, #fff 50%, rgba(255, 246, 210, 0.85) 54%, rgba(255, 255, 255, 0) 62%);
+  animation: gold-shine 3.4s ease-in-out infinite; }
+.fc.tilting .my-gold i { animation: none; transform: translateX(calc(var(--hx, 0) * 1.1%)); }
+@keyframes gold-shine { 0%, 35% { transform: translateX(-33%); } 100% { transform: translateX(33%); } }
+.my-front .fc-info { align-items: center; left: 4cqi; right: 4cqi; text-align: center; }
+.my-front .fc-name { font-size: 15cqi; }
+.my-front .fc-pos { color: var(--r); -webkit-text-stroke: 0; }
+@media (prefers-reduced-motion: reduce) { .my-gold i { animation: none; } }

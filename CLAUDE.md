@@ -46,7 +46,7 @@ Stav k 21. 11. 2026.
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
 | `hra/` | **Hra** `ful.upcba.sk/hra/` (iba priama adresa, `noindex`): `index.html`, `cards.js` (čisté funkcie kariet, testované), `hra.js` (vykreslenie, balík, modlitby), `hra.css` |
-| `tests/*.test.js` | `node --test tests/*.test.js` (94 testov: `logic` 52, `upece` 7, `board` 25, `hra` 10; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (95 testov: `logic` 52, `upece` 7, `board` 25, `hra` 11; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
@@ -144,6 +144,10 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - **Výkon (slabšie mobily, 21. 11. 2026):** animovať iba `transform` a `opacity` (lesk, trblietky, lúče, žiara = rozmazaný kruh s meniacou sa priehľadnosťou).
     Nepoužívať animovaný `filter`, `background-position`, `mix-blend-mode`, `@property` ani `backdrop-filter` – na slabšom mobile to sekalo.
     Karty mimo obrazovky stoja (`.vis` cez IntersectionObserver). Meranie: `THROTTLE=4 node tools/shot.js … @tools/hra-fps.js` (pred: kolekcia 26 / detail 19 / balík 35 FPS, po: 58 / 59 / 60).
+  - **Tajná karta „FULka“ (mythical, 21. 11. 2026):** `C.MYTHICAL` (ID z `M:fulka`), šanca `C.MYTH_ODDS` 0,5 % v každom z prvých 4 slotov balíka (~2 % balíkov).
+    Lonzi chce, aby bola **úplne tajná**: nie je v `buildCards`, v šanciach, lištách, počtoch ani medzi chýbajúcimi kartami; keď padne, je v kolekcii hore ako prvá
+    (počty nemení). Vzhľad: logo FULky, zlaté časti majú masku `ful_bez_pozadia.svg` s leskom, ktorý sa hýbe s náklonom (`--hx`), rám modro-zlatý.
+    **`?debug=mythical`** (dočasne, na skúšanie): karta v kolekcii, balík sa dá otvárať stále a vždy v ňom padne, nič sa neukladá – po odladení zmazať (`DEBUG_MYTH` v `hra.js`).
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
   - Zmazaný hráč z DB z hry zmizne aj z kolekcie (ID v localStorage, ku ktorému karta už nie je, sa ignoruje).
 - **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).

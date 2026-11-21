@@ -123,3 +123,17 @@ test("modlitba dňa: každý deň ďalšia, po poslednej znova prvá", () => {
   assert.equal(days[5], days[0]);
   assert.equal(C.pick(0, "2026-11-21"), 0);
 });
+
+test("tajná karta: padne iba so šancou, je posledná v balíku a nie je medzi kartami z dát", () => {
+  const cards = C.RARITY.flatMap((r) => [1, 2, 3, 4, 5, 6].map((i) => ({ id: `${r}${i}`, rarity: r })));
+  assert.ok(!C.buildCards(D).some((c) => c.rarity === "mythical"));
+  assert.ok(!C.openPack(cards, () => 0.5, C.MYTHICAL).includes(C.MYTHICAL)); // 0,5 ≥ 0,005 → nepadne
+  const lucky = C.openPack(cards, seq(0.001, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5), C.MYTHICAL);
+  assert.equal(lucky.length, 5);
+  assert.equal(lucky[4], C.MYTHICAL);
+  assert.ok(!C.openPack(cards, () => 0).includes(C.MYTHICAL)); // bez tajnej karty v parametri nikdy
+  let s = 11, n = 0;
+  const rng = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  for (let i = 0; i < 20000; i++) if (C.openPack(cards, rng, C.MYTHICAL).includes(C.MYTHICAL)) n++;
+  assert.ok(n / 20000 > 0.012 && n / 20000 < 0.03, `balíkov s tajnou kartou ${n / 20000}`); // 1 − 0,995⁴ ≈ 2 %
+});
