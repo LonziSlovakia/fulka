@@ -3,6 +3,8 @@
    Vzácnosť: --r = farba triedy (common sivá, rare tyrkys UPeCe, epic fialová, legendary zlatá z loga FULky). */
 :root { --gold: #F0C146; --gold-d: #9a7016; --navy: #02235E; --navy-2: #0A3A8C; --navy-3: #011436; --epic: #B36BFF; --teal: #00a8b5; }
 html.locked, html.locked body { overflow: hidden; }
+/* bez modrého prebliku pri ťuknutí na mobile (celá obrazovka balíka je klikateľná); klávesnicu ukazuje :focus-visible zo styles.css */
+.hra, .layer { -webkit-tap-highlight-color: transparent; }
 .hra .msg { padding: 40px 16px; text-align: center; color: var(--fg-2); }
 .r-common { --r: #9a9a9a; }
 .r-rare { --r: var(--teal); }

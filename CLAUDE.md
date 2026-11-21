@@ -141,7 +141,8 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Otvorenie: ťuk → roztrhnutie → karty rubom (žiara podľa vzácnosti) → ťuk = otočenie (2 polovičky cez WAAPI, nie backface-visibility – spoľahlivé na Safari) → zhrnutie. „Odkryť všetky“ preskočí.
   - **localStorage iba `fulka-hra-v1`** = `{ d: deň posledného balíka, c: { idKarty: počet }, l: [ID posledného balíka] }` (Lonzi chcel ukladať čo najmenej). ID karty = FNV-1a hash textu
     `p:<sezóna>:<hráč>` / `t:…` (epic tím) / `T:…` (legendary tím) v sústave 36 → stále rovnaké, aj keď pribudnú hráči. Kolekcia ~0,5 kB. Zmazanie dát prehliadača = kolekcia preč (iné zariadenie = iná kolekcia).
-  - V Lete 2027 sú na súpiske 3 hráči (Janko Mrkvička, Anna Petržlenová, John Doe) – vyzerajú testovacie; v hre sú ako common karty a môžu byť aj hráčom dňa.
+  - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
+  - Zmazaný hráč z DB z hry zmizne aj z kolekcie (ID v localStorage, ku ktorému karta už nie je, sa ignoruje).
 - **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).
   Na webe iba cez priamu adresu (nikde neodkazované, `noindex`). Teraz: **https://ful.upcba.sk/demo/ants/** – návrhy loga Kuchynka Ants (10 verzií, PNG + WebP; 9–10 = 7–8 s tykadlami na temene, poloha `BACK_MV` v `zdroj.html`).
   Zdroje a nástroje loga (kresba `zdroj.html`, vektory z predlohy, `logo-render.js`, `trace-logo.py`) sú **iba lokálne na vetve `demo-ants`** (nepushovať).
