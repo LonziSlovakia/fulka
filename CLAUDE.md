@@ -45,11 +45,11 @@ Stav k 21. 11. 2026.
 | `board-admin.js` | admin → záložka „Tabuľa“ (ovládanie); načíta ho `render.js` s `?edit` pred `admin.js` |
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
-| `hra/` | **Hra** `ful.upcba.sk/hra/` (iba priama adresa, `noindex`): `index.html`, `cards.js` (čisté funkcie kariet, testované), `hra.js` (vykreslenie, balík, modlitby), `hra.css` |
-| `tests/*.test.js` | `node --test tests/*.test.js` (95 testov: `logic` 52, `upece` 7, `board` 25, `hra` 11; `node --test tests/` na Node 22 nejde) |
+| `hra/` | **Hra** `ful.upcba.sk/hra/` (v menu webu „Hráč dňa“): `index.html`, `cards.js` (čisté funkcie kariet, testované), `hra.js` (vykreslenie, balík, modlitby), `hra.css` |
+| `tests/*.test.js` | `node --test tests/*.test.js` (96 testov: `logic` 52, `upece` 7, `board` 25, `hra` 12; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
-| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg` · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
+| `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg`, `ufl.svg` + `ufl-lesk.svg` (logo UFL obkreslené pre tajnú kartu, lesk = maska lesklých častí) · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
 | `demo/` | dočasné ukážky (napr. `demo/ants/`), na webe iba cez priamu adresu; zmazať celé naraz |
 
 ## Nastavenia (`fulka_settings.data`, admin → Nastavenia)
@@ -57,9 +57,10 @@ Stav k 21. 11. 2026.
 `bannerCount` 1–4 · `pointsWin/Draw/Loss` 3/1/0 · `defaultTime` "21:15" (po sv. omši) · `photos` true/false ·
 `layout` "wide"/"narrow" (Lonzi má úzke) · `tableOrder` (predvolene `h2hPoints, h2hDiff, diff, gf`) ·
 `scorerOrder` (predvolene `goals`) · `scorerTies` "shared"/"alpha"/"team" (predvolene shared) ·
-`upece` true/false (sekcia Z UPeCe) · `upeceHours` text pod názvom UPeCe · `upeceOffer` zoznam `{t, d}` pre „Viac než florbal“.
+`upece` true/false (sekcia Z UPeCe) · `upeceHours` text pod názvom UPeCe · `upeceOffer` zoznam `{t, d}` pre „Viac než florbal“ ·
+`gameOdds` "short"/"full"/"none" (hra: šance pri balíku, admin → Hra).
 
-Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|siroke`, `?upece=ano|nie`; v hre `hra/?sance=nie|popis`.
+Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|siroke`, `?upece=ano|nie`; v hre `hra/?sance=kratko|popis|nie`.
 
 ## Rozhodnutia (dohodnuté s Lonzim)
 
@@ -124,30 +125,32 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - **Odobratie tímu zo sezóny** zmaže iba riadok `fulka_season_teams` – tím, hráči aj súpiska (`fulka_roster`) ostanú v DB a po opätovnom pridaní sa súpiska vráti.
   Tím sa dá pridať do akejkoľvek sezóny. Varovanie pri odobratí ostáva (Lonzi: „je pekné“).
 - **Logá tímov** (štýl): hranaté plochy, čierna linka, krémový obrys `#FCF6E8`, animácia = pauza → efekt → pauza (napr. oči Giants, odlesk + zvonček Rangers).
-- **Hra `/hra/`** (vyžiadal Lonzi 21. 11. 2026, „hlavná vec je modlitba“): na webe **nikde neodkazovaná**, iba priama adresa. Dáta ligy iba číta (db.js, zdieľa cache `fulka-data-v1`), nič nezapisuje do DB.
+- **Hra `/hra/`** (vyžiadal Lonzi 21. 11. 2026, „hlavná vec je modlitba“): od 21. 11. 2026 **spustená**: v menu webu prvý odkaz „Hráč dňa“ (aj na mobile hneď viditeľný), indexovaná. Dáta ligy iba číta (db.js, zdieľa cache `fulka-data-v1`), nič nezapisuje do DB.
   - **Hráč dňa** (hore, hlavná vec): všetci hráči z DB v pevnom zamiešanom poradí (`C.playerOfDay`, podľa dátumu v Bratislave) → každý raz za N dní, pre všetkých rovnaký. Jeho karta + „Dnes sa modlíme za …“ +
     **jedna modlitba dňa, bez prepínania** (Lonzi tak chcel; `C.pick` = každý deň ďalšia z poolu): Otče náš, Zdravas’ Mária (s apostrofom), Sláva Otcu, Pod tvoju ochranu, Verím v Boha
     (texty v `hra.js` `PRAYERS`, Lonzi ich skontroloval; „Pod tvoju ochranu“ je jeho krátke znenie „…neodvracaj zrak od našich prosieb…“; Verím = „zostúpil k zosnulým“, Otče náš bez doxológie).
-    Na širokom rozložení majú rámik výšku najdlhšej modlitby (všetky sú v jednej bunke mriežky, skryté `visibility: hidden`), aby sa ľavá časť s kartou nenaťahovala; na mobile bez rezervy.
+    Rámik modlitby má výšku podľa dnešnej modlitby (ukazuje sa iba jedna; predtým fixná na najdlhšiu – Lonzi chcel späť dynamickú).
     Podklad vo farbe tímu (`.day-shard`) je viazaný na šírku karty (`--cw`), nie na šírku okna → text je vždy na čiernom aj na veľkom monitore. Tlačidlo „hore“ ako na hlavnom webe.
     **Modlitba nič nedáva a nič sa nepočíta ani neukladá** (Lonzi: „to je na zodpovednosti toho človeka… iba spásu na konci vekov“) – nepridávať odmeny ani počítadlá.
   - **Karty**: hráč × sezóna a tím × sezóna; tím mimo všetkých sezón (napr. Ants) má kartu bez sezóny („Nový tím“). Vzácnosť hráča = priečka v kanadskom bodovaní sezóny
-    (1–5 legendary, 6–10 epic, 11–20 rare, inak common; **0 bodov = vždy common**). Tím: epic statická + legendary trblietavá s animovaným logom (`logo_anim`).
+    (1–5 legendary, 6–10 epic, 11–20 rare, inak common; **0 bodov = vždy common**). Tím: **iba legendary** trblietavá s animovaným logom (`logo_anim`; statické epic karty tímov Lonzi zrušil 21. 11.), tím bez animovaného loga kartu nemá.
     Farba karty = farba tímu; fotka (`photo`, vystrihnutá postava) iba keď ju hráč má (kapitáni), inak veľké logo tímu. Rub: modrá + zlatá z loga FULky.
     Farby tried: common sivá, rare tyrkys UPeCe `--teal`, epic fialová `#B36BFF`, legendary zlatá FULky `#F0C146`.
   - **Balík raz denne** (deň v Bratislave): 5 kariet, šance 56/28/12/4 % (`C.ODDS`), aspoň 1 rare+, v balíku bez opakovania, odkrýva sa od najbežnejšej. Uloží sa **hneď pri otvorení** (obnovenie stránky balík neotvorí znova).
-    **Šance na webe** (Lonzi sa ešte rozhoduje, „veď to je tá sranda“): predvolene iba triedy so šancami **bez popisov**, čo do triedy patrí; prepínač v adrese
-    `?sance=nie` (nič) / `?sance=popis` (aj popisy + pravidlo vzácnosti v nadpise), nič sa neukladá. Po rozhodnutí nastaviť predvolené v `hra.js` `ODDS_VIEW`.
+    **Šance pri balíku:** admin → záložka **Hra** (`settings.gameOdds`): triedy so šancami (predvolené) / aj s popismi / skryté. Adresa `?sance=kratko|popis|nie` iba na pozretie.
     Otvorenie: ťuk → roztrhnutie → karty rubom (žiara podľa vzácnosti) → ťuk = otočenie (2 polovičky cez WAAPI, nie backface-visibility – spoľahlivé na Safari) → zhrnutie. „Odkryť všetky“ preskočí.
   - **localStorage iba `fulka-hra-v1`** = `{ d: deň posledného balíka, c: { idKarty: počet }, l: [ID posledného balíka] }` (Lonzi chcel ukladať čo najmenej). ID karty = FNV-1a hash textu
     `p:<sezóna>:<hráč>` / `t:…` (epic tím) / `T:…` (legendary tím) v sústave 36 → stále rovnaké, aj keď pribudnú hráči. Kolekcia ~0,5 kB. Zmazanie dát prehliadača = kolekcia preč (iné zariadenie = iná kolekcia).
   - **Výkon (slabšie mobily, 21. 11. 2026):** animovať iba `transform` a `opacity` (lesk, trblietky, lúče, žiara = rozmazaný kruh s meniacou sa priehľadnosťou).
     Nepoužívať animovaný `filter`, `background-position`, `mix-blend-mode`, `@property` ani `backdrop-filter` – na slabšom mobile to sekalo.
     Karty mimo obrazovky stoja (`.vis` cez IntersectionObserver). Meranie: `THROTTLE=4 node tools/shot.js … @tools/hra-fps.js` (pred: kolekcia 26 / detail 19 / balík 35 FPS, po: 58 / 59 / 60).
-  - **Tajná karta „FULka“ (mythical, 21. 11. 2026):** `C.MYTHICAL` (ID z `M:fulka`), šanca `C.MYTH_ODDS` 0,5 % v každom z prvých 4 slotov balíka (~2 % balíkov).
-    Lonzi chce, aby bola **úplne tajná**: nie je v `buildCards`, v šanciach, lištách, počtoch ani medzi chýbajúcimi kartami; keď padne, je v kolekcii hore ako prvá
-    (počty nemení). Vzhľad: logo FULky, zlaté časti majú masku `ful_bez_pozadia.svg` s leskom, ktorý sa hýbe s náklonom (`--hx`), rám modro-zlatý.
-    **`?debug=mythical`** (dočasne, na skúšanie): karta v kolekcii, balík sa dá otvárať stále a vždy v ňom padne, nič sa neukladá – po odladení zmazať (`DEBUG_MYTH` v `hra.js`).
+  - **Tajné karty (mythical, 21. 11. 2026):** `C.MYTHICALS` = FULka (`M:fulka`) a UFL (`M:ufl`, predchodca FULky), každá má šancu `C.MYTH_ODDS` 0,5 % v každom z prvých 4 slotov balíka.
+    Na stránke sa nikde nespomínajú (nie sú v `buildCards`, šanciach, lištách, počtoch ani medzi chýbajúcimi); keď padnú, sú v kolekcii hore ako prvé (počty nemenia).
+    Kto číta kód, ich nájde – Lonzimu to nevadí. Vzhľad: logo s leskom, ktorý sa hýbe s náklonom (`--hx`), cez masku lesklých častí (`--mask`):
+    FULka = `ful_bez_pozadia.svg` (zlaté časti), UFL = `ufl-lesk.svg` (oranžový okraj, písmená, dráha, loptička; užší a slabší lesk, lebo sú to veľké plochy).
+    `ufl.svg` je obkreslené z obrázka (532 px) nástrojom `tools/ufl-trace.py` na vetve `demo-ants` (zdroj `design/ufl/ufl-src.png`): štít a loptička sú nakreslené čisto
+    (krivky dorovnané podľa nameraných okrajov), písmená, dráha, krídla a znak UPeCe obkreslené potrace.
+    **`?debug=mythical`** (dočasne, na skúšanie): obe karty v kolekcii, balík sa dá otvárať stále a vždy v ňom padnú obe, nič sa neukladá – po odladení zmazať (`DEBUG_MYTH` v `hra.js`).
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
   - Zmazaný hráč z DB z hry zmizne aj z kolekcie (ID v localStorage, ku ktorému karta už nie je, sa ignoruje).
 - **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).

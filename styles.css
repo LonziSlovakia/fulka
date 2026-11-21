@@ -59,7 +59,7 @@ a { color: inherit; }
 [aria-expanded="true"] > .chev, [aria-expanded="true"] .chev { transform: rotate(180deg); }
 .nav { margin-left: auto; display: flex; align-items: center; max-width: 100%; overflow-x: auto; }
 .nav a { padding: 12px 9px; color: var(--fg-2); text-decoration: none; white-space: nowrap; font-family: var(--fc); font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
-.nav a:first-child, .nav a:hover { color: var(--fg); }
+.nav a:first-child, .nav a:hover, .nav a.nav-hra { color: var(--fg); } /* „Hráč dňa“ → hra/ (modlitba a karty) */
 .nav-season { margin-left: 6px; min-height: 40px; padding: 0 14px; background: transparent; border: 1px solid var(--fg); font-family: var(--fc); font-weight: 800; font-size: 20px;
   letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; cursor: pointer; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
 

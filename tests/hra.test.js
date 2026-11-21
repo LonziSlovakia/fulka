@@ -49,7 +49,7 @@ test("vzácnosť podľa priečky; bez bodu vždy common", () => {
   assert.equal(C.rarityOf(1, 0), "common");
 });
 
-test("karty z dát: hráči každej sezóny, tímy epic + legendary s animovaným logom, tím bez sezóny", () => {
+test("karty z dát: hráči každej sezóny, tímy iba legendary s animovaným logom, tím bez sezóny", () => {
   const cards = C.buildCards(D);
   const by = (key) => cards.find((c) => c.key === key);
   assert.equal(by("p:s1:p-ana").rarity, "legendary"); // 2 b, 1. miesto
@@ -57,11 +57,11 @@ test("karty z dát: hráči každej sezóny, tímy epic + legendary s animovaný
   assert.equal(by("p:s1:p-bob").rarity, "legendary"); // 1 b, 2. miesto
   assert.equal(by("p:s1:p-cyril").rarity, "common"); // 0 b
   assert.equal(by("p:s2:p-ana").rarity, "common"); // pripravovaná sezóna bez gólov
-  assert.equal(by("t:s1:aaa").rarity, "epic");
-  assert.equal(by("T:s1:aaa"), undefined); // Ants nemá animované logo
+  assert.equal(by("T:s1:aaa"), undefined); // Ants nemá animované logo → bez karty
+  assert.ok(!cards.some((c) => c.kind === "team" && c.rarity !== "legendary")); // statické tímové karty nie sú
   assert.equal(by("T:s1:bbb").rarity, "legendary");
-  assert.equal(by("t:s1:aaa").pos, 1);
-  assert.equal(by("t:-:ccc").season, null); // Cats nie sú v žiadnej sezóne
+  assert.equal(by("T:s1:bbb").pos, 2);
+  assert.equal(by("T:-:ccc").season, null); // Cats nie sú v žiadnej sezóne
   assert.equal(by("T:-:ccc").anim, true);
   assert.equal(new Set(cards.map((c) => c.id)).size, cards.length);
 });
@@ -86,7 +86,7 @@ test("balík: 5 kariet od najbežnejšej, bez opakovania a vždy aspoň rare", (
 });
 
 test("šance: z 10 000 balíkov sedí podiel legendary okolo 4 %", () => {
-  const cards = C.buildCards(D);
+  const cards = C.RARITY.flatMap((r) => [1, 2, 3, 4, 5, 6].map((i) => ({ id: `${r}${i}`, rarity: r })));
   let s = 7;
   const rng = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
   let leg = 0, all = 0;
@@ -136,4 +136,15 @@ test("tajná karta: padne iba so šancou, je posledná v balíku a nie je medzi 
   const rng = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
   for (let i = 0; i < 20000; i++) if (C.openPack(cards, rng, C.MYTHICAL).includes(C.MYTHICAL)) n++;
   assert.ok(n / 20000 > 0.012 && n / 20000 < 0.03, `balíkov s tajnou kartou ${n / 20000}`); // 1 − 0,995⁴ ≈ 2 %
+});
+
+test("dve tajné karty: každá má vlastnú šancu, padne tá podľa náhody", () => {
+  const cards = C.RARITY.flatMap((r) => [1, 2, 3, 4, 5, 6].map((i) => ({ id: `${r}${i}`, rarity: r })));
+  assert.equal(C.MYTHICALS.length, 2);
+  assert.notEqual(C.MYTHICALS[0].id, C.MYTHICALS[1].id);
+  const first = C.openPack(cards, seq(0.004, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5), C.MYTHICALS);
+  const second = C.openPack(cards, seq(0.007, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5), C.MYTHICALS);
+  assert.ok(first.includes(C.MYTHICALS[0]) && !first.includes(C.MYTHICALS[1]));
+  assert.ok(second.includes(C.MYTHICALS[1]) && !second.includes(C.MYTHICALS[0]));
+  assert.ok(!C.openPack(cards, () => 0.011, C.MYTHICALS).some((c) => c.rarity === "mythical")); // 1,1 % > 2 × 0,5 %
 });

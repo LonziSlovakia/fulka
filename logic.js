@@ -13,6 +13,8 @@
     tableOrder: ["h2hPoints", "h2hDiff", "diff", "gf"], scorerOrder: ["goals"], scorerTies: "shared",
     // sekcia „Z UPeCe“ dole na stránke: zapnutá, otváracie hodiny a zoznam „Čo ponúka UPeCe“ (t = názov, d = popis)
     upece: true, upeceHours: "Otvorené denne 13:00 – 24:00",
+    // hra (/hra/): šance pri balíku – "short" triedy so šancami, "full" aj s popismi, "none" skryté
+    gameOdds: "short",
     upeceOffer: [
       { t: "Sv. omše a spoveď", d: "Denne v kaplnke, spoveď cez online rezerváciu" },
       { t: "Florbal a športy", d: "Utorok a piatok po omši, telocvičňa na Šturáku" },

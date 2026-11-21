@@ -140,7 +140,7 @@
         <span class="brand-name"><b>FULka</b><small>Florbalová Upece Liga</small></span></a>
       <button type="button" class="season-btn" data-act="menu" aria-expanded="${state.menu}" aria-label="Vybrať sezónu, teraz ${esc(s.name)}">
         <span class="dot" aria-hidden="true" style="background:${st.dot};border:1px ${st.line} ${st.dotBd}"></span>${esc(s.name)}${chev(14)}</button>
-      <nav class="nav" aria-label="Hlavná navigácia">${nav}
+      <nav class="nav" aria-label="Hlavná navigácia"><a class="nav-hra" href="hra/">Hráč dňa</a>${nav}
         <button type="button" class="nav-season" data-act="menu" aria-expanded="${state.menu}">Sezóny</button></nav>
     </div></header>`;
   }

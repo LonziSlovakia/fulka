@@ -11,7 +11,7 @@
     data: null, tab: "matches", season: null, filter: "all",
     sel: null, draft: null, pick: null, cal: null,
     teamSel: null, moving: null, newName: "", teamScope: "season", // teamScope: "season" = tímy upravovanej sezóny, "all" = všetky tímy z DB
-    seasonSel: null, seasonDraft: null, setDraft: null,
+    seasonSel: null, seasonDraft: null, setDraft: null, gameDraft: null,
     toast: "", error: "", busy: false, uploading: null, loginError: "",
     bk: null, bkLabel: "", bkAll: false, // zálohy: { list, undo, loading, missing, error }
   };
@@ -612,10 +612,10 @@
   }
 
   function nav(c) {
-    const tabs = [["matches", "Zápasy"], ["playoff", "Playoff"], ["teams", "Tímy"], ["seasons", "Sezóny"], ["settings", "Nastavenia"], ["backups", "Zálohy"], ["board", "Tabuľa"]]
+    const tabs = [["matches", "Zápasy"], ["playoff", "Playoff"], ["teams", "Tímy"], ["seasons", "Sezóny"], ["settings", "Nastavenia"], ["game", "Hra"], ["backups", "Zálohy"], ["board", "Tabuľa"]]
       .map(([id, label]) => `<button type="button" data-a="tab" data-id="${id}" ${pressed(S.tab === id)}>${label}</button>`).join("");
     let bar = "";
-    if (S.tab !== "seasons" && S.tab !== "settings" && S.tab !== "backups") {
+    if (S.tab !== "seasons" && S.tab !== "settings" && S.tab !== "backups" && S.tab !== "game") {
       const all = S.tab === "teams" && S.teamScope === "all"; // Tímy → „Všetky tímy“ namiesto jednej sezóny
       const chips = c.d.seasons.slice().sort((x, y) => x.sort - y.sort).map((x) =>
         `<button type="button" class="a-schip" data-a="season" data-id="${esc(x.id)}" ${pressed(!all && x.id === c.s.id)}>${sq(STATE[x.state], !all && x.id === c.s.id)}${esc(x.short || x.name)}</button>`).join("")
@@ -1140,6 +1140,26 @@
           <button type="button" class="a-ghost" data-a="resetSettings">Zahodiť zmeny</button></div></div></div>`;
   }
 
+  /* ---------- Hra (/hra/): hráč dňa s modlitbou a zberateľské karty ----------
+     Nastavenie sa ukladá do fulka_settings.data (gameOdds) spolu s ostatnými nastaveniami webu. */
+  const GAME_ODDS = [["short", "Triedy so šancami"], ["full", "Šance aj s popismi"], ["none", "Skryť šance"]];
+  const savedGame = (c) => ({ gameOdds: GAME_ODDS.some(([v]) => v === c.settings.gameOdds) ? c.settings.gameOdds : L.DEFAULTS.gameOdds });
+  function gamePanel(c) {
+    const gd = S.gameDraft || savedGame(c);
+    const dirty = gd.gameOdds !== savedGame(c).gameOdds;
+    const opts = GAME_ODDS.map(([v, label]) => `<button type="button" data-a="gameOdds" data-id="${v}" ${pressed(gd.gameOdds === v)}>${label}</button>`).join("");
+    const look = (q, label) => `<a class="a-ghost w" href="hra/${q}" target="_blank" rel="noopener">${label}${icon.next}</a>`;
+    return `<div class="a-ed"><div class="a-ed-head"><span class="sh" aria-hidden="true" style="width:30%;background:repeating-linear-gradient(115deg, #2E2E2E 0 6px, #141414 6px 12px);clip-path:polygon(30% 0, 100% 0, 100% 100%, 12% 100%)"></span>
+        <span class="tt"><span class="lbl">Hráč dňa a karty</span><b>Hra</b></span>${dirty ? '<span class="a-dirty">Neuložené zmeny</span>' : ""}</div>
+      ${msgs()}
+      <div class="a-body"><fieldset class="a-fs" style="gap:12px"><legend>Šance pri dennom balíku</legend>
+          <span class="muted" style="font-size:14px">Čo hráči vidia pri balíku: triedy so šancami (Legendary 4 % …), k tomu aj popis, kto do triedy patrí, alebo nič – nech je to prekvapenie.</span>
+          <div class="a-seg" role="group">${opts}</div>
+          <div class="a-actions">${look("?sance=popis", "Pozrieť s popismi")}${look("?sance=kratko", "Pozrieť iba šance")}${look("?sance=nie", "Pozrieť bez šancí")}</div></fieldset>
+        <div class="a-actions"><button type="button" class="a-save" data-a="saveGame"${S.busy ? " disabled" : ""}>${S.busy ? "Ukladám…" : "Uložiť"}</button>
+          <button type="button" class="a-ghost" data-a="resetGame">Zahodiť zmeny</button>${look("", "Otvoriť hru")}</div></div></div>`;
+  }
+
   /* ---------- Zálohy (supabase/3-zalohy.sql) ----------
      Iba ručné zálohy (tlačidlo, napr. po kole), mazanie, stiahnutie do počítača a návrat k zálohe:
      1. okno = čo sa zmení (diff po tabuľkách), 2. okno = „Naozaj?“ + napísať OBNOVIŤ, až potom zápis.
@@ -1311,11 +1331,11 @@
     if (S.tab === "seasons" && !S.seasonDraft && !mobile()) { selectSeason(c.s.id); return; }
     const isMP = S.tab === "matches" || S.tab === "playoff";
     const detail = isMP ? !!S.draft : S.tab === "teams" ? !!(S.teamSel || S.teamDraft) : S.tab === "seasons" ? !!S.seasonDraft : true;
-    const single = S.tab === "settings" || S.tab === "backups" || S.tab === "board"; // iba jeden stĺpec
+    const single = S.tab === "settings" || S.tab === "backups" || S.tab === "board" || S.tab === "game"; // iba jeden stĺpec
     const showLeft = !single && !(mobile() && detail);
     const showRight = single || !mobile() || detail;
     const left = { matches: matchList, playoff: playoffLeft, teams: teamList, seasons: seasonList }[S.tab];
-    const right = isMP ? matchEditor(c) : S.tab === "teams" ? (S.teamDraft ? teamForm(c) : S.teamSel ? teamEditor(c) : "") : S.tab === "seasons" ? (S.seasonDraft ? seasonEditor(c) : "") : S.tab === "backups" ? backupsPanel() : S.tab === "board" ? window.BoardAdmin.html(boardApi()) : settingsPanel(c);
+    const right = isMP ? matchEditor(c) : S.tab === "teams" ? (S.teamDraft ? teamForm(c) : S.teamSel ? teamEditor(c) : "") : S.tab === "seasons" ? (S.seasonDraft ? seasonEditor(c) : "") : S.tab === "backups" ? backupsPanel() : S.tab === "board" ? window.BoardAdmin.html(boardApi()) : S.tab === "game" ? gamePanel(c) : settingsPanel(c);
     const focus = document.activeElement && document.activeElement.closest && document.activeElement.closest("[data-a]");
     const key = focus ? `[data-a="${focus.dataset.a}"]${focus.dataset.id !== undefined ? `[data-id="${CSS.escape(focus.dataset.id)}"]` : ""}${focus.dataset.i !== undefined ? `[data-i="${focus.dataset.i}"]` : ""}` : null;
     app.innerHTML = `<div class="adm">${header(c)}${nav(c)}<main class="wrap a-main">
@@ -1329,7 +1349,7 @@
   /* ---------- Udalosti ---------- */
   const ACTIONS = {
     logout: () => { DB.signOut(); render(); },
-    tab: (el) => { S.tab = el.dataset.id; S.toast = ""; S.error = ""; S.moving = null; S.teamDraft = null; if (S.tab !== "matches" && S.tab !== "playoff") { S.sel = null; S.draft = null; } if (S.tab === "settings") S.setDraft = null; render(); if (S.tab === "backups") loadBackups(); },
+    tab: (el) => { S.tab = el.dataset.id; S.toast = ""; S.error = ""; S.moving = null; S.teamDraft = null; if (S.tab !== "matches" && S.tab !== "playoff") { S.sel = null; S.draft = null; } if (S.tab === "settings") S.setDraft = null; if (S.tab === "game") S.gameDraft = null; render(); if (S.tab === "backups") loadBackups(); },
     season: (el) => { S.season = el.dataset.id; S.teamScope = "season"; S.teamDraft = null; S.sel = null; S.draft = null; S.teamSel = null; S.moving = null; S.filter = "all"; S.toast = ""; S.error = ""; render(); },
     filter: (el) => { S.filter = el.dataset.id; render(); },
     select: (el) => select(el.dataset.id),
@@ -1399,6 +1419,13 @@
     bkDel: (el) => deleteBackup(el.dataset.id),
     bkUndo: () => undoRestore(),
     bkAll: () => { S.bkAll = true; render(); },
+    gameOdds: (el) => { S.gameDraft = { gameOdds: el.dataset.id }; S.toast = ""; render(); },
+    resetGame: () => { S.gameDraft = null; render(); },
+    saveGame: () => {
+      const gd = S.gameDraft || savedGame(ctx());
+      const label = (GAME_ODDS.find(([v]) => v === gd.gameOdds) || [])[1] || "";
+      run(() => DB.saveSettings(Object.assign({}, S.data.settings, gd)), `Uložené. Hra pri balíku: ${label.toLowerCase()}.`, () => { S.gameDraft = null; });
+    },
     saveSettings: () => {
       const sd = setDraftOf(ctx());
       const data = Object.assign({}, S.data.settings, sd);

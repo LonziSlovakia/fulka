@@ -1,6 +1,6 @@
 /* Hra FULky (/hra/): zberateľské karty hráčov a tímov – čisté funkcie (testy: tests/hra.test.js).
    Karta = hráč v jednej sezóne alebo tím v jednej sezóne. Vzácnosť hráča = priečka v kanadskom bodovaní
-   tej sezóny, tím má statickú epic kartu a trblietavú legendary s animovaným logom.
+   tej sezóny, tím má iba trblietavú legendary kartu s animovaným logom.
    V prehliadači sa ukladá iba málo: deň posledného balíka, ID kariet s počtom kusov a ID posledného balíka. */
 (() => {
   "use strict";
@@ -11,7 +11,7 @@
   const ODDS = { common: 56, rare: 28, epic: 12, legendary: 4 }; // šanca jednej karty v balíku (%)
   const TIERS = [[5, "legendary"], [10, "epic"], [20, "rare"]]; // priečka v bodovaní do … → trieda
   const PACK = 5;
-  const MYTH_ODDS = 0.5; // tajná karta (%) v každom z prvých 4 slotov balíka; nikde sa neukazuje ani nepočíta
+  const MYTH_ODDS = 0.5; // každá tajná karta (%) v každom z prvých 4 slotov balíka; nikde sa neukazuje ani nepočíta
 
   // FNV-1a: z textu krátke číslo; ID karty = to číslo v sústave 36 (napr. "z26:p-urban-jozef" → "1k9x0q")
   function hash(text) {
@@ -40,8 +40,13 @@
   }
 
   const card = (key, rest) => Object.assign({ id: cardId(key), key }, rest);
-  // tajná karta FULky (mythical): nie je v buildCards → nemení počty kariet, triedy ani chýbajúce karty
-  const MYTHICAL = card("M:fulka", { kind: "myth", rarity: "mythical", name: "FULka", season: null, team_id: "" });
+  // tajné karty (mythical): nie sú v buildCards → nemenia počty kariet, triedy ani chýbajúce karty
+  // logo FULky a logo UFL (predchodca FULky); art = ktoré logo, poradie = poradie v kolekcii
+  const MYTHICALS = [
+    card("M:fulka", { kind: "myth", art: "ful", rarity: "mythical", name: "FULka", season: null, team_id: "" }),
+    card("M:ufl", { kind: "myth", art: "ufl", rarity: "mythical", name: "UFL", season: null, team_id: "" }),
+  ];
+  const MYTHICAL = MYTHICALS[0];
 
   function playerCards(s, st) {
     return st.list.map((x) => {
@@ -53,15 +58,14 @@
     });
   }
 
-  // tím: epic (statické logo) + legendary (animované logo), ak animované logo má
+  // tím: iba legendary karta s animovaným logom (statické epic karty tímov Lonzi zrušil 21. 11. 2026); bez animovaného loga žiadna
   function teamCards(team, s, st) {
+    if (!team.logo_anim) return [];
     const row = st ? st.table.find((t) => t.id === team.id) : null;
     const place = st ? (st.places.find((p) => p.id === team.id) || {}).pos || null : null;
     const base = { kind: "team", season: s, team_id: team.id, name: team.name, pos: row && row.z ? row.pos : null, b: row ? row.b : 0, place };
     const sid = s ? s.id : "-";
-    const out = [card(`t:${sid}:${team.id}`, Object.assign({ rarity: "epic", anim: false }, base))];
-    if (team.logo_anim) out.push(card(`T:${sid}:${team.id}`, Object.assign({ rarity: "legendary", anim: true }, base)));
-    return out;
+    return [card(`T:${sid}:${team.id}`, Object.assign({ rarity: "legendary", anim: true }, base))];
   }
 
   // všetky karty z dát databázy; tím, ktorý nie je v žiadnej sezóne (napr. nový), má kartu bez sezóny
@@ -99,13 +103,17 @@
   }
 
   // 5 kariet (v jednom balíku sa karta neopakuje, kým je z čoho brať); aspoň jedna rare alebo lepšia;
-  // zoradené od najbežnejšej, aby najlepšia prišla na koniec; myth = tajná karta (šanca MYTH_ODDS v prvých 4 slotoch)
-  function openPack(cards, rng, myth) {
+  // zoradené od najbežnejšej, aby najlepšia prišla na koniec; myths = tajné karty (každá má šancu MYTH_ODDS v prvých 4 slotoch)
+  function openPack(cards, rng, myths) {
+    const myth = [].concat(myths || []);
     const rnd = rng || Math.random;
     const pools = Object.fromEntries(RARITY.map((r) => [r, cards.filter((c) => c.rarity === r)]));
     const pick = [];
     for (let i = 0; i < PACK; i++) {
-      if (myth && i < PACK - 1 && rnd() < MYTH_ODDS / 100) { pick.push(myth); continue; }
+      if (myth.length && i < PACK - 1) {
+        const x = rnd();
+        if (x < (MYTH_ODDS / 100) * myth.length) { pick.push(myth[Math.floor(x / (MYTH_ODDS / 100))]); continue; }
+      }
       const guarantee = i === PACK - 1 && pick.every((c) => c.rarity === "common");
       const r = (guarantee && rollRarity(pools, rnd, 1)) || rollRarity(pools, rnd, 0);
       if (!r) break;
@@ -154,7 +162,7 @@
   }
 
   const Cards = {
-    RARITY, RARITY_NAME, ODDS, TIERS, PACK, MYTH_ODDS, MYTHICAL,
+    RARITY, RARITY_NAME, ODDS, TIERS, PACK, MYTH_ODDS, MYTHICAL, MYTHICALS,
     hash, cardId, rarityOf, buildCards, sortCards, rollRarity, openPack,
     readSave, canOpen, addPack, dayNumber, nextDay, playerOfDay, latestCard, pick,
   };

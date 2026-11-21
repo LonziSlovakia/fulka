@@ -129,16 +129,14 @@ html.locked, html.locked body { overflow: hidden; }
 .day-txt { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
 .day-txt h1 { margin: 16px 0 0; font-family: var(--fc); font-weight: 900; font-size: clamp(60px, 8cqi, 112px); line-height: 0.85; text-transform: uppercase; transform: skewX(-8deg); }
 .day-for { margin: 22px 0 0; font-size: 13px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-2); }
-.day-name { margin: 4px 0 0; font-family: var(--fc); font-weight: 900; font-size: clamp(38px, 4.8cqi, 64px); line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg); color: var(--c); }
+.day-name { margin: 14px 0 0; font-family: var(--fc); font-weight: 900; font-size: clamp(38px, 4.8cqi, 64px); line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg); color: var(--c); }
 .day-team { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-2); }
 .day-team img { width: 26px; height: 26px; }
 .day-lead { margin: 16px 0 0; max-width: 600px; font-size: 15px; color: var(--fg-2); }
 .day-next { margin: 12px 0 0; font-size: 13px; color: var(--fg-3); }
 .pr { width: 100%; max-width: 680px; margin-top: 22px; }
 .pr-kick { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-2); }
-.pr-text { display: grid; margin-top: 10px; padding: 20px 24px 22px; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--c); }
-.pr-one { grid-area: 1 / 1; }
-.pr-one[aria-hidden="true"] { visibility: hidden; }
+.pr-text { margin-top: 10px; padding: 20px 24px 22px; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--c); }
 .pr-text h3 { margin: 0 0 12px; font-family: var(--fc); font-weight: 900; font-size: 30px; line-height: 0.9; text-transform: uppercase; transform: skewX(-8deg); }
 .pr-text p { margin: 0; font-size: 17px; line-height: 1.55; color: #ececec; }
 .pr-text .amen { margin-top: 10px; font-family: var(--fc); font-weight: 900; font-size: 24px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--c); transform: skewX(-8deg); transform-origin: left; }
@@ -253,7 +251,6 @@ html.locked, html.locked body { overflow: hidden; }
     clip-path: polygon(0 0, 100% 0, 100% 62%, 0 100%); }
   .day-txt { align-items: center; text-align: center; }
   .pr-text { text-align: left; }
-  .pr-one[aria-hidden="true"] { display: none; } /* na mobile nie je nič vedľa → bez rezervy na najdlhšiu modlitbu */
   .pk-grid { grid-template-columns: minmax(0, 1fr); justify-items: center; }
   .pk-side { align-items: center; text-align: center; }
   .odds li { grid-template-columns: 8px 84px minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; text-align: left; }
@@ -276,11 +273,17 @@ html.locked, html.locked body { overflow: hidden; }
 .cl-card.vis .fc *, .cl-card.vis .fc *::before, .mini.vis .fc *, .mini.vis .fc *::before { animation-play-state: running; }
 /* ---------- Tajná karta (mythical): logo FULky, zlaté časti sa lesknú pri pohybe ---------- */
 .my-bg { background: repeating-linear-gradient(-62deg, rgba(240, 193, 70, 0.08) 0 0.8cqi, rgba(0, 0, 0, 0) 0.8cqi 6.5cqi), radial-gradient(circle at 50% 36%, var(--navy-2), var(--navy) 55%, var(--navy-3)); }
-.my-logo { position: absolute; left: 50%; top: 15%; width: 68cqi; padding: 2cqi; background: #fff; transform: translateX(-50%); clip-path: polygon(9% 0, 100% 0, 91% 100%, 0 100%); }
-.my-logo img { display: block; width: 100%; height: auto; clip-path: polygon(9% 0, 100% 0, 91% 100%, 0 100%); }
+.my-logo { position: absolute; left: 50%; top: 15%; width: 68cqi; transform: translateX(-50%); }
+.my-logo.framed { padding: 2cqi; background: #fff; clip-path: polygon(9% 0, 100% 0, 91% 100%, 0 100%); }
+.my-logo img { display: block; width: 100%; height: auto; }
+.my-logo.framed img { clip-path: polygon(9% 0, 100% 0, 91% 100%, 0 100%); }
+.my-ufl .my-logo { top: -2cqi; width: 111cqi; filter: drop-shadow(0 2cqi 3cqi rgba(0, 0, 0, 0.45)); } /* v ufl.svg je okolo loga prázdny okraj (logo ~70 % šírky) */
+.my-ufl .my-gold i { background: linear-gradient(110deg, rgba(255, 255, 255, 0) 45%, rgba(255, 255, 255, 0.55) 50%, rgba(255, 255, 255, 0) 55%); } /* veľké plochy → užší a slabší lesk */
+.my-ufl .my-bg { background: repeating-linear-gradient(-62deg, rgba(200, 96, 47, 0.1) 0 0.8cqi, rgba(0, 0, 0, 0) 0.8cqi 6.5cqi), radial-gradient(circle at 50% 36%, #4a525a, #2b3035 55%, #16191c); }
 /* vrstva v tvare zlatých častí loga (ful_bez_pozadia.svg = iba zlatá, rovnaký viewBox ako ful.svg) – po nej prechádza svetlý pás */
-.my-gold { position: absolute; inset: 2cqi; overflow: hidden; pointer-events: none;
-  -webkit-mask: url(../assets/logos/ful_bez_pozadia.svg) center / 100% 100% no-repeat; mask: url(../assets/logos/ful_bez_pozadia.svg) center / 100% 100% no-repeat; }
+.my-gold { position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  -webkit-mask: var(--mask) center / 100% 100% no-repeat; mask: var(--mask) center / 100% 100% no-repeat; }
+.my-logo.framed .my-gold { inset: 2cqi; }
 .my-gold i { position: absolute; top: 0; bottom: 0; left: -100%; width: 300%; will-change: transform;
   background: linear-gradient(110deg, rgba(255, 255, 255, 0) 38%, rgba(255, 246, 210, 0.85) 46%, #fff 50%, rgba(255, 246, 210, 0.85) 54%, rgba(255, 255, 255, 0) 62%);
   animation: gold-shine 3.4s ease-in-out infinite; }

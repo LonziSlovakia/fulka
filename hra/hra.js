@@ -15,9 +15,10 @@
   };
   const S = { data: null, cards: [], byId: {}, T: {}, P: {}, save: C.readSave(ls.get(KEY)), filter: "all", season: "all", busy: false };
   const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  /* Šance pri balíku – Lonzi sa ešte rozhoduje, preto prepínač v adrese (nič sa neukladá):
-     predvolene triedy so šancami bez popisov, ?sance=nie = nič, ?sance=popis = aj čo do triedy patrí */
-  const ODDS_VIEW = ({ nie: "none", popis: "full" })[new URLSearchParams(location.search).get("sance")] || "short";
+  /* Šance pri balíku: nastavenie v admine → Hra (settings.gameOdds: short / full / none);
+     adresa ho vie dočasne prepnúť na pozretie (?sance=kratko|popis|nie), nič sa neukladá */
+  const ODDS_URL = ({ kratko: "short", nie: "none", popis: "full" })[new URLSearchParams(location.search).get("sance")] || "";
+  const oddsView = () => ODDS_URL || L.settingsOf(S.data.settings).gameOdds;
 
   /* ---------- Modlitby ---------- */
   const PRAYERS = [
@@ -56,9 +57,9 @@
   const RNAME = Object.assign({ mythical: "Mythical" }, C.RARITY_NAME);
   /* Tajná karta (mythical): nikde sa nespomína, v kolekcii je iba keď padla (hore ako prvá), nemení počty.
      ?debug=mythical = iba na skúšanie: karta je v kolekcii, balík sa dá otvárať stále a vždy v ňom padne, nič sa neukladá. */
-  const MYTH = C.MYTHICAL;
+  const MYTHS = C.MYTHICALS; // FULka, UFL
   const DEBUG_MYTH = new URLSearchParams(location.search).get("debug") === "mythical";
-  const RLONG = { legendary: "Top 5 hráčov sezóny + trblietavé tímy s animovaným logom", epic: "6. – 10. hráč + tímové karty",
+  const RLONG = { legendary: "Top 5 hráčov sezóny + trblietavé tímy s animovaným logom", epic: "6. – 10. hráč v kanadskom bodovaní",
     rare: "11. – 20. hráč v kanadskom bodovaní", common: "Ostatní hráči zo súpisky" };
 
   function teamsOf(d) {
@@ -70,7 +71,7 @@
     return T;
   }
   const teamOf = (c) => S.T[c.team_id] || FUL;
-  const owned = (id) => S.save.c[id] || (DEBUG_MYTH && id === MYTH.id ? 1 : 0);
+  const owned = (id) => S.save.c[id] || (DEBUG_MYTH && MYTHS.some((m) => m.id === id) ? 1 : 0);
   const store = () => ls.set(KEY, S.save);
 
   /* ---------- Karta ---------- */
@@ -84,16 +85,22 @@
     return `<span class="fc-stats team">${c.place === 1 ? '<i class="cup" aria-hidden="true"></i>' : ""}<span>${place}</span></span>`;
   }
 
-  // tajná karta: logo FULky, zlaté časti loga majú vlastnú vrstvu s leskom (maska v tvare zlatých častí), ktorá sa hýbe s náklonom
-  function mythFront() {
-    return `<div class="fc-face fc-front my-front"><div class="fill my-bg"></div>
-      <span class="my-logo"><img src="../assets/logos/ful.svg" alt=""><span class="my-gold"><i></i></span></span>
+  // tajné karty: logo FULky (lesknú sa zlaté časti) a logo UFL, predchodcu FULky (leskne sa oranžový okraj, písmená, dráha a loptička);
+  // lesk = vrstva v tvare lesklých častí loga (maska), ktorá sa hýbe s náklonom karty
+  const MYTH_ART = {
+    ful: { logo: "../assets/logos/ful.svg", mask: "../assets/logos/ful_bez_pozadia.svg", framed: true, sub: "Florbalová UPeCe liga" },
+    ufl: { logo: "../assets/logos/ufl.svg", mask: "../assets/logos/ufl-lesk.svg", framed: false, sub: "Odtiaľto FULka pokračuje" },
+  };
+  function mythFront(c) {
+    const a = MYTH_ART[c.art] || MYTH_ART.ful;
+    return `<div class="fc-face fc-front my-front my-${esc(c.art)}" style="--mask:url(${a.mask})"><div class="fill my-bg"></div>
+      <span class="my-logo${a.framed ? " framed" : ""}"><img src="${a.logo}" alt=""><span class="my-gold"><i></i></span></span>
       <div class="fc-top"><span class="fc-rar">${RNAME.mythical}</span><span class="fc-pos">✦</span></div>
-      <div class="fc-info"><b class="fc-name">FULka</b><span class="fc-sub">Florbalová UPeCe liga</span><span class="fc-stats team"><span>Tajná karta</span></span></div>${SPARKS}</div>`;
+      <div class="fc-info"><b class="fc-name">${esc(c.name)}</b><span class="fc-sub">${a.sub}</span><span class="fc-stats team"><span>Tajná karta</span></span></div>${SPARKS}</div>`;
   }
 
   function front(c) {
-    if (c.kind === "myth") return mythFront();
+    if (c.kind === "myth") return mythFront(c);
     const t = teamOf(c);
     const p = c.kind === "player" ? S.P[c.player_id] : null;
     const pic = p && p.photo ? DB.photoUrl(p.photo) : "";
@@ -139,12 +146,11 @@
   function dayCard(p) {
     return C.latestCard(S.cards, p.id) || { id: "", kind: "player", rarity: "common", season: null, player_id: p.id, team_id: "", name: p.name, pos: 0, b: 0, g: 0, a: 0 };
   }
-  /* modlitba dňa (bez prepínania): všetky modlitby sú v jednej bunke mriežky na sebe, viditeľná je iba dnešná
-     → rámik má vždy výšku najdlhšej modlitby a stránka sa zo dňa na deň nenaťahuje */
+  // modlitba dňa (bez prepínania): každý deň ďalšia z piatich, výška podľa nej (nie podľa najdlhšej)
   function prayerBox(date) {
-    const today = PRAYERS[C.pick(PRAYERS.length, date)];
-    const one = (pr) => `<div class="pr-one"${pr === today ? "" : ' aria-hidden="true"'}><h3>${esc(pr.name)}</h3>${pr.text.map((l) => `<p${l === "Amen." ? ' class="amen"' : ""}>${esc(l)}</p>`).join("")}</div>`;
-    return `<div class="pr"><p class="pr-kick">Dnešná modlitba</p><div class="pr-text">${PRAYERS.map(one).join("")}</div></div>`;
+    const pr = PRAYERS[C.pick(PRAYERS.length, date)];
+    return `<div class="pr"><p class="pr-kick">Dnešná modlitba</p><div class="pr-text"><h3>${esc(pr.name)}</h3>`
+      + `${pr.text.map((l) => `<p${l === "Amen." ? ' class="amen"' : ""}>${esc(l)}</p>`).join("")}</div></div>`;
   }
   function daySec() {
     const date = today();
@@ -178,8 +184,9 @@
     <span class="bk-logo"><img src="../assets/logos/ful.svg" alt=""></span><b class="pk-title">Karty FULky</b><span class="pk-sub">5 kariet · raz denne</span></div><div class="pk-crimp bot"></div>`;
 
   function odds() {
-    if (ODDS_VIEW === "none") return "";
-    const full = ODDS_VIEW === "full";
+    const view = oddsView();
+    if (view === "none") return "";
+    const full = view === "full";
     const rows = C.RARITY.slice().reverse().map((r) => `<li class="r-${r}"><i></i><b>${RNAME[r]}</b>${full ? `<span>${RLONG[r]}</span>` : ""}<em>${C.ODDS[r]} %</em></li>`).join("");
     return `<ul class="odds${full ? "" : " short"}">${rows}</ul>`;
   }
@@ -192,7 +199,7 @@
       : `<p class="pk-lead">Dnešný balík je otvorený. Ďalší bude o</p><p class="pk-clock" data-clock>${countdown()}</p>
          ${last.length ? `<div class="pk-last">${last.map((c) => `<button type="button" class="mini" data-act="show" data-id="${esc(c.id)}" aria-label="${esc(c.name)}">${cardHtml(c, "front")}</button>`).join("")}</div>` : ""}`;
     return `<section id="balik" class="sec"><div class="wrap">
-      <div class="sec-head"><h2>Denný balík</h2>${ZIG}${ODDS_VIEW === "full" ? '<span class="sec-hint">Vzácnosť hráča = priečka v kanadskom bodovaní sezóny</span>' : ""}</div>
+      <div class="sec-head"><h2>Denný balík</h2>${ZIG}${oddsView() === "full" ? '<span class="sec-hint">Vzácnosť hráča = priečka v kanadskom bodovaní sezóny</span>' : ""}</div>
       <div class="pk-grid"><button type="button" class="pack${open ? "" : " used"}" data-act="open" ${open ? "" : "disabled"} aria-label="Otvoriť balík">${PACK_ART}</button>
         <div class="pk-side">${side}${odds()}</div></div></div></section>`;
   }
@@ -213,7 +220,7 @@
     const chip = (id, name) => `<button type="button" class="cl-chip" data-act="season" data-id="${esc(id)}" aria-pressed="${S.season === id}">${esc(name)}</button>`;
     const chips = [chip("all", "Všetky sezóny")].concat(seasons.map((s) => chip(s.id, s.short || s.name)),
       S.cards.some((c) => !c.season) ? [chip("-", "Nové tímy")] : []).join("");
-    const myth = owned(MYTH.id) ? [MYTH] : []; // tajná karta hore ako prvá (iba keď ju hráč má)
+    const myth = MYTHS.filter((m) => owned(m.id)); // tajné karty hore ako prvé (iba tie, ktoré hráč má)
     const grid = myth.concat(shown).map((c) => (owned(c.id)
       ? `<button type="button" class="cl-card" data-act="show" data-id="${esc(c.id)}" aria-label="${esc(c.name)}">${cardHtml(c, "front")}${owned(c.id) > 1 ? `<span class="cnt">×${owned(c.id)}</span>` : ""}</button>`
       : `<div class="cl-card off" aria-label="Chýbajúca karta ${RNAME[c.rarity]}">${cardHtml(c, "missing")}</div>`)).join("");
@@ -234,7 +241,7 @@
     S.T = teamsOf(d);
     S.P = Object.fromEntries(d.players.map((p) => [p.id, p]));
     S.cards = C.buildCards(d);
-    S.byId = Object.fromEntries(S.cards.concat(MYTH).map((c) => [c.id, c]));
+    S.byId = Object.fromEntries(S.cards.concat(MYTHS).map((c) => [c.id, c]));
     if (!S.busy) render();
   }
 
@@ -290,8 +297,8 @@
     S.busy = true;
     const had = Object.assign({}, S.save.c); // počty pred balíkom → „Nová karta“ / „×2“
     const seen = Object.assign({}, had);
-    const pack = C.openPack(S.cards, Math.random, MYTH);
-    if (DEBUG_MYTH && !pack.includes(MYTH)) pack[pack.length - 1] = MYTH; // skúšanie: tajná karta vždy (posledná)
+    const pack = C.openPack(S.cards, Math.random, MYTHS);
+    if (DEBUG_MYTH) MYTHS.forEach((m, i) => { if (!pack.includes(m)) pack[pack.length - MYTHS.length + i] = m; }); // skúšanie: obe tajné karty (na konci)
     const next = C.addPack(S.save, pack.map((c) => c.id), today());
     if (!DEBUG_MYTH) { S.save = next; store(); } // uložené hneď: obnovenie stránky balík neotvorí znova (pri skúšaní nič)
     let skip = false;
