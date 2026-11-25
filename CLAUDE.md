@@ -85,6 +85,9 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - Admin: zápas, sezóna a nastavenia sa ukladajú tlačidlom; súpiska hneď. Po uložení sa všetko znova načíta z DB. Mazanie (zápas, hráč, tím zo sezóny)
   potvrdí vlastný dialóg s rozmazaným pozadím. Poradie v Nastaveniach: banner → náhľad banneru → fotky → rozloženie → Z UPeCe → kritériá → Uložiť dole.
 - Časy v admine: rýchle voľby 19:00 / 20:15 / 21:00 / 21:15 a ±15 min.
+- **Skončená sezóna** má na konci aj sekciu **Tímy** (súpisky s kapitánmi a fotkami ako prebiehajúca, `teams(c, hint)`), v menu „Tímy“ (Lonzi 25. 11.).
+- **Sezóna v adrese:** `?sezona=z26` pri inej než predvolenej sezóne (predvolená = prebiehajúca, inak najnovšia → adresa bez parametra). Obnovenie a poslaný odkaz
+  ostanú pri sezóne, Späť/Dopredu v prehliadači prepína sezóny (`history.pushState` + `popstate` v `render.js`). Vybraté pred `#kotvou` aj uloženým výberom (odkaz sa dá poslať).
 - Admin → Tímy: v riadku sezón je navyše čip **„Všetky tímy (N)“** (`S.teamScope`; Lonzi ho chcel tam, nie v zozname). „Všetky tímy“ = všetky z DB aj s menami sezón; tím mimo upravovanej sezóny
   sa dá upraviť („Upraviť tím“) a tlačidlom „Pridať do sezóny …“ pridať (súpiska patrí k sezóne). Vyžiadal Lonzi 20. 11. 2026 – tím odobratý zo všetkých sezón sa inak nedal upraviť.
 - Tlačidlo „hore“: plávajúce vpravo dole (biely štvorec so šípkou, zrezaný roh), ukáže sa po odscrollovaní o 400 px, iba na verejnom webe (nie v `?edit`).
@@ -156,7 +159,8 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - **Veniec „Elite Ball Knowledge“ (21. 11. 2026):** keď hráč má všetky karty z `buildCards` (tajné sa nerátajú, `C.complete`), po odkrytí balíka s poslednou chýbajúcou
     kartou príde oslava (veniec + „Elite Ball Knowledge“, potom zhrnutie) a v `fulka-hra-v1` sa uloží `w: 1` – **natrvalo** (nové karty novej sezóny ho nezoberú).
     Veniec (`assets/logos/veniec.svg`, zlatý vavrín) je potom okolo loga FULky v hlavičke webu aj hry (`.brand.wreath` v `styles.css`, `hasWreath()` v `render.js`).
-    **`?debug=veniec`** (ladenie): kolekcia so všetkými kartami okrem jednej (iba v pamäti), balík má chýbajúcu kartu + VERBISTI → oslava a veniec v hlavičke hry; nič sa neukladá.
+    **`?debug=veniec`** (ladenie): kolekcia so všetkými kartami okrem Kuchynka Ants (iba v pamäti), balík = 1 common + Ants + všetky 3 tajné → kolekcia celá, oslava, veniec.
+    Do localStorage nič; veniec si zapamätá `sessionStorage` `fulka-hra-skuska` (iba táto karta prehliadača), aby bol vidieť aj na hlavnom webe (`hasWreath()` číta oboje).
     Test: `node tools/shot.js "…/hra/?debug=veniec" 1440 out.png @tools/hra-veniec.js` (`window.HRA_STOP='ach'` = zastaví na oslave).
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
   - Zmazaný hráč z DB z hry zmizne aj z kolekcie (ID v localStorage, ku ktorému karta už nie je, sa ignoruje).
@@ -214,6 +218,11 @@ texty z DB sa escapujú. Nízke riziká: hádanie hesla, prihlásenie uložené 
 ochrana admina pred vložením do cudzej stránky (clickjacking) – zatiaľ nerobené.
 
 ## Otvorené / nápady
+
+- **Kalendár UPeCe celý (Lonzi 25. 11. – „k tomu sa ešte dostaneme“):** sekcia Z UPeCe berie program iba z týždenných oznamov, takže akcie z kalendára upcba.sk
+  (napr. Ondrejská ľudová veselica 27. 11., Sieversov seminár) chýbajú, kým nevyjde oznam na ten týždeň. Kalendár nie je v REST API upcba.sk (iba príspevky/stránky),
+  jeho iCal nemá CORS a stránka /kalendar/ je za Cloudflare (automatické čítanie zablokované – neobchádzať). Návrh: GitHub Action každých pár hodín stiahne iCal
+  (odkaz z tlačidla „Odoberať“ v kalendári – **Lonzi ho má poslať**) a uloží malý JSON do repozitára; web z neho ukáže 2 týždne dopredu.
 
 
 - Budík proti uspaniu (`keepalive.yml` v repozitári `laura`) pinguje iba raz za 3 dni, kým docs Supabase uvádzajú „niekoľko požiadaviek denne“. Lonzi ho zatiaľ nechce meniť, lebo to funguje.

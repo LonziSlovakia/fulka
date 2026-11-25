@@ -57,8 +57,12 @@
   const RNAME = Object.assign({ mythical: "Mythical" }, C.RARITY_NAME);
   // tajné karty (mythical): nikde sa nespomínajú, v kolekcii sú iba keď padli (hore ako prvé), nemenia počty
   const MYTHS = C.MYTHICALS; // FULka, UFLka, VERBISTI
-  // ?debug=veniec = ladenie venca: kolekcia so všetkými kartami okrem jednej (iba v pamäti), balík s ňou a s VERBISTI → veniec; nič sa neukladá
+  /* ?debug=veniec = ladenie venca: kolekcia so všetkými kartami okrem Kuchynka Ants (iba v pamäti), balík = common + Ants + všetky 3 tajné
+     → kolekcia je celá, oslava a veniec. Do localStorage sa nič neukladá; veniec si zapamätá sessionStorage (iba táto karta prehliadača),
+     aby bol vidieť aj na hlavnom webe ako pri bežnom používaní. */
   const DEBUG_VENIEC = new URLSearchParams(location.search).get("debug") === "veniec";
+  const TRY_KEY = "fulka-hra-skuska"; // sessionStorage: { w: 1 } po ladení venca (číta ho aj render.js)
+  const tryWreath = () => { try { return (JSON.parse(sessionStorage.getItem(TRY_KEY)) || {}).w === 1; } catch (e) { return false; } };
   const RLONG = { legendary: "Top 5 hráčov sezóny + trblietavé tímy s animovaným logom", epic: "6. – 10. hráč v kanadskom bodovaní",
     rare: "11. – 20. hráč v kanadskom bodovaní", common: "Ostatní hráči zo súpisky" };
 
@@ -134,7 +138,7 @@
   /* ---------- Hlavička a päta ---------- */
   function header() {
     return `<header class="top"><div class="wrap top-in">
-      <a class="brand${S.save.w ? " wreath" : ""}" href="../" aria-label="FULka – späť na web"><img src="../assets/logos/ful-mark-white.png" alt="">
+      <a class="brand${S.save.w || tryWreath() ? " wreath" : ""}" href="../" aria-label="FULka – späť na web"><img src="../assets/logos/ful-mark-white.png" alt="">
         <span class="brand-name"><b>FULka</b><small>Hra · karty a modlitba</small></span></a>
       <nav class="nav" aria-label="Hra"><a href="#dnes">Hráč dňa</a><a href="#balik">Balík</a><a href="#kolekcia">Kolekcia</a></nav></div></header>`;
   }
@@ -244,8 +248,8 @@
     S.P = Object.fromEntries(d.players.map((p) => [p.id, p]));
     S.cards = C.buildCards(d);
     S.byId = Object.fromEntries(S.cards.concat(MYTHS).map((c) => [c.id, c]));
-    if (DEBUG_VENIEC && !S.missing && S.cards.length) { // jedna náhodná karta chýba, ostatné „mám“ (iba v pamäti)
-      S.missing = S.cards[Math.floor(Math.random() * S.cards.length)];
+    if (DEBUG_VENIEC && !S.missing && S.cards.length) { // chýba iba Kuchynka Ants (inak náhodná karta), ostatné „mám“ (iba v pamäti)
+      S.missing = S.cards.find((c) => c.kind === "team" && c.team_id === "ant") || S.cards[Math.floor(Math.random() * S.cards.length)];
       S.save = { d: "", c: Object.fromEntries(S.cards.filter((c) => c !== S.missing).map((c) => [c.id, 1])), l: [], w: 0 };
     }
     if (!S.busy) render();
@@ -304,13 +308,14 @@
     const had = Object.assign({}, S.save.c); // počty pred balíkom → „Nová karta“ / „×2“
     const seen = Object.assign({}, had);
     let pack = C.openPack(S.cards, Math.random, MYTHS);
-    if (DEBUG_VENIEC) { // ladenie: posledná chýbajúca karta + VERBISTI + tri ďalšie
-      const order = (c) => (c.rarity === "mythical" ? 9 : C.RARITY.indexOf(c.rarity));
-      pack = pack.filter((c) => c.rarity !== "mythical" && c !== S.missing).slice(0, 3).concat(S.missing, MYTHS[2]).sort((a, b) => order(a) - order(b));
+    if (DEBUG_VENIEC) { // ladenie: jedna common + chýbajúca Ants + všetky tri tajné karty
+      const commons = S.cards.filter((c) => c.rarity === "common" && c !== S.missing);
+      pack = [commons[Math.floor(Math.random() * commons.length)], S.missing].filter(Boolean).concat(MYTHS);
     }
     const next = C.addPack(S.save, pack.map((c) => c.id), today());
     const won = !next.w && C.complete(S.cards, next); // posledná chýbajúca karta → veniec (natrvalo)
     if (won) next.w = 1;
+    if (won && DEBUG_VENIEC) { try { sessionStorage.setItem(TRY_KEY, JSON.stringify({ w: 1 })); } catch (e) {} }
     S.save = next; // uložené hneď: obnovenie stránky balík neotvorí znova
     store();
     let skip = false;

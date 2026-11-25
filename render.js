@@ -6,7 +6,7 @@
   const L = window.Logic;
   const U = window.Upece;
   const app = document.getElementById("app");
-  const state = { data: null, season: null, open: undefined, menu: false, photos: true, layout: "wide", allPlayers: false };
+  const state = { data: null, season: new URLSearchParams(location.search).get("sezona"), open: undefined, menu: false, photos: true, layout: "wide", allPlayers: false };
 
   /* ---------- Drobnosti ---------- */
   const STAGE = { SF1: "Semifinále 1", SF2: "Semifinále 2", B3: "O 3. miesto", F: "Finále" };
@@ -127,13 +127,15 @@
   };
   const NAV = {
     live: [["#vysledky", "Výsledky"], ["#rozpis", "Rozpis"], ["#tabulka", "Tabuľka"], ["#hraci", "Hráči"], ["#playoff", "Playoff"], ["#timy", "Tímy"]],
-    done: [["#sampion", "Šampión"], ["#poradie", "Poradie"], ["#tabulka", "Tabuľka"], ["#playoff", "Playoff"], ["#vysledky", "Výsledky"], ["#hraci", "Hráči"]],
+    done: [["#sampion", "Šampión"], ["#poradie", "Poradie"], ["#tabulka", "Tabuľka"], ["#playoff", "Playoff"], ["#vysledky", "Výsledky"], ["#hraci", "Hráči"], ["#timy", "Tímy"]],
     soon: [],
   };
 
-  // veniec z hry (/hra/): hráč má celú kolekciu kariet → okolo loga v hlavičke (iba v jeho prehliadači)
+  // veniec z hry (/hra/): hráč má celú kolekciu kariet → okolo loga v hlavičke (iba v jeho prehliadači);
+  // sessionStorage fulka-hra-skuska = veniec z ladenia hra/?debug=veniec (iba v tejto karte prehliadača, kým sa nezavrie)
   function hasWreath() {
-    try { return (JSON.parse(localStorage.getItem("fulka-hra-v1")) || {}).w === 1; } catch (e) { return false; }
+    const w = (store, key) => { try { return (JSON.parse(store.getItem(key)) || {}).w === 1; } catch (e) { return false; } };
+    return w(window.localStorage, "fulka-hra-v1") || w(window.sessionStorage, "fulka-hra-skuska");
   }
 
   function header(c) {
@@ -465,9 +467,9 @@
         <ul class="roster">${list}</ul></div></article>`;
   }
 
-  function teams(c) {
+  function teams(c, hint = "Súpisky po drafte · C = kapitán · fotky pribúdajú postupne") {
     if (!c.v.teamIds.length) return "";
-    return `<section id="timy" class="sec">${secHead("Tímy", "Súpisky po drafte · C = kapitán · fotky pribúdajú postupne")}<div class="teams">${c.v.teamIds.map((id) => teamCard(id, c)).join("")}</div></section>`;
+    return `<section id="timy" class="sec">${secHead("Tímy", hint)}<div class="teams">${c.v.teamIds.map((id) => teamCard(id, c)).join("")}</div></section>`;
   }
 
   /* ---------- Prebiehajúca sezóna ---------- */
@@ -572,7 +574,7 @@
     const bar = `<div class="archive-bar"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3zM8 7V4h8v3M3 12h18"></path></svg>
       <span>Archív — toto je skončená sezóna. Výsledky sa už nemenia.</span>${back}</div>`;
     const lastRound = c.v.rounds.length ? c.v.rounds[c.v.rounds.length - 1].round : 0;
-    return champion(c) + `<main class="wrap main">${bar}${placesSec(c)}${table(c, "Základná časť", lastRound ? `Tabuľka po ${lastRound}. kole` : "")}${playoffPast(c, open)}${allResults(c, open)}${topPlayers(c)}</main>`;
+    return champion(c) + `<main class="wrap main">${bar}${placesSec(c)}${table(c, "Základná časť", lastRound ? `Tabuľka po ${lastRound}. kole` : "")}${playoffPast(c, open)}${allResults(c, open)}${topPlayers(c)}${teams(c, "Súpisky sezóny · C = kapitán")}</main>`;
   }
 
   /* ---------- Pripravovaná sezóna ---------- */
@@ -683,7 +685,29 @@
     if (key) { const el = app.querySelector(key); if (el) el.focus({ preventScroll: true }); }
   }
 
+  /* Sezóna v adrese: ?sezona=z26 (iná ako predvolená), aby obnovenie stránky a poslaný odkaz ostali pri nej;
+     predvolená (prebiehajúca, inak najnovšia) má adresu bez parametra. Späť v prehliadači vráti predošlú sezónu. */
+  const SEASON_KEY = "sezona";
+  function seasonUrl(id) {
+    const d = state.data;
+    const live = d && (d.seasons.find((s) => s.state === "live") || d.seasons[0]);
+    const u = new URL(location.href);
+    if (!id || (live && id === live.id)) u.searchParams.delete(SEASON_KEY);
+    else u.searchParams.set(SEASON_KEY, id);
+    u.hash = "";
+    return u.pathname + u.search;
+  }
+  window.addEventListener("popstate", () => {
+    state.season = new URLSearchParams(location.search).get(SEASON_KEY);
+    state.menu = false;
+    state.open = undefined;
+    state.allPlayers = false;
+    render();
+  });
+
   function pickSeason(id) {
+    const url = seasonUrl(id);
+    if (url !== location.pathname + location.search) history.pushState(null, "", url);
     state.season = id;
     state.menu = false;
     state.open = undefined;
