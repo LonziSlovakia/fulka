@@ -1,7 +1,7 @@
 /* Screenshot + chyby z konzoly cez headless Chromium (Playwright), bez knižníc.
    node tools/shot.js <url> <šírka> <výstup.png> [krok…]
    krok = JS výraz (vráti hodnotu → vypíše sa), alebo "RELOAD"; súbor s krokom: "@tools/mock-db.js"
-   CLIP=x,y,w,h → iba výrez, THROTTLE=4 → 4× pomalší procesor. Najprv spusti bash tools/setup.sh */
+   CLIP=x,y,w,h → iba výrez, THROTTLE=4 → 4× pomalší procesor, TOUCH=1 → dotyková obrazovka, H=786 → pevná výška okna (bez roztiahnutia na celú stránku; na celoobrazovkové vrstvy hry). Najprv spusti bash tools/setup.sh */
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -9,9 +9,10 @@ const BIN = `${process.env.HOME}/.cache/ms-playwright/chromium_headless_shell-12
 const LIBS = path.join(__dirname, ".cache/libroot/usr/lib/x86_64-linux-gnu");
 const [url, width = "1440", out = "shot.png", ...steps] = process.argv.slice(2);
 const pres = steps.map((s) => (s.startsWith("@") ? fs.readFileSync(s.slice(1), "utf8") : s));
+const H = +(process.env.H || 900);
 const port = 9300 + Math.floor(Math.random() * 500);
 const dir = fs.mkdtempSync(path.join(require("os").tmpdir(), "chr-"));
-const chrome = spawn(BIN, [`--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, "--no-sandbox", "--hide-scrollbars", `--window-size=${width},900`, "about:blank"],
+const chrome = spawn(BIN, [`--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, "--no-sandbox", "--hide-scrollbars", `--window-size=${width},${H}`, "about:blank"],
   { stdio: "ignore", env: { ...process.env, LD_LIBRARY_PATH: LIBS } });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -36,7 +37,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const send = (method, params = {}) => new Promise((r) => { pending[++id] = r; ws.send(JSON.stringify({ id, method, params })); });
   await send("Runtime.enable"); await send("Network.enable"); await send("Page.enable");
   if (process.env.THROTTLE) await send("Emulation.setCPUThrottlingRate", { rate: +process.env.THROTTLE }); // THROTTLE=4 → procesor 4× pomalší (slabší mobil)
-  await send("Emulation.setDeviceMetricsOverride", { width: +width, height: 900, deviceScaleFactor: 1, mobile: +width < 600 });
+  await send("Emulation.setDeviceMetricsOverride", { width: +width, height: H, deviceScaleFactor: 1, mobile: +width < 600 });
+  if (process.env.TOUCH) await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 }); // TOUCH=1 → dotykový mobil (hover: none, pointer: coarse)
   await send("Page.navigate", { url });
   await sleep(3500);
   for (const pre of pres) {
@@ -47,10 +49,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await sleep(800);
   }
   const { result } = await send("Runtime.evaluate", { expression: "document.documentElement.scrollHeight", returnByValue: true });
-  await send("Emulation.setDeviceMetricsOverride", { width: +width, height: Math.min(result.result.value, 16000), deviceScaleFactor: 1, mobile: +width < 600 });
+  if (!process.env.H) await send("Emulation.setDeviceMetricsOverride", { width: +width, height: Math.min(result.result.value, 16000), deviceScaleFactor: 1, mobile: +width < 600 });
   await sleep(500);
   const clip = process.env.CLIP ? (([x, y, w, h]) => ({ x, y, width: w, height: h, scale: 1 }))(process.env.CLIP.split(",").map(Number)) : undefined;
-  const shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip });
+  const shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: !process.env.H, clip });
   fs.writeFileSync(out, Buffer.from(shot.result.data, "base64"));
   console.log(logs.length ? logs.join("\n") : "konzola: bez chýb");
   ws.close(); chrome.kill(); await sleep(400);

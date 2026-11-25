@@ -163,6 +163,12 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Do localStorage nič; veniec si zapamätá `sessionStorage` `fulka-hra-skuska` (iba táto karta prehliadača), aby bol vidieť aj na hlavnom webe (`hasWreath()` číta oboje).
     Test: `node tools/shot.js "…/hra/?debug=veniec" 1440 out.png @tools/hra-veniec.js` (`window.HRA_STOP='ach'` = zastaví na oslave).
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
+  - **Gyroskop (26. 11. 2026):** na dotykovom zariadení sa karty nakláňajú a lesk hýbe podľa náklonu telefónu (`deviceorientation`), nie podľa prsta (prst nakláňa iba bez gyroskopu).
+    „Rovno“ = ako telefón držíš (základ sa pomaly prispôsobí, ~2 s). Hýbu sa iba viditeľné karty (hráč dňa, `.vis` v kolekcii, karta vo vrstve), premenné `--rx/--ry/--hx` + trieda `tilting`.
+    iPhone pýta povolenie „pohyb a orientácia“ pri prvom ťuknutí na stránke (Safari to inak nedovolí). Simulácia: `TOUCH=1 node tools/shot.js …` + `dispatchEvent(new DeviceOrientationEvent(…))`.
+  - **Šírka stránky sa nesmie meniť:** `.fc-in` má `overflow: hidden` (odlesk `::before` inak počas animácie vytŕčal z kariet → stránka bola na chvíľu širšia, na mobile sa oddialila),
+    `.page.hra` `overflow-x: clip`, `html` `scrollbar-gutter: stable` (otvorenie vrstvy neposunie stránku). Kontrola: max `scrollWidth` pri kolekcii = šírka okna.
+  - **Vrstvy (balík, detail, zhrnutie, veniec) sa zmestia na výšku okna** – veľkosti cez `dvh` (Lonzi má Windows so zväčšením 150 % → okno ~1333×655). Test: `H=655 node tools/shot.js … 1333` (pevná výška, bez roztiahnutia).
   - Zmazaný hráč z DB z hry zmizne aj z kolekcie (ID v localStorage, ku ktorému karta už nie je, sa ignoruje).
 - **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).
   Na webe iba cez priamu adresu (nikde neodkazované, `noindex`). Teraz: **https://ful.upcba.sk/demo/ants/** – návrhy loga Kuchynka Ants (PNG + WebP: 1–12 a `9-old`/`10-old`; 11–12 = 9–10 s o kúsok dlhšou oranžovou stopkou predného tykadla (úzky pásik `STALK_POLY` orezaný `HEAD11` = HEAD9 + `STALK_EXT` 21), čierna linka hlavy ako v 9–10; 9–10 = 7–8 s tými istými tykadlami posunutými dozadu na temeno a zväčšenými, `MV9` v `zdroj.html`, bez čierneho fľaku medzi tykadlami – výrezy `ant9f`/`ant9b`, hlava pred predným tykadlom – orez `HEAD9`; old = predošlá 9/10 bez orezu po hlave).
@@ -177,6 +183,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   Návrat: okno 1 = diff po tabuľkách (`L.compareData`) → „Pokračovať“ → okno 2 „Naozaj?“ + napísať **OBNOVIŤ** → až potom `fulka_restore`
   (v jednej transakcii, `fulka_apply`). Stav pred návratom = **jediná poistka** (`kind = 'undo'`, prepíše sa pri ďalšom návrate, nedá sa zmazať),
   tlačidlo „Vrátiť späť“ (`fulka_undo`) vymení aktuálny stav s poistkou. Stiahnutie do počítača (JSON `format: fulka-zaloha-1`) a návrat zo súboru.
+- Menu: všetky odkazy sivé, biele iba pri prejdení myšou – aj „Hráč dňa“ (predtým bol stále biely; Lonzi 26. 11. chcel ako ostatné).
 - Päta: odkaz na UPeCe Bratislava (upcba.sk, biele logo) a Supabase (supabase.com, „Dáta, fotky a prihlásenie bežia na Supabase“).
 
 ## Ako testovať (bez zápisu do databázy)
@@ -198,7 +205,7 @@ node tools/shot.js "http://127.0.0.1:8770/fulka/?edit" 1440 /tmp/a.png @tools/fa
 - Chromium je Playwright headless shell; chýbajúce knižnice sú v `tools/.cache/libroot` (bez sudo, gitignore).
 - Nástroje WebP (`img2webp`, `anim_dump`, `webpmux`…) sú v `tools/.cache/webproot` (gitignore): `apt-get -o Acquire::ForceIPv4=true download webp libwebp7 libwebpmux3 libwebpdemux2 libsharpyuv0 libjpeg8 libjpeg-turbo8 libtiff6 libgif7 libpng16-16t64`
   do `tools/.cache/webp-debs` a `dpkg -x` každého do `webproot` (aj `potrace libpotrace0` pre `trace-logo.py` na vetve `demo-ants`); spúšťať s `LD_LIBRARY_PATH=tools/.cache/webproot/usr/lib/x86_64-linux-gnu`. Zmazanie = celý `tools/.cache`.
-- `shot.js` s `THROTTLE=4` spomalí procesor 4× (ako slabší mobil); `tools/hra-fps.js` zmeria FPS hry (`window.HRA_FPS='kolekcia|detail|balik'`).
+- `shot.js` s `THROTTLE=4` spomalí procesor 4× (ako slabší mobil), `H=655` = pevná výška okna (celoobrazovkové vrstvy), `TOUCH=1` = dotyková obrazovka; `tools/hra-fps.js` zmeria FPS hry (`window.HRA_FPS='kolekcia|detail|balik'`).
 - Hra: `tools/hra-pack.js` (krok pre `shot.js`: otvorí balík, `window.HRA_STOP='pack|back|front|sum'`, `window.HRA_LUCK=0.99` = samé legendary),
   `tools/hra-all.js` (+ `RELOAD`: naplní kolekciu všetkými kartami na pozretie). Bez prihlásenia, nič nezapisuje do DB.
 - Port 8765 používa iný projekt – nezabíjať.

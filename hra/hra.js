@@ -258,6 +258,7 @@
   /* ---------- Otočenie a náklon karty ---------- */
   function tilt(el) {
     const move = (e) => {
+      if (gyro.on && e.pointerType !== "mouse") return; // mobil s gyroskopom: nakláňa sa telefónom, nie prstom
       const r = el.getBoundingClientRect();
       const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
       const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
@@ -266,11 +267,58 @@
       el.style.setProperty("--hx", ((0.5 - x) * 60).toFixed(1)); // posun zlatého lesku pri náklone
       el.classList.add("tilting");
     };
-    const leave = () => { el.classList.remove("tilting"); ["--rx", "--ry", "--hx"].forEach((k) => el.style.removeProperty(k)); };
+    const leave = () => { if (gyro.on) return; el.classList.remove("tilting"); ["--rx", "--ry", "--hx"].forEach((k) => el.style.removeProperty(k)); };
     el.addEventListener("pointermove", move);
     el.addEventListener("pointerleave", leave);
     el.addEventListener("pointercancel", leave);
   }
+
+  /* ---------- Náklon telefónu (gyroskop) ---------- */
+  // na mobile sa karty nakláňajú a lesk sa hýbe podľa náklonu telefónu. „Rovno“ = poloha, v ktorej telefón držíš:
+  // základ sa jej pomaly prispôsobuje (podrží sa naklonený → karta sa za ~2 s vráti). Iba karty, ktoré vidno.
+  const gyro = { on: false, x: 0, y: 0, bx: null, by: null, frame: 0, last: "" };
+  const GYRO_MAX = 16; // o koľko stupňov treba telefón nakloniť na plný náklon karty
+  const clamp1 = (v) => Math.max(-1, Math.min(1, v));
+  function gyroPaint() {
+    gyro.frame = 0;
+    const nx = clamp1(gyro.x / GYRO_MAX), ny = clamp1(gyro.y / GYRO_MAX);
+    const key = `${nx.toFixed(2)},${ny.toFixed(2)}`;
+    if (key === gyro.last) return; // telefón sa nehýbe → nič neprekresľovať
+    gyro.last = key;
+    const cards = layer.hidden ? app.querySelectorAll(".day-card .fc, .cl-card.vis .fc, .mini.vis .fc") : layer.querySelectorAll(".op-card .fc:not(.back)");
+    cards.forEach((el) => {
+      el.classList.add("tilting");
+      el.style.setProperty("--ry", `${(nx * 11).toFixed(2)}deg`);
+      el.style.setProperty("--rx", `${(ny * 9).toFixed(2)}deg`);
+      el.style.setProperty("--hx", (-nx * 30).toFixed(1));
+    });
+  }
+  function onOrient(e) {
+    if (e.beta == null || e.gamma == null) return;
+    const a = ((screen.orientation && screen.orientation.angle) || window.orientation || 0) % 360;
+    // gamma = doľava/doprava, beta = dopredu/dozadu; pri telefóne na šírku sa vymenia
+    let x = e.gamma, y = e.beta;
+    if (a === 90) { x = e.beta; y = -e.gamma; } else if (a === 270 || a === -90) { x = -e.beta; y = e.gamma; } else if (a === 180) { x = -e.gamma; y = -e.beta; }
+    if (gyro.bx == null || Math.abs(y - gyro.by) > 90) { gyro.bx = x; gyro.by = y; } // prvé meranie alebo preklopenie cez 180°
+    gyro.bx += (x - gyro.bx) * 0.02;
+    gyro.by += (y - gyro.by) * 0.02;
+    gyro.x = x - gyro.bx;
+    gyro.y = y - gyro.by;
+    gyro.on = true;
+    if (!gyro.frame) gyro.frame = requestAnimationFrame(gyroPaint);
+  }
+  function gyroStart() {
+    if (!matchMedia("(hover: none) and (pointer: coarse)").matches || !("DeviceOrientationEvent" in window)) return; // iba dotykové zariadenia
+    window.addEventListener("deviceorientation", onOrient); // Android: chodí hneď, bez pýtania
+    if (typeof DeviceOrientationEvent.requestPermission !== "function") return;
+    // iPhone: povolenie „pohyb a orientácia“ sa dá pýtať iba po ťuknutí → pri prvom ťuknutí na stránke (dovtedy udalosti nechodia)
+    const ask = () => {
+      document.removeEventListener("click", ask, true);
+      DeviceOrientationEvent.requestPermission().catch(() => {});
+    };
+    document.addEventListener("click", ask, true);
+  }
+  gyroStart();
 
   // otočenie v dvoch polovičkách (do 90° rubom, výmena, z -90° lícom) – spoľahlivé aj na Safari
   async function flip(el, c) {
@@ -281,6 +329,7 @@
     el.querySelector(".fc-in").innerHTML = front(c);
     await el.animate([{ transform: `${P} rotateY(-90deg) scale(1.06)` }, { transform: `${P} rotateY(0deg) scale(1)` }], { duration: half + 120, easing: "cubic-bezier(.2,1.4,.4,1)", fill: "forwards" }).finished;
     el.getAnimations().forEach((a) => a.cancel()); // koniec = bez transformácie, náklon (.fc-in) potom funguje
+    gyro.last = "";
   }
 
   /* ---------- Otvorenie balíka (celá obrazovka) ---------- */
@@ -292,6 +341,7 @@
     layer.innerHTML = html;
     layer.hidden = false;
     document.documentElement.classList.add("locked");
+    gyro.last = ""; // nové karty dostanú náklon hneď
   }
   function hideLayer() {
     layer.hidden = true;
@@ -445,9 +495,10 @@
   }, 1000);
   // animácie bežia iba na kartách, ktoré vidno (slabšie mobily); trieda .vis spúšťa animácie v CSS
   const seen = "IntersectionObserver" in window
-    ? new IntersectionObserver((list) => list.forEach((x) => x.target.classList.toggle("vis", x.isIntersecting)), { rootMargin: "120px" }) : null;
+    ? new IntersectionObserver((list) => { list.forEach((x) => x.target.classList.toggle("vis", x.isIntersecting)); gyro.last = ""; }, { rootMargin: "120px" }) : null;
   // po každom vykreslení: náklon veľkej karty hráča dňa a sledovanie kariet v kolekcii
   new MutationObserver(() => {
+    gyro.last = "";
     const el = app.querySelector(".day-card .fc:not([data-t])");
     if (el) { el.dataset.t = "1"; tilt(el); }
     app.querySelectorAll(".cl-card:not([data-o]), .mini:not([data-o])").forEach((x) => { x.dataset.o = "1"; if (seen) seen.observe(x); else x.classList.add("vis"); });
