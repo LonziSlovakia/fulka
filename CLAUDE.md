@@ -26,7 +26,7 @@ Stav k 21. 11. 2026.
   Zápis povoľuje RLS cez `public.is_admin('fulka')`. Budík proti uspaniu databázy beží v repozitári `laura`.
 - Spustené SQL: `supabase/1-fulka.sql` (tabuľky, pravidlá, štartovacie dáta), `supabase/2-loga-webp.sql` (logá víťazov vo WebP),
   `supabase/3-zalohy.sql` (ručné zálohy + poistka; spustené a Lonzim otestované 3. 11. 2026), `supabase/4-terminy-sezony.sql` (termíny sezóny; spustené 19. 11. 2026),
-  `supabase/5-roly-vlastnik.sql` (roly, zálohy iba vlastník; pripravené 26. 11. 2026 – **spustenie čaká na Lonziho**, potom tu zapísať).
+  `supabase/5-roly-vlastnik.sql` (roly, zálohy iba vlastník; spustené a Lonzim overené 26. 11. 2026 – vlastník = jeho hlavný účet).
   Demo tím Kuchynka Ants si Lonzi vytvorí sám v admine (SQL na to **nechce**); logá sú v `demo/ants/`.
 - Sezóny: Zimná 2026 `z26` (pilotná, skončená), Letná 2027 `l27` (pripravujeme). Tímy Veľká sála Giants, Libresso Brewers, Recepcia Rangers, Kaplnka Saints.
 
