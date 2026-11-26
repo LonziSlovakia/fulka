@@ -256,7 +256,7 @@
 
   /* ---------- Otočenie a náklon karty ---------- */
   // náklon podľa polohy kurzora/prsta; mimo karty (v páse TILT_REACH okolo nej) náklon postupne slabne do nuly
-  const TILT_REACH = 0.15; // myš nakláňa kartu už 15 % (šírky/výšky karty) pred jej okrajom (Lonzi 26. 11.)
+  const TILT_REACH = 0.25; // myš nakláňa kartu už 25 % (šírky/výšky karty) pred jej okrajom (Lonzi 26. 11.)
   function tiltTo(el, e) {
     const r = el.getBoundingClientRect();
     const rx = (e.clientX - r.left) / r.width;
