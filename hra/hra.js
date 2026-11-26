@@ -75,6 +75,7 @@
   const owned = (id) => S.save.c[id] || 0;
   const store = () => { if (!DEBUG_VYMENA) ls.set(KEY, S.save); };
   const tradeable = () => C.tradeCard(S.cards.concat(MYTHS), S.save); // karta, ktorú má hráč aspoň 6× (alebo null)
+  const canTrade = (id) => owned(id) > C.TRADE; // výmena 5 kusov za balík (v detaile karty), jeden ostane
 
   /* ---------- Karta ---------- */
   // trblietky na legendary (pozície sú v CSS cez --x/--y/--t)
@@ -205,17 +206,8 @@
     return `<section id="balik" class="sec"><div class="wrap">
       <div class="sec-head"><h2>Denný balík</h2>${ZIG}${oddsView() === "full" ? '<span class="sec-hint">Vzácnosť hráča = priečka v kanadskom bodovaní sezóny</span>' : ""}</div>
       <div class="pk-grid"><button type="button" class="pack${open ? "" : " used"}" data-act="open" ${open ? "" : "disabled"} aria-label="Otvoriť balík">${PACK_ART}</button>
-        <div class="pk-side">${side}${tradeBox()}${odds()}</div></div></div></section>`;
+        <div class="pk-side">${side}${odds()}</div></div></div></section>`;
   }
-  // výmena: 6 rovnakých kariet → 5 za nový balík (jedna ostane)
-  function tradeBox() {
-    const t = tradeable();
-    if (!t) return "";
-    return `<div class="trade"><span class="trade-card">${cardHtml(t, "front")}<span class="cnt">×${owned(t.id)}</span></span>
-      <div class="trade-txt"><p class="trade-kick">Výmena</p><p>Máš <b>${owned(t.id)}×</b> kartu <b>${esc(t.name)}</b>. Vymeň ${C.TRADE} z nich za nový balík – jedna ti ostane.</p>
-        <button type="button" class="btn-white" data-act="trade">Vymeniť ${C.TRADE} za balík</button></div></div>`;
-  }
-
   /* ---------- Kolekcia ---------- */
   function collectionSec() {
     const all = C.sortCards(S.cards);
@@ -234,7 +226,7 @@
       S.cards.some((c) => !c.season) ? [chip("-", "Nové tímy")] : []).join("");
     const myth = MYTHS.filter((m) => owned(m.id)); // tajné karty hore ako prvé (iba tie, ktoré hráč má)
     const grid = myth.concat(shown).map((c) => (owned(c.id)
-      ? `<button type="button" class="cl-card" data-act="show" data-id="${esc(c.id)}" aria-label="${esc(c.name)}">${cardHtml(c, "front")}${owned(c.id) > 1 ? `<span class="cnt">×${owned(c.id)}</span>` : ""}</button>`
+      ? `<button type="button" class="cl-card" data-act="show" data-id="${esc(c.id)}" aria-label="${esc(c.name)}">${cardHtml(c, "front")}${owned(c.id) > 1 ? `<span class="cnt${canTrade(c.id) ? " trade" : ""}">×${owned(c.id)}</span>` : ""}</button>`
       : `<div class="cl-card off" aria-label="Chýbajúca karta ${RNAME[c.rarity]}">${cardHtml(c, "missing")}</div>`)).join("");
     return `<section id="kolekcia" class="sec"><div class="wrap">
       <div class="sec-head"><h2>Kolekcia</h2>${ZIG}<span class="sec-hint"><b class="cl-total">${have.length} / ${all.length}</b> kariet</span></div>
@@ -357,11 +349,12 @@
   }
 
   const RAYS = '<div class="rays" aria-hidden="true"></div>';
-  // bonus = balík za výmenu 5 rovnakých kariet (denný balík ostáva)
-  async function openPack(bonus) {
+  // tradeId = balík za výmenu 5 kusov tejto karty (denný balík ostáva)
+  async function openPack(tradeId) {
     if (S.busy || !S.cards.length) return;
-    const t = bonus ? tradeable() : null;
-    if (bonus ? !t : !C.canOpen(S.save, today())) return;
+    const t = tradeId ? S.byId[tradeId] : null;
+    if (tradeId ? !t || !canTrade(t.id) : !C.canOpen(S.save, today())) return;
+    const bonus = !!t;
     S.busy = true;
     const base = t ? C.spend(S.save, t.id) : S.save;
     const had = Object.assign({}, base.c); // počty pred balíkom → „Nová karta“ / „×2“
@@ -440,8 +433,7 @@
       <h2 class="op-h">${bonus ? "Balík za výmenu" : "Dnešný balík"}</h2>
       <div class="op-sum">${pack.map((c, i) => `<button type="button" class="sum-card" data-act="show" data-id="${esc(c.id)}" style="--i:${i}">${cardHtml(c, "front")}
         <span class="sum-tags"><span class="op-tag r-${c.rarity}">${RNAME[c.rarity]}</span>${had[c.id] ? `<span class="op-dup">×${counts[c.id]}</span>` : '<span class="op-new">Nová</span>'}</span></button>`).join("")}</div>
-      ${t ? `<p class="op-trade">Máš ${owned(t.id)}× ${esc(t.name)} – ${C.TRADE} môžeš vymeniť za nový balík.</p>` : ""}
-      <div class="op-btns"><button type="button" class="btn-white big" data-op="close">Do kolekcie</button>${t ? `<button type="button" class="btn-white big alt" data-op="trade">Vymeniť ${C.TRADE} za balík</button>` : ""}</div></div>`);
+      <div class="op-btns"><button type="button" class="btn-white big" data-op="close">Do kolekcie</button>${t ? `<p class="op-trade">Máš ${owned(t.id)}× <b>${esc(t.name)}</b> – v kolekcii (detail karty) môžeš ${C.TRADE} vymeniť za nový balík.</p>` : ""}</div></div>`);
     bindSummary();
   }
 
@@ -454,7 +446,8 @@
     const wasBusy = S.busy;
     const html = `<div class="op detail" data-rarity="${c.rarity === "mythical" ? "mythical" : ""}"><button type="button" class="op-x" data-op="x" aria-label="Zavrieť">${CLOSE}</button>
       <div class="op-stage">${c.rarity === "legendary" || c.rarity === "mythical" ? RAYS : ""}<div class="op-card">${cardHtml(c, "front", "big tilt")}</div></div>
-      <p class="op-cap"><span class="op-tag r-${c.rarity}">${RNAME[c.rarity]}</span><span>${where}</span>${n ? `<span class="op-dup">Máš ×${n}</span>` : ""}</p></div>`;
+      <p class="op-cap"><span class="op-tag r-${c.rarity}">${RNAME[c.rarity]}</span><span>${where}</span>${n ? `<span class="op-dup">Máš ×${n}</span>` : ""}</p>
+      ${canTrade(id) ? `<div class="op-btns trade"><button type="button" class="btn-white big alt" data-op="trade">Vymeniť ${C.TRADE} za balík</button><p class="op-trade">${C.TRADE} kusov dáš za nový balík, jedna karta ti ostane.</p></div>` : ""}</div>`;
     const prev = wasBusy ? layer.innerHTML : null;
     showLayer(html);
     S.busy = true;
@@ -463,14 +456,14 @@
       if (prev) { layer.innerHTML = prev; bindSummary(); } else hideLayer();
     };
     layer.querySelector("[data-op=x]").addEventListener("click", close);
+    const tr = layer.querySelector("[data-op=trade]");
+    if (tr) tr.addEventListener("click", () => { hideLayer(); openPack(id); });
     layer.querySelector(".op").addEventListener("click", (e) => { if (e.target.classList.contains("op") || e.target.classList.contains("op-stage")) close(); });
   }
   // zhrnutie balíka po návrate z detailu karty
   function bindSummary() {
     const btn = layer.querySelector("[data-op=close]");
     if (btn) btn.addEventListener("click", () => { hideLayer(); document.getElementById("kolekcia").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth" }); });
-    const tr = layer.querySelector("[data-op=trade]");
-    if (tr) tr.addEventListener("click", () => { hideLayer(); openPack(true); });
   }
 
   /* ---------- Udalosti ---------- */
@@ -479,7 +472,6 @@
     if (!el) return;
     const act = el.dataset.act;
     if (act === "open") openPack();
-    else if (act === "trade") openPack(true);
     else if (act === "show") showCard(el.dataset.id);
     else if (act === "filter") { S.filter = el.dataset.id; rerenderCollection(); }
     else if (act === "season") { S.season = el.dataset.id; rerenderCollection(); }

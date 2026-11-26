@@ -617,7 +617,7 @@
   }
   function upCalendar() {
     const raw = state.up;
-    const rows = raw ? U.program(raw.week, L.localParts(Date.now()).date) : [];
+    const rows = raw ? U.program(raw.week, L.localParts(Date.now()).date, 10, raw.cal) : [];
     const news = raw ? U.news(raw.news, 2) : [];
     const list = rows.length ? `<ul class="up-rows">${rows.map(upRow).join("")}</ul>`
       : `<p class="up-empty">${raw ? "Program na najbližšie dni ešte nie je zverejnený." : state.upFail ? "Program sa teraz nepodarilo načítať." : "Načítavam program…"}</p>`;

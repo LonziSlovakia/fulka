@@ -84,3 +84,49 @@ test("novinky: dátum, nadpis s entitami, skrátený úvod, odkazy iba na upcba.
   assert.ok(n[0].sub.endsWith("…") && n[0].sub.length <= 81);
   assert.equal(n[1].link, "https://www.upcba.sk/");
 });
+
+/* ---------- Kalendár upcba.sk: iCal → JSON (tools/kalendar.js) → dni programu (upece.js) ---------- */
+const K = require("../tools/kalendar.js");
+const ICS = ["BEGIN:VCALENDAR", "BEGIN:VEVENT", "SUMMARY:Sv. omša", "DTSTART;TZID=Europe/Bratislava:20260914T190000", "LOCATION:Kaplnka UPeCe",
+  "RRULE:FREQ=WEEKLY;BYDAY=MO;WKST=MO", "END:VEVENT",
+  "BEGIN:VEVENT", "SUMMARY:Sieversov seminár", "DTSTART;TZID=Europe/Bratislava:20261019T190000", "RRULE:FREQ=WEEKLY;UNTIL=20261224T235959Z;INTERVAL=2", "END:VEVENT",
+  "BEGIN:VEVENT", "SUMMARY:Športy", "DTSTART;TZID=Europe/Bratislava:20260918T210000", "EXDATE;TZID=Europe/Bratislava:20261120T210000",
+  "RRULE:FREQ=WEEKLY;UNTIL=20261225T235959Z;BYDAY=FR;WKST=MO", "END:VEVENT",
+  "BEGIN:VEVENT", "SUMMARY:Ondrejská ľudová", "  veselica", "CATEGORIES;LANGUAGE=sk-SK:Akcie\\,Akcie UPeCe", "DTSTART;TZID=Europe/Bratislava:20261127T200000",
+  "LOCATION:Veľká sála UPeCe @ Staré Grunty 36. Bratislava", "URL:https://www.upcba.sk/podujatie/olv/", "END:VEVENT",
+  "BEGIN:VEVENT", "SUMMARY:3DA", "DTSTART;VALUE=DATE:20261113", "DTEND;VALUE=DATE:20261116", "URL:https://zly.example/", "END:VEVENT",
+  "BEGIN:VEVENT", "SUMMARY:Stará akcia", "DTSTART:20250101T100000Z", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+
+test("kalendár: iCal → udalosti (zalomené riadky, miesto, kategória, opakovanie, vynechané dni, iba odkazy na upcba.sk)", () => {
+  const ev = K.parse(ICS);
+  const olv = ev.find((e) => e.t.startsWith("Ondrejská"));
+  assert.deepEqual(olv, { t: "Ondrejská ľudová veselica", s: "2026-11-27T20:00", p: "Veľká sála", c: "Akcie", u: "https://www.upcba.sk/podujatie/olv/" });
+  assert.deepEqual(ev.find((e) => e.t === "Sieversov seminár").r, { f: "WEEKLY", i: 2, u: "2026-12-24" });
+  assert.deepEqual(ev.find((e) => e.t === "Športy").x, ["2026-11-20"]);
+  assert.equal(ev.find((e) => e.t === "3DA").u, undefined);
+  assert.equal(K.stamp("20250101T100000Z"), "2025-01-01T11:00"); // UTC → Bratislava
+  assert.deepEqual(K.keep(ev, "2026-11-26").map((e) => e.t), ["Sv. omša", "Športy", "Sieversov seminár", "Ondrejská ľudová veselica"]); // staré preč
+});
+
+test("kalendár: opakovanie každý 2. týždeň, vynechaný deň, jednorazová akcia zvýraznená", () => {
+  const cal = { udalosti: K.parse(ICS) };
+  assert.deepEqual(U.occurrences(cal.udalosti[1], "2026-11-01", "2026-12-31"), ["2026-11-02", "2026-11-16", "2026-11-30", "2026-12-14"]);
+  assert.deepEqual(U.occurrences(cal.udalosti[2], "2026-11-13", "2026-11-28"), ["2026-11-13", "2026-11-27"]); // 20. 11. vynechaný
+  assert.deepEqual(U.occurrences(cal.udalosti[4], "2026-11-14", "2026-11-20"), ["2026-11-14"]); // viacdňová, ktorá už beží
+  const days = U.calendarDays(cal, "2026-11-26", "2026-12-01");
+  assert.deepEqual(days["2026-11-27"].map((r) => [r.time, r.title, r.kind]), [["20:00", "Ondrejská ľudová veselica", "special"], ["21:00", "Športy", "event"]]);
+  assert.deepEqual(days["2026-11-30"].map((r) => [r.time, r.title, r.place, r.kind]), [["19:00", "Sv. omša", "Kaplnka", "mass"], ["19:00", "Sieversov seminár", "", "event"]]);
+});
+
+test("program: deň z oznamu má prednosť, z kalendára sa doplní jednorazová akcia a dni bez oznamu", () => {
+  const cal = { udalosti: K.parse(ICS).concat([{ t: "Nikodémova noc", s: "2026-10-23T21:00" }, { t: "Večer chvál", s: "2026-10-22T21:00" },
+    { t: "Ondrejská ľudová veselica", s: "2026-10-20T22:00" }]) };
+  const rows = U.program([W1], "2026-10-20", 30, cal);
+  const day = (d) => rows.filter((r) => r.date === d).map((r) => `${r.title}:${r.kind}`);
+  assert.ok(day("2026-10-23").includes("Nikodémova noc:special")); // v tabuľke oznamu → zvýraznená
+  assert.ok(day("2026-10-22").includes("Večer chvál:special")); // iba v kalendári → doplnená
+  assert.ok(!day("2026-10-22").some((r) => r.startsWith("Sv. omša") && r !== "Sv. omša:mass")); // omša z oznamu, nie dvakrát
+  assert.deepEqual(day("2026-11-02"), ["Sv. omša:mass", "Sieversov seminár:event"]); // deň bez oznamu = z kalendára
+  const W = week("UPeCe oznamy 19.10.2026 &#8211; 25.10.2026", [row("20. 10.<br>Utorok", "", "<strong>20:00</strong><br>kaplnka", "<strong>OĽV 22:00</strong>")]);
+  assert.deepEqual(U.program([W], "2026-10-20", 30, cal).filter((r) => r.date === "2026-10-20").map((r) => `${r.time} ${r.title}:${r.kind}`), ["20:00 Sv. omša:mass", "22:00 Ondrejská ľudová veselica:special"]); // skratka = tá istá akcia, doplnená z kalendára
+});

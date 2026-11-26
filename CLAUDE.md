@@ -37,7 +37,8 @@ Stav k 21. 11. 2026.
 | `config.js` | URL + publishable key (verejné) |
 | `db.js` | fetch klient: načítanie všetkých 8 tabuliek (sezóny `select=*`, aby fungovalo pred aj po pridaní stĺpcov) + cache v `localStorage` (`fulka-data-v1`), prihlásenie s obnovou tokenu (`fulka-session-v1`), `upsert(kind, rows, key)`, `remove(kind, where, maybe)` (where aj `{ seq: { gt: 3 } }`), `upload`, `photoUrl`, zálohy `backups/backupData/backup/restore/restoreFile` |
 | `logic.js` | čisté výpočty (testované): skóre, tabuľka, bodovanie, playoff, dátumy v čase Bratislavy, draft zápasu ↔ riadok DB (`draftOf`/`rowOf`), `DEFAULTS` nastavení |
-| `upece.js` | sekcia „Z UPeCe“: načítanie a čítanie týždenných oznamov a noviniek z upcba.sk (čisté funkcie + `load()` s cache `fulka-upece-v1`) |
+| `upece.js` | sekcia „Z UPeCe“: načítanie a čítanie týždenných oznamov, noviniek z upcba.sk a kalendára `data/upece-kalendar.json` (čisté funkcie + `load()` s cache `fulka-upece-v1`) |
+| `data/upece-kalendar.json` | kalendár upcba.sk pre web – **robí ho GitHub Action** (`.github/workflows/kalendar.yml` + `tools/kalendar.js`), ručne nemeniť |
 | `render.js` | verejný web; s `?edit` sa nevykresľuje a načíta `admin.js` + `admin.css` |
 | `admin.js` / `admin.css` | admin podľa `design/Admin.dc.html`; triedy admina majú predponu `a-` (napr. `.a-mid`), aby sa nebili so `styles.css` |
 | `board.js` | výsledková tabuľa, čisté funkcie (testované): stav → nový stav (čas z časovej značky, tresty, góly, koniec) + uloženie do `localStorage` (`fulka-board-v1`) |
@@ -46,7 +47,7 @@ Stav k 21. 11. 2026.
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
 | `hra/` | **Hra** `ful.upcba.sk/hra/` (v menu webu „Hráč dňa“): `index.html`, `cards.js` (čisté funkcie kariet, testované), `hra.js` (vykreslenie, balík, modlitby), `hra.css` |
-| `tests/*.test.js` | `node --test tests/*.test.js` (99 testov: `logic` 52, `upece` 7, `board` 25, `hra` 15; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (102 testov: `logic` 52, `upece` 10, `board` 25, `hra` 15; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg`, `ufl.svg` + `ufl-lesk.svg` (logo UFL obkreslené pre tajnú kartu, lesk = maska lesklých častí), `verbisti.svg` (zlaté logo verbistov pre tajnú kartu), `veniec.svg` (veniec za celú kolekciu) · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
@@ -96,7 +97,15 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - Podpora: logo `assets/logos/upece-512.png` (z upcba.sk, čierne na bielom → na webe `invert` + `mix-blend-mode: screen`), „Zisti viac“ → upcba.sk.
   - Kalendár naživo z WordPress REST API upcba.sk (CORS povolený): posledné 2 príspevky kategórie **Oznamy (174)**, z tabuľky
     `td.day/.liturgy/.mass/.events` sa skladá program na **najbližšie 2 týždne** od dnes (max 10 riadkov; Lonzi 21. 11.), nadpis „Čo sa najbližšie deje v UPeCe“.
-    Ukáže sa iba to, čo už je v zverejnených týždenných oznamoch (oznam na ďalší týždeň býva až ku koncu týždňa). iCal export kalendára CORS nemá, preto sa nepoužíva.
+    Oznam na ďalší týždeň býva až ku koncu týždňa, preto sa **dni bez oznamu doplnia z kalendára upcba.sk** (26. 11. 2026, nižšie).
+  - **Kalendár upcba.sk** (plugin All-in-One Event Calendar): iCal z odkazu „Odoberať → Pridať do iného kalendára“ nemá CORS (prehliadač ho čítať nesmie) a nie je vo WordPress REST API.
+    Preto ho **GitHub Action `.github/workflows/kalendar.yml`** každé 3 hodiny (aj ručne: Actions → „Kalendár UPeCe“ → Run workflow) stiahne obyčajným `curl` (Cloudflare ho pustí),
+    `tools/kalendar.js` ho prerobí na `data/upece-kalendar.json` (udalosti s pravidlami opakovania, nie rozpísané dni → súbor sa mení iba so zmenou kalendára; staršie než týždeň vynechá)
+    a ak sa zmenil, commitne ho (autor `github-actions[bot]`) a vyžiada nasadenie webu (commit z Action ho sám nespustí).
+    Web (`upece.js` `calendarDays`, `occurrences`) rozpíše opakovania (týždenne, každý 2. týždeň, denne, mesačne, ročne; vynechané dni) na 2 týždne.
+    Spojenie s oznamami (`program`): deň z oznamu má prednosť (liturgia, miesta, časy); z kalendára sa k nemu pridajú iba jednorazové akcie, a keď už v oznamu sú
+    (aj ako skratka „OĽV“ = začiatočné písmená), zvýraznia sa a doplní sa čas, miesto a celý názov. Dni bez oznamu sú celé z kalendára: omše jedného dňa v jednom riadku,
+    jednorazové akcie (bez opakovania) zvýraznené. Bez JSON (chyba) je program iba z oznamov. GitHub vypne plánované Actions po 60 dňoch bez commitu v repozitári → potom zapnúť v Actions.
   - **Výnimočná akcia** (zvýraznená tyrkysovou) = má v tom týždni vlastný oznam s dátumom (`notice-title` „Názov D. M.“). Oznam s dátumom a časom,
     ktorý nie je v tabuľke, sa doplní ako riadok. „… do D. M.“ je uzávierka, nie akcia.
   - Novinky: 2 posledné príspevky z **Aktuality (165)** bez Oznamov. Odkazy iba na `https://www.upcba.sk/…`, texty sa escapujú.
@@ -166,8 +175,10 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - **Výmena 5 rovnakých kariet za balík (26. 11.):** keď má hráč nejakú kartu aspoň 6× (`C.TRADE` + 1), pri balíku (a v zhrnutí balíka) je ponuka „Vymeniť 5 za balík“ → 5 kusov preč, 1 ostane,
     otvorí sa normálny balík („Balík za výmenu“). Denný balík tým neprepadne (`addPack(…, bonus)` nemení `d`). Pri viacerých kartách sa ponúkne tá s najviac kusmi (pri zhode najbežnejšia).
     Simulácia: s výmenou je celá kolekcia priemerne za ~29 dní (s pomocou ~26) a výmen je ~40–110 → výmena je silná, keby bolo treba, prísnejšie = viac kariet za balík alebo 1 výmena denne.
-    **`?debug=vymena`** (ladenie): kolekcia = jedna common karta 5× (iba v pamäti, nič do localStorage), denný balík ju obsahuje → 6× → výmena → ostane 1× a ponuka zmizne.
-    Test: `node tools/shot.js "…/hra/?debug=vymena" 1440 out.png @tools/hra-vymena.js` (`window.HRA_STOP='sum'|'side'`).
+    Kde: **tlačidlo iba v detaile karty v kolekcii** (Lonzi 26. 11.); karta s ≥ 6 kusmi má v kolekcii zlatý štítok počtu; v zhrnutí balíka je iba text vedľa „Do kolekcie“
+    („Máš 6× … – v kolekcii (detail karty) môžeš 5 vymeniť za nový balík“), žiadne tlačidlo; pri dennom balíku nič.
+    **`?debug=vymena`** (ladenie): kolekcia = jedna common karta 5× (iba v pamäti, nič do localStorage), denný balík ju obsahuje → 6× → detail karty → výmena → ostane 1×.
+    Test: `node tools/shot.js "…/hra/?debug=vymena" 1440 out.png @tools/hra-vymena.js` (`window.HRA_STOP='sum'|'detail'`).
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
   - **Gyroskop (26. 11. 2026):** na dotykovom zariadení sa podľa náklonu telefónu (`deviceorientation`) hýbe **iba lesk**, karta stojí (Lonzi nechcel nakláňanie karty; prst nakláňa iba bez gyroskopu).
     „Rovno“ = ako telefón držíš (základ sa pomaly prispôsobí, ~2 s). Iba viditeľné karty (hráč dňa, `.vis` v kolekcii, karta vo vrstve), premenná `--hx` + trieda `tilting`.
@@ -234,13 +245,6 @@ texty z DB sa escapujú. Nízke riziká: hádanie hesla, prihlásenie uložené 
 ochrana admina pred vložením do cudzej stránky (clickjacking) – zatiaľ nerobené.
 
 ## Otvorené / nápady
-
-- **Kalendár UPeCe celý (Lonzi 25. 11. – „k tomu sa ešte dostaneme“):** sekcia Z UPeCe berie program iba z týždenných oznamov, takže akcie z kalendára upcba.sk
-  (napr. Ondrejská ľudová veselica 27. 11., Sieversov seminár) chýbajú, kým nevyjde oznam na ten týždeň. Kalendár nie je v REST API upcba.sk (iba príspevky/stránky),
-  jeho iCal nemá CORS a stránka /kalendar/ je za Cloudflare (automatické čítanie zablokované – neobchádzať).
-  Overené 26. 11.: `wp-json` má iba `wp/v2`, `elementor`, `podcastplayer`… (žiadny kalendárový plugin), stránka `kalendar` má v REST prázdny obsah (kalendár je v šablóne Elementoru) → bez odkazu „Odoberať“ sa nedá zistiť, odkiaľ kalendár je. Návrh: GitHub Action každých pár hodín stiahne iCal
-  (odkaz z tlačidla „Odoberať“ v kalendári – **Lonzi ho má poslať**) a uloží malý JSON do repozitára; web z neho ukáže 2 týždne dopredu.
-
 
 - Budík proti uspaniu (`keepalive.yml` v repozitári `laura`) pinguje iba raz za 3 dni, kým docs Supabase uvádzajú „niekoľko požiadaviek denne“. Lonzi ho zatiaľ nechce meniť, lebo to funguje.
   Ak príde varovný e-mail od Supabase alebo sa projekt uspí: zmeniť cron na každých 6 hodín (`17 */6 * * *`, 4× denne).

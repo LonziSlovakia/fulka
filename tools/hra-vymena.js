@@ -1,23 +1,31 @@
-/* Krok pre shot.js (hra /hra/?debug=vymena): otvorí denný balík (padne 6. kus karty), v zhrnutí klikne „Vymeniť 5 za balík“,
-   preskočí odkrývanie a zavrie zhrnutie. window.HRA_STOP = 'sum' (zastaví na prvom zhrnutí) | 'side' (ponuka pri balíku) | iné = celé.
-   Vráti počty karty pred / po výmene. */
+/* Krok pre shot.js (hra /hra/?debug=vymena): otvorí denný balík (padne 6. kus karty) → v zhrnutí iba text o výmene → kolekcia →
+   detail karty ×6 → „Vymeniť 5 za balík“ → balík za výmenu → späť v kolekcii ostane ×1.
+   window.HRA_STOP = 'sum' (zastaví na zhrnutí) | 'detail' (detail karty s tlačidlom) | iné = celé. Vráti, čo sa stalo. */
 (async () => {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  const cnt = () => (document.querySelector(".trade .cnt") || {}).textContent || "bez ponuky";
-  document.querySelector("[data-act=open]").click();
+  const q = (s) => document.querySelector(s);
+  q("[data-act=open]").click();
   await wait(600);
-  document.querySelector("[data-op=skip]").click();
+  q("[data-op=skip]").click();
   await wait(1500);
-  const offer = (document.querySelector(".op-trade") || {}).textContent || "bez ponuky";
-  if (window.HRA_STOP === "sum") return offer;
-  if (window.HRA_STOP === "side") { document.querySelector("[data-op=close]").click(); await wait(900); document.getElementById("balik").scrollIntoView(); return cnt(); }
-  document.querySelector("[data-op=trade]").click();
-  await wait(700);
-  document.querySelector("[data-op=skip]").click();
-  await wait(1500);
-  const h = document.querySelector(".op-h").textContent;
-  const again = !!document.querySelector("[data-op=trade]");
-  document.querySelector("[data-op=close]").click();
+  const offer = (q(".op-trade") || {}).textContent || "bez textu";
+  const btnInSum = !!q("[data-op=trade]");
+  if (window.HRA_STOP === "sum") return [offer, "tlačidlo v zhrnutí: " + btnInSum];
+  q("[data-op=close]").click();
   await wait(900);
-  return [offer, h, "ďalšia výmena: " + again, "ponuka pri balíku: " + cnt(), "denný balík: " + (document.querySelector(".pk-clock") ? "otvorený" : "čaká"), localStorage.getItem("fulka-hra-v1")];
+  const badge = q(".cnt.trade");
+  if (!badge) return "v kolekcii nie je karta ×6";
+  const id = badge.closest("[data-id]").dataset.id;
+  badge.closest("[data-id]").click();
+  await wait(700);
+  if (window.HRA_STOP === "detail") return [offer, badge.textContent, (q(".op.detail .op-trade") || {}).textContent];
+  q("[data-op=trade]").click();
+  await wait(700);
+  q("[data-op=skip]").click();
+  await wait(1500);
+  const h = q(".op-h").textContent;
+  q("[data-op=close]").click();
+  await wait(900);
+  const after = q(`.cl-card[data-id="${id}"] .cnt`);
+  return [offer, "tlačidlo v zhrnutí: " + btnInSum, h, "po výmene: " + (after ? after.textContent : "×1"), "denný balík: " + (q(".pk-clock") ? "otvorený" : "čaká"), localStorage.getItem("fulka-hra-v1")];
 })();

@@ -98,7 +98,13 @@
       return { time: tm ? tm[0] : "", sort, place: "", title, sub: "", kind: closed ? "closed" : "event" };
     });
   }
-  const same = (a, b) => { const x = a.toLowerCase(); const y = b.toLowerCase(); return x.includes(y) || y.includes(x); };
+  // rovnaká akcia: jeden názov obsahuje druhý, alebo je skratkou druhého („OĽV“ = „Ondrejská ľudová veselica“)
+  const initials = (s) => s.split(/\s+/).filter((w) => w.length > 2).map((w) => w[0]).join("").toLowerCase();
+  const same = (a, b) => {
+    const x = a.toLowerCase(); const y = b.toLowerCase();
+    const short = (s) => s.replace(/[^\p{L}]/gu, "");
+    return x.includes(y) || y.includes(x) || (short(x).length >= 2 && (short(x) === initials(b) || short(y) === initials(a)));
+  };
 
   // jeden príspevok „UPeCe oznamy“ → dni s riadkami programu
   function parseWeek(post) {
@@ -127,16 +133,99 @@
   // dátum o n dní neskôr (ISO)
   const addDays = (date, n) => { const [y, m, d] = date.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
 
+  /* ---------- Kalendár upcba.sk (data/upece-kalendar.json z GitHub Action, tools/kalendar.js) ---------- */
+  // udalosti majú pravidlo opakovania (r: f = WEEKLY/DAILY/MONTHLY/YEARLY, i = každý i-ty, d = dni MO…SU, u = do dňa, n = počet), x = vynechané dni
+  const WD = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+  const dayIndex = (date) => { const [y, m, d] = date.split("-").map(Number); return Math.floor(Date.UTC(y, m - 1, d) / 864e5); };
+  const monday = (date) => dayIndex(date) - ((dow(date) + 6) % 7);
+  // dni výskytu udalosti v [from, to); jednorazová = deň začiatku (viacdňová, ktorá už beží = dnes)
+  function occurrences(e, from, to) {
+    const start = e.s.slice(0, 10);
+    const r = e.r;
+    if (!r) {
+      const end = (e.e || e.s).slice(0, 10);
+      if (start >= from && start < to) return [start];
+      return start < from && end > from && e.e ? [from] : [];
+    }
+    const skip = new Set(e.x || []);
+    const days = r.d && r.d.length ? r.d : [WD[dow(start)]];
+    const out = [];
+    let n = 0;
+    for (let d = start; d < to && (!r.u || d <= r.u); d = addDays(d, 1)) {
+      const k = dayIndex(d) - dayIndex(start);
+      let hit = false;
+      if (r.f === "DAILY") hit = k % r.i === 0;
+      else if (r.f === "WEEKLY") hit = days.includes(WD[dow(d)]) && ((monday(d) - monday(start)) / 7) % r.i === 0;
+      else if (r.f === "MONTHLY") hit = d.slice(8) === start.slice(8) && ((+d.slice(0, 4) - +start.slice(0, 4)) * 12 + +d.slice(5, 7) - +start.slice(5, 7)) % r.i === 0;
+      else if (r.f === "YEARLY") hit = d.slice(5) === start.slice(5) && (+d.slice(0, 4) - +start.slice(0, 4)) % r.i === 0;
+      else hit = d === start;
+      if (!hit) continue;
+      n++;
+      if (r.n && n > r.n) break;
+      if (d >= from && !skip.has(d)) out.push(d);
+    }
+    return out;
+  }
+  const isMass = (e) => /^sv\.?\s*omš/i.test(e.t) || e.c === "Sv. omše";
+  const shortTime = (s) => (s.length > 10 ? s.slice(11).replace(/^0(\d)/, "$1") : ""); // „2026-11-27T08:00“ → „8:00“
+  const dm = (date) => `${dayNum(date)}. ${Number(date.slice(5, 7))}.`;
+  // kalendár → { dátum: [riadky programu] } na dni [from, to); omše v jeden deň = jeden riadok, jednorazové akcie = výnimočné (zvýraznené)
+  function calendarDays(cal, from, to) {
+    const events = (cal && cal.udalosti) || [];
+    const repeating = new Set(events.filter((e) => e.r).map((e) => e.t.toLowerCase()));
+    const days = {};
+    events.forEach((e) => occurrences(e, from, to).forEach((date) => {
+      const rows = days[date] || (days[date] = []);
+      const time = shortTime(e.s);
+      if (isMass(e)) {
+        const m = rows.find((r) => r.kind === "mass");
+        if (m) {
+          m.times.push(time);
+          if (e.p && !m.places.includes(e.p)) m.places.push(e.p);
+        } else rows.push({ kind: "mass", times: [time], places: e.p ? [e.p] : [] });
+        return;
+      }
+      const end = e.e ? e.e.slice(0, 10) : "";
+      const multi = end && !e.r && (e.s.length > 10 ? end > e.s.slice(0, 10) : addDays(end, -1) > e.s.slice(0, 10));
+      const last = e.s.length > 10 ? end : addDays(end, -1);
+      rows.push({ time, sort: time ? minutes(time) : -2, place: e.p || "", title: e.t, sub: multi ? `${dm(e.s.slice(0, 10))} – ${dm(last)}` : "",
+        kind: !e.r && !repeating.has(e.t.toLowerCase()) ? "special" : "event" });
+    }));
+    Object.values(days).forEach((rows) => rows.forEach((r, i) => {
+      if (r.kind !== "mass") return;
+      const times = r.times.filter(Boolean).sort((a, b) => minutes(a) - minutes(b));
+      rows[i] = { time: times.join(" · "), sort: times.length ? minutes(times[0]) : 0, place: r.places.join(" a "), title: times.length > 1 ? "Sv. omše" : "Sv. omša", sub: "", kind: "mass" };
+    }));
+    Object.values(days).forEach((rows) => rows.sort((a, b) => a.sort - b.sort));
+    return days;
+  }
+
   // program na najbližšie 2 týždne (DAYS dní od dnes): novší príspevok prepíše rovnaký deň zo staršieho;
   // najviac max riadkov, ale výnimočné akcie sa neodrežú nikdy (namiesto nich vypadnú bežné riadky na konci).
-  // Ukáže sa iba to, čo je v zverejnených týždenných oznamoch (oznam na ďalší týždeň býva až ku koncu týždňa).
+  // Deň z týždenného oznamu má prednosť (liturgický kalendár, miesta); z kalendára upcba.sk sa k nemu doplnia iba jednorazové akcie.
+  // Dni, na ktoré oznam ešte nevyšiel, sa vezmú celé z kalendára (cal = data/upece-kalendar.json).
   const DAYS = 14;
-  function program(posts, today, max = 10) {
+  function program(posts, today, max = 10, cal) {
     const days = {};
     (posts || []).slice().reverse().forEach((p) => parseWeek(p).forEach((d) => { days[d.date] = d; }));
+    const end = addDays(today, DAYS);
+    const fromCal = cal ? calendarDays(cal, today, end) : {};
     const all = [];
-    Object.keys(days).sort().filter((d) => d >= today && d < addDays(today, DAYS)).forEach((date) => {
-      days[date].rows.forEach((r) => all.push(Object.assign({ date, dn: dayShort(date), dd: dayNum(date) }, r)));
+    [...new Set(Object.keys(days).concat(Object.keys(fromCal)))].sort().filter((d) => d >= today && d < end).forEach((date) => {
+      let rows = fromCal[date] || [];
+      if (days[date]) {
+        rows = days[date].rows.map((r) => Object.assign({}, r));
+        (fromCal[date] || []).filter((c) => c.kind === "special").forEach((c) => {
+          const hit = rows.find((r) => r.kind !== "mass" && same(r.title, c.title));
+          if (!hit) { rows.push(c); return; }
+          // tá istá akcia: zvýrazniť a doplniť z kalendára, čo v oznamu chýba (čas, miesto, celý názov namiesto skratky)
+          Object.assign(hit, { kind: "special", title: c.title.length > hit.title.length ? c.title : hit.title });
+          if (!hit.time && c.time) Object.assign(hit, { time: c.time, sort: c.sort });
+          if (!hit.place && c.place) hit.place = c.place;
+        });
+        rows.sort((a, b) => a.sort - b.sort);
+      }
+      rows.forEach((r) => all.push(Object.assign({ date, dn: dayShort(date), dd: dayNum(date) }, r)));
     });
     const room = Math.max(0, max - all.filter((r) => r.kind === "special").length);
     let normal = 0;
@@ -160,12 +249,15 @@
   function writeCache(v) {
     try { localStorage.setItem(CACHE, JSON.stringify(v)); } catch (e) { /* bez úložiska ide web ďalej */ }
   }
-  // stiahne posledné 2 týždenné oznamy (tento aj budúci týždeň) a novinky; surové príspevky uloží do cache
+  // stiahne posledné 2 týždenné oznamy (tento aj budúci týždeň), novinky a kalendár (JSON z nášho webu, obnovuje ho GitHub Action);
+  // surové dáta uloží do cache. Kalendár je nepovinný – keď chýba, program je iba z oznamov.
+  const CAL_URL = "data/upece-kalendar.json";
   function load() {
     const week = getJson(`${API}?categories=${CAT_WEEK}&per_page=2&_fields=date,title,content`);
     const fresh = getJson(`${API}?categories=${CAT_NEWS}&categories_exclude=${CAT_WEEK}&per_page=3&_fields=date,link,title,excerpt`);
-    return Promise.all([week, fresh]).then(([w, n]) => {
-      const v = { at: Date.now(), week: w, news: n };
+    const cal = getJson(`${CAL_URL}?h=${Math.floor(Date.now() / 36e5)}`).catch(() => null); // ?h = nová adresa každú hodinu (cache)
+    return Promise.all([week, fresh, cal]).then(([w, n, c]) => {
+      const v = { at: Date.now(), week: w, news: n, cal: c };
       writeCache(v);
       return v;
     });
@@ -173,7 +265,7 @@
 
   const Upece = {
     SITE, CALENDAR: `${SITE}/kalendar/`, OFFER: `${SITE}/o-upece/`,
-    decode, text, lines, safeLink, weekStart, dateOf, noticeHead, noticeTime, notices, massRow, eventRows, parseWeek, program, news,
+    decode, text, lines, safeLink, weekStart, dateOf, noticeHead, noticeTime, notices, massRow, eventRows, parseWeek, occurrences, calendarDays, program, news,
     readCache, load,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Upece;
