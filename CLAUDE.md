@@ -112,6 +112,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     jednorazové akcie (bez opakovania) zvýraznené. Bez JSON (chyba) je program iba z oznamov. GitHub vypne plánované Actions po 60 dňoch bez commitu v repozitári → potom zapnúť v Actions.
     **Stav 26. 11.:** s predvoleným User-Agentom `curl` vracal Cloudflare na upcba.sk serverom GitHubu 403; kolega z web tímu upcba.sk ponúkol výnimku podľa hlavičky/User-Agenta,
     Action sa predstaví User-Agentom **`Fulka/0.1`** (dohodnutý s kolegom z web tímu, podľa neho je výnimka vo WAF; verejný, je v repozitári) → `schedule` je zapnutý.
+    Pozor: ručné spustenia prešli, ale **plánované (`schedule`) GitHub do 20:28 26. 11. ani raz nespustil** → workflow vypnutý a zapnutý (`gh workflow disable/enable kalendar.yml`). Overiť: `gh run list --workflow=kalendar.yml --event schedule`.
     Voliteľne tajná hlavička `X-FULka-Token` z GitHub Secret `UPECE_KALENDAR_TOKEN` (posiela sa iba keď je nastavený) – keby web tím chcel výnimku, ktorá sa nedá napodobniť.
     Pri chybe log vypíše `cf-ray` a `cf-mitigated` (podľa nich web tím nájde požiadavku v Cloudflare → Security → Events). Nič iné neobchádzať.
     Alternatíva bez Action: **CORS hlavička** `Access-Control-Allow-Origin: https://ful.upcba.sk` na odkaz exportu → web by čítal kalendár priamo (parser presunúť z `tools/kalendar.js` do `upece.js`).
