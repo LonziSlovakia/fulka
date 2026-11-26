@@ -106,6 +106,11 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Spojenie s oznamami (`program`): deň z oznamu má prednosť (liturgia, miesta, časy); z kalendára sa k nemu pridajú iba jednorazové akcie, a keď už v oznamu sú
     (aj ako skratka „OĽV“ = začiatočné písmená), zvýraznia sa a doplní sa čas, miesto a celý názov. Dni bez oznamu sú celé z kalendára: omše jedného dňa v jednom riadku,
     jednorazové akcie (bez opakovania) zvýraznené. Bez JSON (chyba) je program iba z oznamov. GitHub vypne plánované Actions po 60 dňoch bez commitu v repozitári → potom zapnúť v Actions.
+    **Stav 26. 11.: Cloudflare na upcba.sk vracia serverom GitHubu 403** (z domácej IP `curl` prejde) → `schedule` v yml je zakomentovaný (inak e-mail o chybe každé 3 h),
+    JSON je stiahnutý ručne 26. 11. (opakované omše/športy platia ďalej, nové jednorazové akcie chýbajú). Neobchádzať (iný User-Agent a pod.).
+    Riešenie čaká na web tím upcba.sk: buď **CORS hlavička** `Access-Control-Allow-Origin: https://ful.upcba.sk` na odkaz exportu (Cloudflare → Rules → Transform Rules → Response Header)
+    → web by čítal kalendár priamo a Action netreba (parser presunúť z `tools/kalendar.js` do `upece.js`), alebo **WAF výnimka** pre ten odkaz → stačí odkomentovať `schedule`.
+    Dovtedy ručne: `curl -fsSL "<ICAL z yml>" -o /tmp/u.ics && node tools/kalendar.js /tmp/u.ics data/upece-kalendar.json` a commit.
   - **Výnimočná akcia** (zvýraznená tyrkysovou) = má v tom týždni vlastný oznam s dátumom (`notice-title` „Názov D. M.“). Oznam s dátumom a časom,
     ktorý nie je v tabuľke, sa doplní ako riadok. „… do D. M.“ je uzávierka, nie akcia.
   - Novinky: 2 posledné príspevky z **Aktuality (165)** bez Oznamov. Odkazy iba na `https://www.upcba.sk/…`, texty sa escapujú.
