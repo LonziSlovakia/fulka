@@ -63,6 +63,7 @@
   const DEBUG_VENIEC = new URLSearchParams(location.search).get("debug") === "veniec";
   const TRY_KEY = "fulka-hra-skuska"; // sessionStorage: { w: 1 } po ladení venca (číta ho aj render.js)
   const tryWreath = () => { try { return (JSON.parse(sessionStorage.getItem(TRY_KEY)) || {}).w === 1; } catch (e) { return false; } };
+  if (!DEBUG_VENIEC) { try { sessionStorage.removeItem(TRY_KEY); } catch (e) {} } // hra bez ladenia → skúšobný veniec preč
   const RLONG = { legendary: "Top 5 hráčov sezóny + trblietavé tímy s animovaným logom", epic: "6. – 10. hráč v kanadskom bodovaní",
     rare: "11. – 20. hráč v kanadskom bodovaní", common: "Ostatní hráči zo súpisky" };
 
@@ -274,7 +275,7 @@
   }
 
   /* ---------- Náklon telefónu (gyroskop) ---------- */
-  // na mobile sa karty nakláňajú a lesk sa hýbe podľa náklonu telefónu. „Rovno“ = poloha, v ktorej telefón držíš:
+  // na mobile sa podľa náklonu telefónu hýbe lesk na kartách (karta sama stojí, nenakláňa sa). „Rovno“ = poloha, v ktorej telefón držíš:
   // základ sa jej pomaly prispôsobuje (podrží sa naklonený → karta sa za ~2 s vráti). Iba karty, ktoré vidno.
   const gyro = { on: false, x: 0, y: 0, bx: null, by: null, frame: 0, last: "" };
   const GYRO_MAX = 16; // o koľko stupňov treba telefón nakloniť na plný náklon karty
@@ -286,11 +287,9 @@
     if (key === gyro.last) return; // telefón sa nehýbe → nič neprekresľovať
     gyro.last = key;
     const cards = layer.hidden ? app.querySelectorAll(".day-card .fc, .cl-card.vis .fc, .mini.vis .fc") : layer.querySelectorAll(".op-card .fc:not(.back)");
-    cards.forEach((el) => {
+    cards.forEach((el) => { // karta stojí, hýbe sa iba lesk (Lonzi 26. 11.)
       el.classList.add("tilting");
-      el.style.setProperty("--ry", `${(nx * 11).toFixed(2)}deg`);
-      el.style.setProperty("--rx", `${(ny * 9).toFixed(2)}deg`);
-      el.style.setProperty("--hx", (-nx * 30).toFixed(1));
+      el.style.setProperty("--hx", (-(nx + ny * 0.5) * 30).toFixed(1));
     });
   }
   function onOrient(e) {

@@ -132,10 +132,11 @@
   };
 
   // veniec z hry (/hra/): hráč má celú kolekciu kariet → okolo loga v hlavičke (iba v jeho prehliadači);
-  // sessionStorage fulka-hra-skuska = veniec z ladenia hra/?debug=veniec (iba v tejto karte prehliadača, kým sa nezavrie)
+  // sessionStorage fulka-hra-skuska = veniec z ladenia hra/?debug=veniec: ukáže sa iba raz (prvé načítanie webu po ladení), potom sa zmaže
+  const wreathOf = (store, key) => { try { return (JSON.parse(store.getItem(key)) || {}).w === 1; } catch (e) { return false; } };
+  const TRY_WREATH = (() => { const w = wreathOf(window.sessionStorage, "fulka-hra-skuska"); try { window.sessionStorage.removeItem("fulka-hra-skuska"); } catch (e) {} return w; })();
   function hasWreath() {
-    const w = (store, key) => { try { return (JSON.parse(store.getItem(key)) || {}).w === 1; } catch (e) { return false; } };
-    return w(window.localStorage, "fulka-hra-v1") || w(window.sessionStorage, "fulka-hra-skuska");
+    return TRY_WREATH || wreathOf(window.localStorage, "fulka-hra-v1");
   }
 
   function header(c) {
