@@ -1,4 +1,5 @@
 -- FULka: ručné zálohy dát (snímky všetkých tabuliek fulka_*) a návrat k zálohe.
+-- Pozor: po 5-roly-vlastnik.sql robí zálohy iba vlastník – keby si tento skript spustil znova, spusti potom znova aj 5-roly-vlastnik.sql.
 -- Spustiť raz v Supabase: SQL Editor → New query → vložiť celé → Run. Dá sa spustiť aj opakovane.
 --
 -- Ako to funguje:

@@ -25,7 +25,8 @@ Stav k 21. 11. 2026.
 - Dáta, fotky, prihlásenie: Supabase projekt `lonzi-weby` (spoločný s `laura`), tabuľky `fulka_*`, bucket `fulka`.
   Zápis povoľuje RLS cez `public.is_admin('fulka')`. Budík proti uspaniu databázy beží v repozitári `laura`.
 - Spustené SQL: `supabase/1-fulka.sql` (tabuľky, pravidlá, štartovacie dáta), `supabase/2-loga-webp.sql` (logá víťazov vo WebP),
-  `supabase/3-zalohy.sql` (ručné zálohy + poistka; spustené a Lonzim otestované 3. 11. 2026), `supabase/4-terminy-sezony.sql` (termíny sezóny; spustené 19. 11. 2026).
+  `supabase/3-zalohy.sql` (ručné zálohy + poistka; spustené a Lonzim otestované 3. 11. 2026), `supabase/4-terminy-sezony.sql` (termíny sezóny; spustené 19. 11. 2026),
+  `supabase/5-roly-vlastnik.sql` (roly, zálohy iba vlastník; pripravené 26. 11. 2026 – **spustenie čaká na Lonziho**, potom tu zapísať).
   Demo tím Kuchynka Ants si Lonzi vytvorí sám v admine (SQL na to **nechce**); logá sú v `demo/ants/`.
 - Sezóny: Zimná 2026 `z26` (pilotná, skončená), Letná 2027 `l27` (pripravujeme). Tímy Veľká sála Giants, Libresso Brewers, Recepcia Rangers, Kaplnka Saints.
 
@@ -202,6 +203,12 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - Potvrdzovacie okno (`ask()` v `admin.js`) je **iba pri mazaní, pri zálohách a pri ukončení zápasu na tabuli**. Potvrdenie pred každou bežnou úpravou Lonzi **nechce**
   (raz som ho pridal, vrátil som to) – nepridávať.
 - Góly sa ukladajú bez mazania vopred: upsert podľa `match_id,seq`, potom zmazať iba `seq > počet` (predtým sa najprv všetko zmazalo → pri výpadku by góly zmizli).
+- **Roly (26. 11. 2026, `supabase/5-roly-vlastnik.sql`):** návštevník → admin (`public.admins` / `is_admin('fulka')`, spoločné s laura, nemeniť) → **vlastník** = admin s riadkom
+  `fulka_roles (user_id, role = 'owner')`. Zálohy (zoznam, vytvorenie, mazanie, návrat, „Vrátiť späť“) smie iba vlastník – kontroluje to databáza (`fulka_is_owner()` vo funkciách a pravidlách),
+  admin len skryje záložku (`DB.myRoles()` → `S.roles`, `canBackup()`; kým skript nebežal, rpc chýba → `null` → zálohy vidí každý admin ako predtým).
+  Vlastník je Lonziho hlavný účet, druhý jeho účet je iba admin (Lonzi chcel, aby zálohy robil iba hlavný). E-maily nikdy do repozitára – vlastníka pridáva Lonzi v SQL Editore.
+  Ďalšie roly do budúcna: pridať názov do `check` v skripte a v pravidlách použiť `fulka_has_role('…')`. Pozor: opätovné spustenie `3-zalohy.sql` vráti zálohy všetkým adminom → potom znova `5-…`.
+  Test v admine: `tools/mock-db.js` má `DB.myRoles` (`window.__roles = []` = admin bez záloh, inak `["owner"]`).
 - **Zálohy** (`supabase/3-zalohy.sql`, admin → Zálohy): **iba ručné** tlačidlom „Uložiť zálohu“ (Lonzi si zálohuje po kolách; automatické
   zálohy nechce – „spam“). Snímka všetkých 8 tabuliek v `fulka_backups` (~25 kB), vidí/vytvára/maže ich iba admin (zmazať sa dá v admine).
   Fotky sa nezálohujú (Lonzi: netreba).

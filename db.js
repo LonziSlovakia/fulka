@@ -140,6 +140,8 @@
   const restore = (id) => rpc("restore", { p_id: Number(id) });
   const restoreFile = (data) => rpc("restore_file", { p_data: data });
   const undo = () => rpc("undo");
+  // roly prihláseného (supabase/5-roly-vlastnik.sql), napr. ["owner"]; admin bez roly = []
+  const myRoles = () => rpc("my_roles").then((r) => (Array.isArray(r) ? r : []));
 
   /* ---------- Fotky ---------- */
   async function upload(path, blob) {
@@ -173,6 +175,7 @@
     restore,
     restoreFile,
     undo,
+    myRoles,
     upload,
     photoUrl,
   };

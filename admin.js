@@ -613,6 +613,7 @@
 
   function nav(c) {
     const tabs = [["matches", "Zápasy"], ["playoff", "Playoff"], ["teams", "Tímy"], ["seasons", "Sezóny"], ["settings", "Nastavenia"], ["game", "Hra"], ["backups", "Zálohy"], ["board", "Tabuľa"]]
+      .filter(([id]) => id !== "backups" || canBackup()) // zálohy iba vlastník
       .map(([id, label]) => `<button type="button" data-a="tab" data-id="${id}" ${pressed(S.tab === id)}>${label}</button>`).join("");
     let bar = "";
     if (S.tab !== "seasons" && S.tab !== "settings" && S.tab !== "backups" && S.tab !== "game") {
@@ -1327,8 +1328,20 @@
   }
 
   /* ---------- Hlavné vykreslenie ---------- */
+  /* Roly (supabase/5-roly-vlastnik.sql): zálohy iba pre vlastníka (owner). S.roles: undefined = ešte nenačítané,
+     null = databáza roly nepozná (skript ešte nebežal) → zálohy vidí každý admin ako doteraz, pole = roly prihláseného.
+     Skrytie záložky je iba pohodlie – skutočná ochrana je v databáze (funkcie a pravidlá záloh). */
+  const canBackup = () => S.roles === null || (Array.isArray(S.roles) && S.roles.includes("owner"));
+  async function loadRoles() {
+    S.roles = "loading";
+    try { S.roles = await DB.myRoles(); } catch (e) { S.roles = null; }
+    if (S.tab === "backups" && !canBackup()) S.tab = "matches";
+    render();
+  }
+
   function render() {
-    if (!DB.user()) { app.innerHTML = `<div class="adm">${loginView()}</div>`; document.title = "FULka – admin"; return; }
+    if (!DB.user()) { S.roles = undefined; app.innerHTML = `<div class="adm">${loginView()}</div>`; document.title = "FULka – admin"; return; }
+    if (S.roles === undefined) loadRoles();
     if (!S.data) { app.innerHTML = '<p class="msg">Načítavam…</p>'; return; }
     const c = ctx();
     if (!c.s) { app.innerHTML = `<div class="adm">${header(c)}<p class="msg">V databáze nie je žiadna sezóna.</p></div>`; return; }

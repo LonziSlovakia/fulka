@@ -33,6 +33,7 @@
   const apply = (d) => { mem = JSON.parse(JSON.stringify(d)); mem.settings = d.settings[0].data; delete mem.format; };
   const keepUndo = (d, label) => { backups = backups.filter((b) => b.kind !== "undo"); take("undo", label, d); };
   const strip = ({ data, ...b }) => b;
+  DB.myRoles = async () => (window.__roles !== undefined ? window.__roles : ["owner"]); // __roles = [] → admin bez záloh
   DB.backups = async () => backups.filter((b) => b.kind === "manual").reverse().map(strip);
   DB.undoInfo = async () => { const u = backups.find((b) => b.kind === "undo"); return u ? strip(u) : null; };
   DB.backupData = async (id) => JSON.parse(JSON.stringify(backups.find((b) => String(b.id) === String(id)).data));
