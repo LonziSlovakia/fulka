@@ -4,11 +4,11 @@
 # Ručné spustenie: GitHub → repozitár → záložka Actions → „Kalendár UPeCe“ → Run workflow.
 name: Kalendár UPeCe
 
-# POZOR (26. 11. 2026): Cloudflare na upcba.sk vracia serverom GitHubu 403 (z domácej IP to ide) → plánované spúšťanie je vypnuté,
-# kým web tím upcba.sk nepovolí tento odkaz (pravidlo vo WAF) alebo nepridá CORS hlavičku. Potom stačí odkomentovať schedule.
+# 26. 11. 2026: s predvoleným User-Agentom curl vracal Cloudflare na upcba.sk serverom GitHubu 403, s vlastným (UA nižšie) prešiel (HTTP 200).
+# Keby znova chodilo 403: v logu je cf-ray → poslať web tímu upcba.sk (výnimka vo WAF, prípadne tajná hlavička X-FULka-Token).
 on:
-  # schedule:
-  #   - cron: "23 */3 * * *" # každé 3 hodiny, 23. minúta (čas v UTC = Bratislava − 1 h, v lete − 2 h)
+  schedule:
+    - cron: "23 */3 * * *" # každé 3 hodiny, 23. minúta (čas v UTC = Bratislava − 1 h, v lete − 2 h)
   workflow_dispatch: {} # tlačidlo „Run workflow“
 
 permissions:
