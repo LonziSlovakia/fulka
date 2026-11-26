@@ -67,6 +67,8 @@ html { scrollbar-gutter: stable; }
 .fc-face::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(62deg, rgba(255, 255, 255, 0) 0 3cqi, rgba(255, 244, 200, 0.1) 3cqi 3.6cqi); opacity: 0; }
 .fc.r-legendary .fc-front::after { opacity: 1; } /* jemná trblietavá fólia (statická) */
 .fc.tilting .fc-holo { animation: none; transform: translateX(calc(var(--hx, 0) * 1%)); }
+/* epic: odlesk ide za náklonom (myš / gyroskop na mobile) ako pri legendary – stred karty = 100 %, náklon ho posúva po karte */
+.fc.tilting .fc-sheen { animation: none; transform: translateX(calc(100% + var(--hx, 0) * 2.6%)); transition: transform 0.08s linear; }
 @keyframes holo { from { transform: translateX(-30%); } to { transform: translateX(30%); } }
 .fc .sp { position: absolute; left: var(--x); top: var(--y); width: 5cqi; height: 5cqi; background: #fff; pointer-events: none;
   clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);

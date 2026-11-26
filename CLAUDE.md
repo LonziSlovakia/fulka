@@ -188,7 +188,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     („Máš 6× … – v kolekcii (detail karty) môžeš 5 vymeniť za nový balík“), žiadne tlačidlo; pri dennom balíku nič.
     Ladenie `?debug=vymena` je zmazané (26. 11., Lonzi: funguje).
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
-  - **Gyroskop (26. 11. 2026):** na dotykovom zariadení sa podľa náklonu telefónu (`deviceorientation`) hýbe **iba lesk**, karta stojí (Lonzi nechcel nakláňanie karty; prst nakláňa iba bez gyroskopu).
+  - **Gyroskop (26. 11. 2026):** na dotykovom zariadení sa podľa náklonu telefónu (`deviceorientation`) hýbe **iba lesk** (legendary fólia, epic odlesk `.fc-sheen`, tajné karty), karta stojí (Lonzi nechcel nakláňanie karty; prst nakláňa iba bez gyroskopu).
     „Rovno“ = ako telefón držíš (základ sa pomaly prispôsobí, ~2 s). Iba viditeľné karty (hráč dňa, `.vis` v kolekcii, karta vo vrstve), premenná `--hx` + trieda `tilting`.
     iPhone pýta povolenie „pohyb a orientácia“ pri prvom ťuknutí na stránke (Safari to inak nedovolí). Simulácia: `TOUCH=1 node tools/shot.js …` + `dispatchEvent(new DeviceOrientationEvent(…))`.
   - **Šírka stránky sa nesmie meniť:** `.fc-in` má `overflow: hidden` (odlesk `::before` inak počas animácie vytŕčal z kariet → stránka bola na chvíľu širšia, na mobile sa oddialila),
