@@ -111,6 +111,6 @@ end $$;
 -- 1) kto je vlastník (má vrátiť 1 riadok s tvojím e-mailom):
 --    select u.email, r.role from public.fulka_roles r join auth.users u on u.id = r.user_id;
 -- 2) admini a či sú vlastníci (tvoj hlavný účet: true, druhý účet: false):
---    select u.email, exists (select 1 from public.fulka_roles r where r.user_id = u.id and r.role = 'owner') as vlastnik
---    from public.admins a join auth.users u on u.id = a.user_id where a.site = 'fulka';
+--    (celý dotaz je na jednom riadku – odkomentuj ho celý, inak chyba „missing FROM-clause entry“)
+--    select u.email, exists (select 1 from public.fulka_roles r where r.user_id = u.id and r.role = 'owner') as vlastnik from public.admins a join auth.users u on u.id = a.user_id where a.site = 'fulka';
 -- 3) na webe: prihlásený hlavný účet vidí v admine záložku Zálohy, druhý účet ju nevidí.
