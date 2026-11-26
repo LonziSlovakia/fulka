@@ -51,7 +51,7 @@ function parse(ics) {
     if (!ev) continue;
     const i = line.indexOf(":");
     if (i < 0) continue;
-    const [name, ...params] = line.slice(0, i).split(";");
+    const name = line.slice(0, i).split(";")[0]; // „DTSTART;TZID=…“ → „DTSTART“
     const value = line.slice(i + 1);
     if (name === "SUMMARY") ev.t = unescape(value);
     else if (name === "DTSTART") ev.s = stamp(value);
@@ -61,22 +61,19 @@ function parse(ics) {
     else if (name === "URL" && value.startsWith(SITE)) ev.u = value.trim();
     else if (name === "RRULE") ev.r = rule(value);
     else if (name === "EXDATE") value.split(",").forEach((v) => { const d = stamp(v.trim()); if (d) ev.x.push(d.slice(0, 10)); });
-    else if (name === "RECURRENCE-ID") ev.rid = stamp(value);
-    void params;
   }
   return out.map((e) => {
     const o = { t: e.t, s: e.s };
     if (e.e && e.e !== e.s) o.e = e.e;
     ["p", "c", "u", "r"].forEach((k) => { if (e[k]) o[k] = e[k]; });
     if (e.x.length) o.x = [...new Set(e.x)].sort();
-    if (e.rid) o.rid = e.rid; // zmenený jeden výskyt opakovanej udalosti
     return o;
   });
 }
 
 // posledný deň udalosti (pri opakovaní koniec pravidla; bez konca = ďaleko v budúcnosti)
 function lastDay(e) {
-  if (e.r) return e.r.u || (e.r.n ? "9999-12-31" : "9999-12-31");
+  if (e.r) return e.r.u || "9999-12-31";
   return (e.e || e.s).slice(0, 10);
 }
 // iba udalosti, ktoré ešte prebiehajú alebo skončili nedávno; zoradené podľa začiatku
