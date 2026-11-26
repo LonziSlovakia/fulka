@@ -30,7 +30,7 @@ jobs:
       #  - User-Agent je verejný (repozitár je verejný), takže sám o sebe sa dá napodobniť – pre kalendár (verejné dáta) to nevadí,
       #  - X-FULka-Token = tajný kľúč dohodnutý s web tímom, uložený v GitHub → Settings → Secrets and variables → Actions
       #    pod menom UPECE_KALENDAR_TOKEN (v kóde ani v logu nie je). Kým tajomstvo nie je nastavené, hlavička sa neposiela.
-      UA: "FULka-kalendar/1.0 (+https://ful.upcba.sk; GitHub Actions)"
+      UA: "Fulka/0.1" # dohodnuté s web tímom upcba.sk (26. 11. 2026) – podľa neho je výnimka vo WAF
     steps:
       - uses: actions/checkout@v4
 

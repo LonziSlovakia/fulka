@@ -109,7 +109,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     (aj ako skratka „OĽV“ = začiatočné písmená), zvýraznia sa a doplní sa čas, miesto a celý názov. Dni bez oznamu sú celé z kalendára: omše jedného dňa v jednom riadku,
     jednorazové akcie (bez opakovania) zvýraznené. Bez JSON (chyba) je program iba z oznamov. GitHub vypne plánované Actions po 60 dňoch bez commitu v repozitári → potom zapnúť v Actions.
     **Stav 26. 11.:** s predvoleným User-Agentom `curl` vracal Cloudflare na upcba.sk serverom GitHubu 403; kolega z web tímu upcba.sk ponúkol výnimku podľa hlavičky/User-Agenta,
-    Action sa preto predstaví User-Agentom `FULka-kalendar/1.0 (+https://ful.upcba.sk; GitHub Actions)` (verejný, je v repozitári) a s ním prešla (HTTP 200) → `schedule` je zapnutý.
+    Action sa predstaví User-Agentom **`Fulka/0.1`** (dohodnutý s kolegom z web tímu, podľa neho je výnimka vo WAF; verejný, je v repozitári) → `schedule` je zapnutý.
     Voliteľne tajná hlavička `X-FULka-Token` z GitHub Secret `UPECE_KALENDAR_TOKEN` (posiela sa iba keď je nastavený) – keby web tím chcel výnimku, ktorá sa nedá napodobniť.
     Pri chybe log vypíše `cf-ray` a `cf-mitigated` (podľa nich web tím nájde požiadavku v Cloudflare → Security → Events). Nič iné neobchádzať.
     Alternatíva bez Action: **CORS hlavička** `Access-Control-Allow-Origin: https://ful.upcba.sk` na odkaz exportu → web by čítal kalendár priamo (parser presunúť z `tools/kalendar.js` do `upece.js`).
