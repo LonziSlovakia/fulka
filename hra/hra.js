@@ -57,9 +57,6 @@
   const RNAME = Object.assign({ mythical: "Mythical" }, C.RARITY_NAME);
   // tajné karty (mythical): nikde sa nespomínajú, v kolekcii sú iba keď padli (hore ako prvé), nemenia počty
   const MYTHS = C.MYTHICALS; // FULka, UFLka, VERBISTI
-  /* ?debug=vymena = ladenie výmeny: kolekcia = jedna common karta 5× (iba v pamäti, do localStorage nič), denný balík ju obsahuje → 6×
-     → ponuka „vymeň 5 za balík“ → balík → ostane 1× a ponuka zmizne. Obnovenie stránky = znova od začiatku. */
-  const DEBUG_VYMENA = new URLSearchParams(location.search).get("debug") === "vymena";
   const RLONG = { legendary: "Top 5 hráčov sezóny + trblietavé tímy s animovaným logom", epic: "6. – 10. hráč v kanadskom bodovaní",
     rare: "11. – 20. hráč v kanadskom bodovaní", common: "Ostatní hráči zo súpisky" };
 
@@ -73,7 +70,7 @@
   }
   const teamOf = (c) => S.T[c.team_id] || FUL;
   const owned = (id) => S.save.c[id] || 0;
-  const store = () => { if (!DEBUG_VYMENA) ls.set(KEY, S.save); };
+  const store = () => ls.set(KEY, S.save);
   const tradeable = () => C.tradeCard(S.cards.concat(MYTHS), S.save); // karta, ktorú má hráč aspoň 6× (alebo null)
   const canTrade = (id) => owned(id) > C.TRADE; // výmena 5 kusov za balík (v detaile karty), jeden ostane
 
@@ -246,11 +243,6 @@
     S.P = Object.fromEntries(d.players.map((p) => [p.id, p]));
     S.cards = C.buildCards(d);
     S.byId = Object.fromEntries(S.cards.concat(MYTHS).map((c) => [c.id, c]));
-    if (DEBUG_VYMENA && !S.extra && S.cards.length) { // jedna common karta 5× (iba v pamäti)
-      const commons = S.cards.filter((c) => c.rarity === "common");
-      S.extra = commons[Math.floor(Math.random() * commons.length)] || S.cards[0];
-      S.save = { d: "", c: { [S.extra.id]: 5 }, l: [], w: 0 };
-    }
     if (!S.busy) render();
   }
 
@@ -374,13 +366,11 @@
     if (S.busy || !S.cards.length) return;
     const t = tradeId ? S.byId[tradeId] : null;
     if (tradeId ? !t || !canTrade(t.id) : !C.canOpen(S.save, today())) return;
-    const bonus = !!t;
     S.busy = true;
     const base = t ? C.spend(S.save, t.id) : S.save;
     const had = Object.assign({}, base.c); // počty pred balíkom → „Nová karta“ / „×2“
     const seen = Object.assign({}, had);
-    let pack = C.openPack(S.cards, Math.random, MYTHS, base.c);
-    if (DEBUG_VYMENA && !bonus && S.extra) pack = [S.extra].concat(pack.filter((c) => c !== S.extra).slice(1)); // ladenie: 6. kus karty
+    const pack = C.openPack(S.cards, Math.random, MYTHS, base.c);
     const next = C.addPack(base, pack.map((c) => c.id), today(), !!t);
     const won = !next.w && C.complete(S.cards, next); // posledná chýbajúca karta → veniec (natrvalo)
     if (won) next.w = 1;

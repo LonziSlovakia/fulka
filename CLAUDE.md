@@ -186,8 +186,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Simulácia: s výmenou je celá kolekcia priemerne za ~29 dní (s pomocou ~26) a výmen je ~40–110 → výmena je silná, keby bolo treba, prísnejšie = viac kariet za balík alebo 1 výmena denne.
     Kde: **tlačidlo iba v detaile karty v kolekcii** (Lonzi 26. 11.); karta s ≥ 6 kusmi má v kolekcii zlatý štítok počtu; v zhrnutí balíka je iba text vedľa „Do kolekcie“
     („Máš 6× … – v kolekcii (detail karty) môžeš 5 vymeniť za nový balík“), žiadne tlačidlo; pri dennom balíku nič.
-    **`?debug=vymena`** (ladenie): kolekcia = jedna common karta 5× (iba v pamäti, nič do localStorage), denný balík ju obsahuje → 6× → detail karty → výmena → ostane 1×.
-    Test: `node tools/shot.js "…/hra/?debug=vymena" 1440 out.png @tools/hra-vymena.js` (`window.HRA_STOP='sum'|'detail'`).
+    Ladenie `?debug=vymena` je zmazané (26. 11., Lonzi: funguje).
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
   - **Gyroskop (26. 11. 2026):** na dotykovom zariadení sa podľa náklonu telefónu (`deviceorientation`) hýbe **iba lesk**, karta stojí (Lonzi nechcel nakláňanie karty; prst nakláňa iba bez gyroskopu).
     „Rovno“ = ako telefón držíš (základ sa pomaly prispôsobí, ~2 s). Iba viditeľné karty (hráč dňa, `.vis` v kolekcii, karta vo vrstve), premenná `--hx` + trieda `tilting`.
