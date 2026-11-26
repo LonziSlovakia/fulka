@@ -130,3 +130,35 @@ test("program: deň z oznamu má prednosť, z kalendára sa doplní jednorazová
   const W = week("UPeCe oznamy 19.10.2026 &#8211; 25.10.2026", [row("20. 10.<br>Utorok", "", "<strong>20:00</strong><br>kaplnka", "<strong>OĽV 22:00</strong>")]);
   assert.deepEqual(U.program([W], "2026-10-20", 30, cal).filter((r) => r.date === "2026-10-20").map((r) => `${r.time} ${r.title}:${r.kind}`), ["20:00 Sv. omša:mass", "22:00 Ondrejská ľudová veselica:special"]); // skratka = tá istá akcia, doplnená z kalendára
 });
+
+// séria omší (UID A): 16. 11. presunutá na utorok 17. 11. 18:00, 23. 11. zrušená (bez názvu); adorácia iba s dňami navyše (RDATE); zrušená akcia
+const ICS2 = ["BEGIN:VCALENDAR",
+  "BEGIN:VEVENT", "UID:A", "SUMMARY:Sv. omša", "DTSTART;TZID=Europe/Bratislava:20261102T190000", "RRULE:FREQ=WEEKLY;BYDAY=MO", "LOCATION:Kaplnka UPeCe", "END:VEVENT",
+  "BEGIN:VEVENT", "UID:A", "RECURRENCE-ID;TZID=Europe/Bratislava:20261116T190000", "SUMMARY:Sv. omša", "DTSTART;TZID=Europe/Bratislava:20261117T180000", "END:VEVENT",
+  "BEGIN:VEVENT", "UID:A", "RECURRENCE-ID:20261123T180000Z", "STATUS:CANCELLED", "DTSTART:20261123T180000Z", "END:VEVENT",
+  "BEGIN:VEVENT", "UID:B", "SUMMARY:Adorácia", "DTSTART;TZID=Europe/Bratislava:20261105T200000", "RDATE;TZID=Europe/Bratislava:20261112T200000,20261126T200000", "END:VEVENT",
+  "BEGIN:VEVENT", "UID:C", "SUMMARY:Zrušená akcia", "STATUS:CANCELLED", "DTSTART;TZID=Europe/Bratislava:20261118T200000", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+
+test("kalendár: presunutý a zrušený výskyt série, dni navyše (RDATE), zrušená udalosť", () => {
+  const ev = K.parse(ICS2);
+  assert.deepEqual(ev.map((e) => e.t), ["Sv. omša", "Sv. omša", "Adorácia"]); // zrušené preč, pomocné polia (UID…) nie sú v JSON
+  assert.deepEqual(ev[0].x, ["2026-11-16", "2026-11-23"]);
+  assert.deepEqual(ev[1], { t: "Sv. omša", s: "2026-11-17T18:00", p: "Kaplnka" }); // miesto prevzaté zo série
+  assert.deepEqual(U.occurrences(ev[0], "2026-11-01", "2026-12-01"), ["2026-11-02", "2026-11-09", "2026-11-30"]);
+  assert.deepEqual(U.occurrences(ev[2], "2026-11-06", "2026-12-01"), ["2026-11-12", "2026-11-26"]);
+  assert.deepEqual(K.keep(ev, "2026-11-30").map((e) => e.t), ["Sv. omša", "Adorácia"]); // adorácia ostane kvôli 26. 11.
+  const days = U.calendarDays({ udalosti: ev }, "2026-11-16", "2026-11-27");
+  assert.equal(days["2026-11-16"], undefined);
+  assert.deepEqual(days["2026-11-17"].map((r) => [r.time, r.title, r.kind]), [["18:00", "Sv. omša", "mass"]]);
+  assert.equal(days["2026-11-23"], undefined);
+  assert.deepEqual(days["2026-11-26"].map((r) => [r.title, r.kind]), [["Adorácia", "event"]]); // opakuje sa → nie výnimočná
+});
+
+test("cache programu: čerstvá 15 minút, bez času alebo z budúcnosti nie", () => {
+  const now = Date.UTC(2026, 10, 26, 12, 0);
+  assert.equal(U.fresh({ at: now - 14 * 60e3 }, now), true);
+  assert.equal(U.fresh({ at: now - 15 * 60e3 }, now), false);
+  assert.equal(U.fresh({ at: now + 60e3 }, now), false);
+  assert.equal(U.fresh({}, now), false);
+  assert.equal(U.fresh(null, now), false);
+});

@@ -48,7 +48,7 @@ Stav k 21. 11. 2026.
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
 | `hra/` | **Hra** `ful.upcba.sk/hra/` (v menu webu „Hráč dňa“): `index.html`, `cards.js` (čisté funkcie kariet, testované), `hra.js` (vykreslenie, balík, modlitby), `hra.css` |
-| `tests/*.test.js` | `node --test tests/*.test.js` (103 testov: `logic` 53, `upece` 10, `board` 25, `hra` 15; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (105 testov: `logic` 53, `upece` 12, `board` 25, `hra` 15; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg`, `ufl.svg` + `ufl-lesk.svg` (logo UFL obkreslené pre tajnú kartu, lesk = maska lesklých častí), `verbisti.svg` (zlaté logo verbistov pre tajnú kartu), `veniec.svg` (veniec za celú kolekciu) · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
@@ -104,7 +104,9 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Preto ho **GitHub Action `.github/workflows/kalendar.yml`** každé 3 hodiny (aj ručne: Actions → „Kalendár UPeCe“ → Run workflow) stiahne obyčajným `curl` (Cloudflare ho pustí),
     `tools/kalendar.js` ho prerobí na `data/upece-kalendar.json` (udalosti s pravidlami opakovania, nie rozpísané dni → súbor sa mení iba so zmenou kalendára; staršie než týždeň vynechá)
     a ak sa zmenil, commitne ho (autor `github-actions[bot]`) a vyžiada nasadenie webu (commit z Action ho sám nespustí).
-    Web (`upece.js` `calendarDays`, `occurrences`) rozpíše opakovania (týždenne, každý 2. týždeň, denne, mesačne, ročne; vynechané dni) na 2 týždne.
+    Web (`upece.js` `calendarDays`, `occurrences`) rozpíše opakovania (týždenne, každý 2. týždeň, denne, mesačne, ročne; vynechané dni `x`, dni navyše `a` = RDATE) na 2 týždne.
+    **Presunutý výskyt série** (rovnaké UID + RECURRENCE-ID) rieši `tools/kalendar.js` (`applyChanges`): pôvodný deň pridá do `x` série, nový termín je samostatná udalosť (chýbajúci názov/miesto zo série);
+    zrušené (`STATUS:CANCELLED`, výskyt aj celá udalosť) sa do JSON nedostanú. Cieľ (Lonzi 26. 11.): na webe iba skutočné omše podľa kalendára.
     Spojenie s oznamami (`program`): deň z oznamu má prednosť (liturgia, miesta, časy); z kalendára sa k nemu pridajú iba jednorazové akcie, a keď už v oznamu sú
     (aj ako skratka „OĽV“ = začiatočné písmená), zvýraznia sa a doplní sa čas, miesto a celý názov. Dni bez oznamu sú celé z kalendára: omše jedného dňa v jednom riadku,
     jednorazové akcie (bez opakovania) zvýraznené. Bez JSON (chyba) je program iba z oznamov. GitHub vypne plánované Actions po 60 dňoch bez commitu v repozitári → potom zapnúť v Actions.
@@ -116,6 +118,8 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Ručne z Lonziho počítača: **`bash tools/kalendar.sh`** (rovnaký User-Agent; stiahne, prerobí, ak sa zmenil → commit + push).
   - **Výnimočná akcia** (zvýraznená tyrkysovou) = má v tom týždni vlastný oznam s dátumom (`notice-title` „Názov D. M.“). Oznam s dátumom a časom,
     ktorý nie je v tabuľke, sa doplní ako riadok. „… do D. M.“ je uzávierka, nie akcia.
+  - **Cache programu** `fulka-upece-v1` (`at` = čas stiahnutia): mladšia ako 15 min (`U.fresh`) → web nič nesťahuje (žiadny spam na upcba.sk pri obnovovaní), inak 3 požiadavky (oznamy, novinky, `upece-kalendar.json`).
+    Program sa ráta iba pri nových dátach alebo novom dni (`upProgram` v `render.js`), nie pri každom `render()`.
   - Novinky: 2 posledné príspevky z **Aktuality (165)** bez Oznamov. Odkazy iba na `https://www.upcba.sk/…`, texty sa escapujú.
   - „Celý kalendár“ → upcba.sk/kalendar/ (curl dostane 403 od Cloudflare, prehliadač je OK) · „Všetko, čo ponúkame“ → upcba.sk/o-upece/.
   - Ponuka: zoznam z nastavení (`upeceOffer`) + **všetky tímy z databázy** (aj tie, ktoré ešte nie sú v žiadnej sezóne), s menom miesta (`venue`), poradie podľa mena.

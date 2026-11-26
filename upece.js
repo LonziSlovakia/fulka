@@ -138,8 +138,14 @@
   const WD = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
   const dayIndex = (date) => { const [y, m, d] = date.split("-").map(Number); return Math.floor(Date.UTC(y, m - 1, d) / 864e5); };
   const monday = (date) => dayIndex(date) - ((dow(date) + 6) % 7);
-  // dni výskytu udalosti v [from, to); jednorazová = deň začiatku (viacdňová, ktorá už beží = dnes)
+  // dni výskytu udalosti v [from, to): podľa pravidla, plus dni navyše (a = RDATE), bez vynechaných dní (x = EXDATE a presunuté výskyty)
   function occurrences(e, from, to) {
+    const skip = new Set(e.x || []);
+    const days = ruleDays(e, from, to).concat((e.a || []).filter((d) => d >= from && d < to));
+    return [...new Set(days)].filter((d) => !skip.has(d)).sort();
+  }
+  // dni podľa pravidla opakovania; jednorazová = deň začiatku (viacdňová, ktorá už beží = dnes)
+  function ruleDays(e, from, to) {
     const start = e.s.slice(0, 10);
     const r = e.r;
     if (!r) {
@@ -147,7 +153,6 @@
       if (start >= from && start < to) return [start];
       return start < from && end > from && e.e ? [from] : [];
     }
-    const skip = new Set(e.x || []);
     const days = r.d && r.d.length ? r.d : [WD[dow(start)]];
     const out = [];
     let n = 0;
@@ -162,7 +167,7 @@
       if (!hit) continue;
       n++;
       if (r.n && n > r.n) break;
-      if (d >= from && !skip.has(d)) out.push(d);
+      if (d >= from) out.push(d);
     }
     return out;
   }
@@ -172,7 +177,8 @@
   // kalendár → { dátum: [riadky programu] } na dni [from, to); omše v jeden deň = jeden riadok, jednorazové akcie = výnimočné (zvýraznené)
   function calendarDays(cal, from, to) {
     const events = (cal && cal.udalosti) || [];
-    const repeating = new Set(events.filter((e) => e.r).map((e) => e.t.toLowerCase()));
+    const repeats = (e) => e.r || (e.a && e.a.length);
+    const repeating = new Set(events.filter(repeats).map((e) => e.t.toLowerCase()));
     const days = {};
     events.forEach((e) => occurrences(e, from, to).forEach((date) => {
       const rows = days[date] || (days[date] = []);
@@ -186,10 +192,10 @@
         return;
       }
       const end = e.e ? e.e.slice(0, 10) : "";
-      const multi = end && !e.r && (e.s.length > 10 ? end > e.s.slice(0, 10) : addDays(end, -1) > e.s.slice(0, 10));
+      const multi = end && !repeats(e) && (e.s.length > 10 ? end > e.s.slice(0, 10) : addDays(end, -1) > e.s.slice(0, 10));
       const last = e.s.length > 10 ? end : addDays(end, -1);
       rows.push({ time, sort: time ? minutes(time) : -2, place: e.p || "", title: e.t, sub: multi ? `${dm(e.s.slice(0, 10))} – ${dm(last)}` : "",
-        kind: !e.r && !repeating.has(e.t.toLowerCase()) ? "special" : "event" });
+        kind: !repeats(e) && !repeating.has(e.t.toLowerCase()) ? "special" : "event" });
     }));
     Object.values(days).forEach((rows) => rows.forEach((r, i) => {
       if (r.kind !== "mass") return;
@@ -252,6 +258,12 @@
   // stiahne posledné 2 týždenné oznamy (tento aj budúci týždeň), novinky a kalendár (JSON z nášho webu, obnovuje ho GitHub Action);
   // surové dáta uloží do cache. Kalendár je nepovinný – keď chýba, program je iba z oznamov.
   const CAL_URL = "data/upece-kalendar.json";
+  // cache je čerstvá, kým nemá viac ako maxAge ms → web znova nesťahuje (žiadny spam na upcba.sk pri obnovovaní stránky)
+  const MAX_AGE = 15 * 60e3;
+  function fresh(cache, now, maxAge = MAX_AGE) {
+    const age = cache && cache.at ? now - cache.at : -1;
+    return age >= 0 && age < maxAge;
+  }
   function load() {
     const week = getJson(`${API}?categories=${CAT_WEEK}&per_page=2&_fields=date,title,content`);
     const fresh = getJson(`${API}?categories=${CAT_NEWS}&categories_exclude=${CAT_WEEK}&per_page=3&_fields=date,link,title,excerpt`);
@@ -266,7 +278,7 @@
   const Upece = {
     SITE, CALENDAR: `${SITE}/kalendar/`, OFFER: `${SITE}/o-upece/`,
     decode, text, lines, safeLink, weekStart, dateOf, noticeHead, noticeTime, notices, massRow, eventRows, parseWeek, occurrences, calendarDays, program, news,
-    readCache, load,
+    readCache, fresh, load,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Upece;
   else window.Upece = Upece;

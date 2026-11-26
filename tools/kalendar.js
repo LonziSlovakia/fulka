@@ -41,13 +41,28 @@ function rule(value) {
 // „Veľká sála UPeCe @ Staré Grunty 36. Bratislava“ → „Veľká sála“
 const place = (s) => s.split("@")[0].replace(/\s*UPeCe\s*$/i, "").trim();
 
-// celý iCal → zoznam udalostí { t: názov, s: začiatok, e: koniec, p: miesto, c: kategória, u: odkaz, r: opakovanie, x: vynechané dni }
+// zmenený výskyt opakovanej udalosti (rovnaké UID + RECURRENCE-ID = pôvodný termín): pôvodný deň sa zo série vynechá
+// a nový termín ostane ako samostatná udalosť; zrušené (STATUS:CANCELLED, celá séria aj jeden výskyt) sa neukážu vôbec
+function applyChanges(events) {
+  const series = new Map(events.filter((e) => e.id && !e.rid).map((e) => [e.id, e]));
+  events.filter((e) => e.rid).forEach((e) => {
+    const m = series.get(e.id);
+    if (!m) return;
+    m.x.push(e.rid.slice(0, 10));
+    ["t", "p", "c", "u"].forEach((k) => { if (!e[k] && m[k]) e[k] = m[k]; }); // čo zmenený výskyt neuvádza, je ako v sérii
+  });
+  return events.filter((e) => !e.cancel && e.t);
+}
+// zoznam dátumov z EXDATE / RDATE („20261116T190000,20261123T190000“; pri RDATE aj „začiatok/koniec“) → dni
+const dates = (value) => value.split(",").map((v) => stamp(v.trim().split("/")[0])).filter(Boolean).map((d) => d.slice(0, 10));
+
+// celý iCal → zoznam udalostí { t: názov, s: začiatok, e: koniec, p: miesto, c: kategória, u: odkaz, r: opakovanie, x: vynechané dni, a: dni navyše }
 function parse(ics) {
   const out = [];
   let ev = null;
   for (const line of unfold(ics)) {
-    if (line === "BEGIN:VEVENT") { ev = { x: [] }; continue; }
-    if (line === "END:VEVENT") { if (ev && ev.t && ev.s) out.push(ev); ev = null; continue; }
+    if (line === "BEGIN:VEVENT") { ev = { x: [], a: [] }; continue; }
+    if (line === "END:VEVENT") { if (ev && ev.s && (ev.t || ev.rid)) out.push(ev); ev = null; continue; }
     if (!ev) continue;
     const i = line.indexOf(":");
     if (i < 0) continue;
@@ -60,21 +75,27 @@ function parse(ics) {
     else if (name === "CATEGORIES" && value.trim()) ev.c = unescape(value).split(",")[0].trim();
     else if (name === "URL" && value.startsWith(SITE)) ev.u = value.trim();
     else if (name === "RRULE") ev.r = rule(value);
-    else if (name === "EXDATE") value.split(",").forEach((v) => { const d = stamp(v.trim()); if (d) ev.x.push(d.slice(0, 10)); });
+    else if (name === "EXDATE") ev.x.push(...dates(value));
+    else if (name === "RDATE") ev.a.push(...dates(value));
+    else if (name === "UID") ev.id = value.trim();
+    else if (name === "RECURRENCE-ID") ev.rid = stamp(value);
+    else if (name === "STATUS") ev.cancel = value.trim().toUpperCase() === "CANCELLED";
   }
-  return out.map((e) => {
+  return applyChanges(out).map((e) => {
     const o = { t: e.t, s: e.s };
     if (e.e && e.e !== e.s) o.e = e.e;
     ["p", "c", "u", "r"].forEach((k) => { if (e[k]) o[k] = e[k]; });
     if (e.x.length) o.x = [...new Set(e.x)].sort();
+    if (e.a.length) o.a = [...new Set(e.a)].sort();
     return o;
   });
 }
 
-// posledný deň udalosti (pri opakovaní koniec pravidla; bez konca = ďaleko v budúcnosti)
+// posledný deň udalosti (pri opakovaní koniec pravidla; bez konca = ďaleko v budúcnosti; dni navyše môžu byť aj neskôr)
 function lastDay(e) {
-  if (e.r) return e.r.u || "9999-12-31";
-  return (e.e || e.s).slice(0, 10);
+  const day = e.r ? e.r.u || "9999-12-31" : (e.e || e.s).slice(0, 10);
+  const extra = (e.a || []).slice(-1)[0] || "";
+  return extra > day ? extra : day;
 }
 // iba udalosti, ktoré ešte prebiehajú alebo skončili nedávno; zoradené podľa začiatku
 function keep(events, today) {

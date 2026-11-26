@@ -615,9 +615,15 @@
     return `<li class="up-row ${r.kind}"><span class="up-day"><small>${esc(r.dn)}</small><b>${r.dd}</b></span>
       <span class="up-ev">${meta ? `<small>${esc(meta)}</small>` : ""}<b>${esc(r.title)}</b>${r.sub ? `<span>${esc(r.sub)}</span>` : ""}</span></li>`;
   }
+  // program sa ráta iba pri nových dátach alebo novom dni, nie pri každom prekreslení (menu, rozbalenie hráčov…)
+  let upMemo = null;
+  function upProgram(raw, today) {
+    if (!upMemo || upMemo.raw !== raw || upMemo.today !== today) upMemo = { raw, today, rows: U.program(raw.week, today, 10, raw.cal) };
+    return upMemo.rows;
+  }
   function upCalendar() {
     const raw = state.up;
-    const rows = raw ? U.program(raw.week, L.localParts(Date.now()).date, 10, raw.cal) : [];
+    const rows = raw ? upProgram(raw, L.localParts(Date.now()).date) : [];
     const news = raw ? U.news(raw.news, 2) : [];
     const list = rows.length ? `<ul class="up-rows">${rows.map(upRow).join("")}</ul>`
       : `<p class="up-empty">${raw ? "Program na najbližšie dni ešte nie je zverejnený." : state.upFail ? "Program sa teraz nepodarilo načítať." : "Načítavam program…"}</p>`;
@@ -819,10 +825,11 @@
   }
   if (!EDIT) watchScroll(toTopButton());
 
-  // program a novinky UPeCe: hneď z cache, potom čerstvé z upcba.sk (ak nejdú, ostane cache)
+  // program a novinky UPeCe: hneď z cache; čerstvé z upcba.sk iba keď je cache staršia ako 15 min (ak nejdú, ostane cache)
   if (!EDIT) {
     state.up = U.readCache();
-    U.load().then((v) => { state.up = v; render(); }, () => { state.upFail = true; render(); });
+    if (U.fresh(state.up, Date.now())) render(); // stránka mohla byť vykreslená z cache ligy ešte bez programu
+    else U.load().then((v) => { state.up = v; render(); }, () => { state.upFail = true; render(); });
   }
 
   // admin (editor) sa načíta iba s ?edit v adrese; dostane rovnakú verziu (?v=…) ako render.js v index.html, aby prehliadač nebral starú kópiu
