@@ -7,6 +7,6 @@ set -e
 cd "$(dirname "$0")/.."
 V=$(date +%Y%m%d%H%M)
 for f in index.html tabula.html hra/index.html; do
-  sed -E -i "s#((src|href)=\"(\.\./)?[a-z-]+\.(js|css))(\?v=[0-9]+)?\"#\1?v=$V\"#g" "$f"
+  sed -E -i "s#((src|href)=\"(\.\./|hra/)?[a-z-]+\.(js|css))(\?v=[0-9]+)?\"#\1?v=$V\"#g" "$f"
 done
 echo "verzia $V: $(grep -o "?v=$V" index.html tabula.html hra/index.html | wc -l) odkazov"

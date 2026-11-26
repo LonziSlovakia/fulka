@@ -132,11 +132,9 @@
   };
 
   // veniec z hry (/hra/): hráč má celú kolekciu kariet → okolo loga v hlavičke (iba v jeho prehliadači);
-  // sessionStorage fulka-hra-skuska = veniec z ladenia hra/?debug=veniec: ukáže sa iba raz (prvé načítanie webu po ladení), potom sa zmaže
-  const wreathOf = (store, key) => { try { return (JSON.parse(store.getItem(key)) || {}).w === 1; } catch (e) { return false; } };
-  const TRY_WREATH = (() => { const w = wreathOf(window.sessionStorage, "fulka-hra-skuska"); try { window.sessionStorage.removeItem("fulka-hra-skuska"); } catch (e) {} return w; })();
+  // (natrvalo – w: 1 v localStorage fulka-hra-v1 sa už nezmaže, ani keď pribudnú nové karty)
   function hasWreath() {
-    return TRY_WREATH || wreathOf(window.localStorage, "fulka-hra-v1");
+    try { return (JSON.parse(window.localStorage.getItem("fulka-hra-v1")) || {}).w === 1; } catch (e) { return false; }
   }
 
   function header(c) {
@@ -672,6 +670,48 @@
     return { d, T, P, seasons, live, cur, v: seasonView(d, cur, P) };
   }
 
+  /* ---------- Hráč dňa: nízky pásik pod hlavičkou → hra/ ----------
+     Ukáže sa iba pri prvých 2 otvoreniach webu za deň (počítadlo v localStorage fulka-hra-pasik = { d: deň, n: počet otvorení }).
+     Hráč, karta a modlitba sa rátajú rovnako ako v hre (hra/cards.js) → vždy to isté, čo hra ukáže. */
+  const PEEK_KEY = "fulka-hra-pasik";
+  const PEEK_MAX = 2;
+  const PEEK_RARITY = { common: "#9a9a9a", rare: "#00a8b5", epic: "#B36BFF", legendary: "#F0C146" };
+  let peekOn = null; // rozhodne sa raz pri prvom vykreslení (jedno otvorenie stránky = +1)
+  function peekAllowed() {
+    if (peekOn !== null) return peekOn;
+    const date = today();
+    try {
+      const v = JSON.parse(localStorage.getItem(PEEK_KEY)) || {};
+      const n = v.d === date ? (v.n || 0) + 1 : 1;
+      localStorage.setItem(PEEK_KEY, JSON.stringify({ d: date, n }));
+      peekOn = n <= PEEK_MAX;
+    } catch (e) { peekOn = true; }
+    return peekOn;
+  }
+  function peekOf(d) {
+    const C = window.Cards;
+    const date = today();
+    const p = C && C.playerOfDay(d.players, date);
+    if (!p) return null;
+    return { p, card: C.latestCard(C.buildCards(d), p.id), prayer: C.PRAYER_NAMES[C.prayerOfDay(C.PRAYER_NAMES.length, date)] };
+  }
+  function peek(c) {
+    if (!window.Cards || !peekAllowed()) return "";
+    if (state.peekFor !== c.d) { state.peekFor = c.d; state.peek = peekOf(c.d); }
+    const k = state.peek;
+    if (!k) return "";
+    const t = (k.card && c.T[k.card.team_id]) || NOTEAM;
+    const pic = photo(k.p, "photo");
+    const rar = k.card ? k.card.rarity : "common";
+    return `<a class="peek" href="hra/#dnes" style="${vars(t)};--r:${PEEK_RARITY[rar]}" aria-label="Hráč dňa: ${esc(k.p.name)}, dnešná modlitba ${esc(k.prayer)}">
+      <div class="wrap peek-in"><span class="peek-shard" aria-hidden="true"></span>
+        <span class="peek-card${rar === "legendary" ? " gl" : ""}" aria-hidden="true"><span class="peek-face">${pic ? `<img class="ph" src="${esc(pic)}" alt="">` : `<img class="lg" src="${esc(t.svg)}" alt="">`}</span></span>
+        <span class="peek-who"><small>Hráč dňa</small><b>${esc(k.p.name)}</b></span>
+        <span class="peek-pr"><small>Dnešná modlitba</small><b>${esc(k.prayer)}</b></span>
+        <span class="peek-go"><span>Pomodli sa</span><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+      </div></a>`;
+  }
+
   function render() {
     if (!state.data) return;
     if (!state.data.seasons.length) { app.innerHTML = '<p class="msg">Zatiaľ tu nie je žiadna sezóna.</p>'; return; }
@@ -681,7 +721,7 @@
     const body = c.cur.state === "live" ? liveBody(c, open) : c.cur.state === "done" ? pastBody(c, open) : futureBody(c);
     const focus = document.activeElement && document.activeElement.closest && document.activeElement.closest("[data-act]");
     const key = focus ? `[data-act="${focus.dataset.act}"]${focus.dataset.id ? `[data-id="${CSS.escape(focus.dataset.id)}"]` : ""}` : null;
-    app.innerHTML = header(c) + (state.menu ? seasonMenu(c) : "") + body + upeceSec(c) + footer(c);
+    app.innerHTML = header(c) + (state.menu ? seasonMenu(c) : "") + peek(c) + body + upeceSec(c) + footer(c);
     document.title = `FULka – ${c.cur.name}`;
     if (key) { const el = app.querySelector(key); if (el) el.focus({ preventScroll: true }); }
   }

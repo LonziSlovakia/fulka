@@ -11,7 +11,7 @@ Stav k 21. 11. 2026.
 - Kód v malých samostatných funkciách. Výpočty patria do `logic.js` (čisté funkcie + testy), vykresľovanie do `render.js` / `admin.js`.
 - Fotky a dáta patria do Supabase (bucket a tabuľky `fulka`), nie do repozitára.
 - SQL skripty (`supabase/N-nazov.sql`) iba pripravíš; Lonzi ich spustí v Supabase → SQL Editor. Povedz mu aj, ako to overiť.
-- **Keď sa zmení JS alebo CSS: `bash tools/verzia.sh`** (dá `?v=<čas>` do `index.html`, `tabula.html` a `hra/index.html`; admin a tabuľu `render.js` načíta s rovnakou verziou).
+- **Keď sa zmení JS alebo CSS: `bash tools/verzia.sh`** (dá `?v=<čas>` do `index.html`, `tabula.html` a `hra/index.html`, aj pre `hra/cards.js`; admin a tabuľu `render.js` načíta s rovnakou verziou).
   Dôvod: Cloudflare na `ful.upcba.sk` necháva prehliadač pamätať si JS/CSS 4 hodiny (HTML iba 10 min) – bez novej verzie Lonzi vidí starý admin.
 - Pred commitom: `node --test tests/*.test.js`; vizuálne zmeny over cez `tools/shot.js` (desktop 1440 aj mobil 390).
 - **Commit + push na `main` hneď po otestovaní je OK** (Lonzi to tak chce) a potom over nasadenie (nižšie).
@@ -33,7 +33,7 @@ Stav k 21. 11. 2026.
 
 | Súbor | Čo robí |
 |---|---|
-| `index.html` | kostra; načíta `config.js`, `db.js`, `logic.js`, `upece.js`, `render.js` |
+| `index.html` | kostra; načíta `config.js`, `db.js`, `logic.js`, `hra/cards.js` (pásik Hráč dňa), `upece.js`, `render.js` |
 | `config.js` | URL + publishable key (verejné) |
 | `db.js` | fetch klient: načítanie všetkých 8 tabuliek (sezóny `select=*`, aby fungovalo pred aj po pridaní stĺpcov) + cache v `localStorage` (`fulka-data-v1`), prihlásenie s obnovou tokenu (`fulka-session-v1`), `upsert(kind, rows, key)`, `remove(kind, where, maybe)` (where aj `{ seq: { gt: 3 } }`), `upload`, `photoUrl`, zálohy `backups/backupData/backup/restore/restoreFile` |
 | `logic.js` | čisté výpočty (testované): skóre, tabuľka, bodovanie, playoff, dátumy v čase Bratislavy, draft zápasu ↔ riadok DB (`draftOf`/`rowOf`), `DEFAULTS` nastavení |
@@ -46,7 +46,7 @@ Stav k 21. 11. 2026.
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
 | `hra/` | **Hra** `ful.upcba.sk/hra/` (v menu webu „Hráč dňa“): `index.html`, `cards.js` (čisté funkcie kariet, testované), `hra.js` (vykreslenie, balík, modlitby), `hra.css` |
-| `tests/*.test.js` | `node --test tests/*.test.js` (97 testov: `logic` 52, `upece` 7, `board` 25, `hra` 13; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (99 testov: `logic` 52, `upece` 7, `board` 25, `hra` 15; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg`, `ufl.svg` + `ufl-lesk.svg` (logo UFL obkreslené pre tajnú kartu, lesk = maska lesklých častí), `verbisti.svg` (zlaté logo verbistov pre tajnú kartu), `veniec.svg` (veniec za celú kolekciu) · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
@@ -132,7 +132,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
 - **Hra `/hra/`** (vyžiadal Lonzi 21. 11. 2026, „hlavná vec je modlitba“): od 21. 11. 2026 **spustená**: v menu webu prvý odkaz „Hráč dňa“ (aj na mobile hneď viditeľný), indexovaná. Dáta ligy iba číta (db.js, zdieľa cache `fulka-data-v1`), nič nezapisuje do DB.
   - **Hráč dňa** (hore, hlavná vec): všetci hráči z DB v pevnom zamiešanom poradí (`C.playerOfDay`, podľa dátumu v Bratislave) → každý raz za N dní, pre všetkých rovnaký. Jeho karta + „Dnes sa modlíme za …“ +
     **jedna modlitba dňa, bez prepínania** (`C.prayerOfDay`: každý deň náhodná z piatich okrem včerajšej, pre všetkých rovnaká – ráta sa deň po dni od 1. 11. 2026): Otče náš, Zdravas’ Mária (s apostrofom), Sláva Otcu, Pod tvoju ochranu, Verím v Boha
-    (texty v `hra.js` `PRAYERS`, Lonzi ich skontroloval; „Pod tvoju ochranu“ je jeho krátke znenie „…neodvracaj zrak od našich prosieb…“; Verím = „zostúpil k zosnulým“, Otče náš bez doxológie).
+    (názvy v `cards.js` `PRAYER_NAMES` – potrebuje ich aj hlavný web; texty v `hra.js` `PRAYERS` v rovnakom poradí, Lonzi ich skontroloval; „Pod tvoju ochranu“ je jeho krátke znenie „…neodvracaj zrak od našich prosieb…“; Verím = „zostúpil k zosnulým“, Otče náš bez doxológie).
     Rámik modlitby má výšku podľa dnešnej modlitby (ukazuje sa iba jedna; predtým fixná na najdlhšiu – Lonzi chcel späť dynamickú).
     Podklad vo farbe tímu (`.day-shard`) je viazaný na šírku karty (`--cw`), nie na šírku okna → text je vždy na čiernom aj na veľkom monitore. Tlačidlo „hore“ ako na hlavnom webe.
     **Modlitba nič nedáva a nič sa nepočíta ani neukladá** (Lonzi: „to je na zodpovednosti toho človeka… iba spásu na konci vekov“) – nepridávať odmeny ani počítadlá.
@@ -158,11 +158,16 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Názvy kariet „FULka“, „UFLka“ (malé „ka“, `text-transform: none`) a „VERBISTI“. Ladiace režimy `?debug=mythical` a `?debug=colors` sú zmazané (21. 11., Lonzi: „sme komplet dotestovaní“); hra je finálna.
   - **Veniec „Elite Ball Knowledge“ (21. 11. 2026):** keď hráč má všetky karty z `buildCards` (tajné sa nerátajú, `C.complete`), po odkrytí balíka s poslednou chýbajúcou
     kartou príde oslava (veniec + „Elite Ball Knowledge“, potom zhrnutie) a v `fulka-hra-v1` sa uloží `w: 1` – **natrvalo** (nové karty novej sezóny ho nezoberú).
-    Veniec (`assets/logos/veniec.svg`, zlatý vavrín) je potom okolo loga FULky v hlavičke webu aj hry (`.brand.wreath` v `styles.css`, `hasWreath()` v `render.js`).
-    **`?debug=veniec`** (ladenie): kolekcia so všetkými kartami okrem Kuchynka Ants (iba v pamäti), balík = 1 common + Ants + všetky 3 tajné → kolekcia celá, oslava, veniec.
-    Do localStorage nič; veniec si zapamätá `sessionStorage` `fulka-hra-skuska`, aby bol vidieť aj na hlavnom webe – **iba raz**: hlavný web ho prečíta a zmaže (obnovenie = bez venca),
-    hra bez `?debug` ho zmaže hneď (Lonzi videl veniec aj bez ladenia a nechcel to).
-    Test: `node tools/shot.js "…/hra/?debug=veniec" 1440 out.png @tools/hra-veniec.js` (`window.HRA_STOP='ach'` = zastaví na oslave).
+    Veniec (`assets/logos/veniec.svg`, zlatý vavrín) je potom okolo loga FULky v hlavičke webu aj hry **stále** (`.brand.wreath` v `styles.css`, `hasWreath()` v `render.js` číta iba `fulka-hra-v1`).
+    Ladenie `?debug=veniec` je zmazané (26. 11., Lonzi: odladené).
+  - **Tajná pomoc pri zbieraní (26. 11.):** šance tried (56/28/12/4 %) ostávajú presne, ale keď už padne trieda, s šancou `C.MISSING_BOOST` 50 % príde karta z nej, ktorú hráč ešte nemá
+    (`openPack(…, have)`). Lonzi chcel „tajne zvýšiť legendary“ (10 legendary, 5 epic) bez zmeny šancí – toto je ten tajný prepočet a zobrazené šance stále platia.
+    Simulácia 44 kariet (10 L / 5 E / 10 R / 19 C), dni do celej kolekcie: dnes 143 (90 % hráčov do 222) → s pomocou 66; legendary ×2 by dalo 76.
+  - **Výmena 5 rovnakých kariet za balík (26. 11.):** keď má hráč nejakú kartu aspoň 6× (`C.TRADE` + 1), pri balíku (a v zhrnutí balíka) je ponuka „Vymeniť 5 za balík“ → 5 kusov preč, 1 ostane,
+    otvorí sa normálny balík („Balík za výmenu“). Denný balík tým neprepadne (`addPack(…, bonus)` nemení `d`). Pri viacerých kartách sa ponúkne tá s najviac kusmi (pri zhode najbežnejšia).
+    Simulácia: s výmenou je celá kolekcia priemerne za ~29 dní (s pomocou ~26) a výmen je ~40–110 → výmena je silná, keby bolo treba, prísnejšie = viac kariet za balík alebo 1 výmena denne.
+    **`?debug=vymena`** (ladenie): kolekcia = jedna common karta 5× (iba v pamäti, nič do localStorage), denný balík ju obsahuje → 6× → výmena → ostane 1× a ponuka zmizne.
+    Test: `node tools/shot.js "…/hra/?debug=vymena" 1440 out.png @tools/hra-vymena.js` (`window.HRA_STOP='sum'|'side'`).
   - Na mobile bez modrého prebliku pri ťuknutí (`-webkit-tap-highlight-color: transparent` na `.hra` a `.layer`).
   - **Gyroskop (26. 11. 2026):** na dotykovom zariadení sa podľa náklonu telefónu (`deviceorientation`) hýbe **iba lesk**, karta stojí (Lonzi nechcel nakláňanie karty; prst nakláňa iba bez gyroskopu).
     „Rovno“ = ako telefón držíš (základ sa pomaly prispôsobí, ~2 s). Iba viditeľné karty (hráč dňa, `.vis` v kolekcii, karta vo vrstve), premenná `--hx` + trieda `tilting`.
@@ -172,7 +177,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   - **Vrstvy (balík, detail, zhrnutie, veniec) sa zmestia na výšku okna** – veľkosti cez `dvh` (Lonzi má Windows so zväčšením 150 % → okno ~1333×655). Test: `H=655 node tools/shot.js … 1333` (pevná výška, bez roztiahnutia).
   - Zmazaný hráč z DB z hry zmizne aj z kolekcie (ID v localStorage, ku ktorému karta už nie je, sa ignoruje).
 - **Demo priečinok `demo/`** (od 20. 11. 2026): všetko demo/ukážkové patrí sem, aby sa dalo zmazať naraz (`git rm -r demo`).
-  Na webe iba cez priamu adresu (nikde neodkazované, `noindex`). Teraz: **https://ful.upcba.sk/demo/ants/** – návrhy loga Kuchynka Ants (PNG + WebP: 1–14 a `9-old`/`10-old`; 13–14 = 12 skrátená na 2,25 s ako ostatné tímy (2,1–2,4 s; 12 má 3,65 s): 13 kratšie pauzy 400/300 ms pri 50 ms/snímku, 14 tempo ostatných 40 ms/snímku + pauzy 600/410 ms (`tools/webp-timing.py`, bez prekódovania); na webe (v DB) je teraz 12; 11–12 = 9–10 s o kúsok dlhšou oranžovou stopkou predného tykadla (úzky pásik `STALK_POLY` orezaný `HEAD11` = HEAD9 + `STALK_EXT` 21), čierna linka hlavy ako v 9–10; 9–10 = 7–8 s tými istými tykadlami posunutými dozadu na temeno a zväčšenými, `MV9` v `zdroj.html`, bez čierneho fľaku medzi tykadlami – výrezy `ant9f`/`ant9b`, hlava pred predným tykadlom – orez `HEAD9`; old = predošlá 9/10 bez orezu po hlave).
+  Na webe iba cez priamu adresu (nikde neodkazované, `noindex`). Teraz: **https://ful.upcba.sk/demo/ants/** – návrhy loga Kuchynka Ants (PNG + WebP: 1–14 a `9-old`/`10-old`; 13–14 = 12 skrátená na 2,25 s ako ostatné tímy (2,1–2,4 s; 12 má 3,65 s): 13 kratšie pauzy 400/300 ms pri 50 ms/snímku, 14 tempo ostatných 40 ms/snímku + pauzy 600/410 ms (`tools/webp-timing.py`, bez prekódovania); Lonzimu sa páči tempo **14** – nahrá ju sám v admine (Tímy → Ants → animované logo; v DB je zatiaľ 12); 11–12 = 9–10 s o kúsok dlhšou oranžovou stopkou predného tykadla (úzky pásik `STALK_POLY` orezaný `HEAD11` = HEAD9 + `STALK_EXT` 21), čierna linka hlavy ako v 9–10; 9–10 = 7–8 s tými istými tykadlami posunutými dozadu na temeno a zväčšenými, `MV9` v `zdroj.html`, bez čierneho fľaku medzi tykadlami – výrezy `ant9f`/`ant9b`, hlava pred predným tykadlom – orez `HEAD9`; old = predošlá 9/10 bez orezu po hlave).
   Zdroje a nástroje loga (kresba `zdroj.html`, vektory z predlohy, `logo-render.js`, `trace-logo.py`) sú **iba lokálne na vetve `demo-ants`** (nepushovať).
   Farby tímu Ants: `#EE6A12` / tmavá `#6E2A05` / text `#111111`.
 - Potvrdzovacie okno (`ask()` v `admin.js`) je **iba pri mazaní, pri zálohách a pri ukončení zápasu na tabuli**. Potvrdenie pred každou bežnou úpravou Lonzi **nechce**
@@ -184,6 +189,9 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   Návrat: okno 1 = diff po tabuľkách (`L.compareData`) → „Pokračovať“ → okno 2 „Naozaj?“ + napísať **OBNOVIŤ** → až potom `fulka_restore`
   (v jednej transakcii, `fulka_apply`). Stav pred návratom = **jediná poistka** (`kind = 'undo'`, prepíše sa pri ďalšom návrate, nedá sa zmazať),
   tlačidlo „Vrátiť späť“ (`fulka_undo`) vymení aktuálny stav s poistkou. Stiahnutie do počítača (JSON `format: fulka-zaloha-1`) a návrat zo súboru.
+- **Pásik „Hráč dňa“ na hlavnej stránke (26. 11.):** nízky pásik na celú šírku hneď pod hlavičkou (`peek()` v `render.js`, štýl `.peek` v `styles.css`): malá karta (farba rámika = vzácnosť,
+  fotka alebo logo tímu, podklad vo farbe tímu končí za kartou), „Hráč dňa“ + meno, „Dnešná modlitba“ + názov, „Pomodli sa →“; celý je odkaz na `hra/#dnes`. Na mobile: karta | meno a pod ním modlitba | šípka.
+  Iba pri **prvých 2 otvoreniach webu za deň** (localStorage `fulka-hra-pasik` = `{ d, n }`). Hráč, karta a modlitba sa rátajú z `hra/cards.js` (načíta ho `index.html`) → rovnaké ako v hre.
 - Menu: všetky odkazy sivé, biele iba pri prejdení myšou – aj „Hráč dňa“ (predtým bol stále biely; Lonzi 26. 11. chcel ako ostatné).
 - Päta: odkaz na UPeCe Bratislava (upcba.sk, biele logo) a Supabase (supabase.com, „Dáta, fotky a prihlásenie bežia na Supabase“).
 
@@ -229,7 +237,8 @@ ochrana admina pred vložením do cudzej stránky (clickjacking) – zatiaľ ner
 
 - **Kalendár UPeCe celý (Lonzi 25. 11. – „k tomu sa ešte dostaneme“):** sekcia Z UPeCe berie program iba z týždenných oznamov, takže akcie z kalendára upcba.sk
   (napr. Ondrejská ľudová veselica 27. 11., Sieversov seminár) chýbajú, kým nevyjde oznam na ten týždeň. Kalendár nie je v REST API upcba.sk (iba príspevky/stránky),
-  jeho iCal nemá CORS a stránka /kalendar/ je za Cloudflare (automatické čítanie zablokované – neobchádzať). Návrh: GitHub Action každých pár hodín stiahne iCal
+  jeho iCal nemá CORS a stránka /kalendar/ je za Cloudflare (automatické čítanie zablokované – neobchádzať).
+  Overené 26. 11.: `wp-json` má iba `wp/v2`, `elementor`, `podcastplayer`… (žiadny kalendárový plugin), stránka `kalendar` má v REST prázdny obsah (kalendár je v šablóne Elementoru) → bez odkazu „Odoberať“ sa nedá zistiť, odkiaľ kalendár je. Návrh: GitHub Action každých pár hodín stiahne iCal
   (odkaz z tlačidla „Odoberať“ v kalendári – **Lonzi ho má poslať**) a uloží malý JSON do repozitára; web z neho ukáže 2 týždne dopredu.
 
 

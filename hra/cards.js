@@ -12,6 +12,11 @@
   const TIERS = [[5, "legendary"], [10, "epic"], [20, "rare"]]; // priečka v bodovaní do … → trieda
   const PACK = 5;
   const MYTH_ODDS = 0.5; // každá tajná karta (%) v každom z prvých 4 slotov balíka; nikde sa neukazuje ani nepočíta
+  // tajná pomoc pri zbieraní: keď už padne trieda (šance tried ostávajú presne podľa ODDS), s touto šancou príde karta, ktorú hráč ešte nemá
+  // (simulácia 44 kariet: celá kolekcia priemerne za 143 → 66 dní; najviac pomôže pri posledných legendary)
+  const MISSING_BOOST = 0.5;
+  const TRADE = 5; // výmena: 5 rovnakých kariet za nový balík (dá sa, keď ich má hráč aspoň TRADE + 1 → jedna ostane)
+  const PRAYER_NAMES = ["Otče náš", "Zdravas’ Mária", "Sláva Otcu", "Pod tvoju ochranu", "Verím v Boha"]; // poradie = poradie textov v hra.js (aj hlavný web)
 
   // FNV-1a: z textu krátke číslo; ID karty = to číslo v sústave 36 (napr. "z26:p-urban-jozef" → "1k9x0q")
   function hash(text) {
@@ -104,8 +109,9 @@
   }
 
   // 5 kariet (v jednom balíku sa karta neopakuje, kým je z čoho brať); aspoň jedna rare alebo lepšia;
-  // zoradené od najbežnejšej, aby najlepšia prišla na koniec; myths = tajné karty (každá má šancu MYTH_ODDS v prvých 4 slotoch)
-  function openPack(cards, rng, myths) {
+  // zoradené od najbežnejšej, aby najlepšia prišla na koniec; myths = tajné karty (každá má šancu MYTH_ODDS v prvých 4 slotoch);
+  // have = { idKarty: počet } hráča → v triede s šancou MISSING_BOOST karta, ktorú ešte nemá
+  function openPack(cards, rng, myths, have) {
     const myth = [].concat(myths || []);
     const rnd = rng || Math.random;
     const pools = Object.fromEntries(RARITY.map((r) => [r, cards.filter((c) => c.rarity === r)]));
@@ -119,7 +125,8 @@
       const r = (guarantee && rollRarity(pools, rnd, 1)) || rollRarity(pools, rnd, 0);
       if (!r) break;
       const unused = pools[r].filter((c) => !pick.includes(c));
-      const from = unused.length ? unused : pools[r];
+      const missing = have ? unused.filter((c) => !(have[c.id] > 0)) : [];
+      const from = missing.length && rnd() < MISSING_BOOST ? missing : unused.length ? unused : pools[r];
       pick.push(from[Math.floor(rnd() * from.length)]);
     }
     return pick.sort((x, y) => rank(x.rarity) - rank(y.rarity));
@@ -134,10 +141,21 @@
     return { d: ok && typeof raw.d === "string" ? raw.d : "", c, l: ok && Array.isArray(raw.l) ? raw.l.filter((x) => typeof x === "string") : [], w: ok && raw.w === 1 ? 1 : 0 };
   }
   const canOpen = (save, today) => save.d !== today;
-  function addPack(save, ids, today) {
+  // bonus = balík za výmenu → deň denného balíka sa nemení (dnešný sa dá otvoriť aj potom)
+  function addPack(save, ids, today, bonus) {
     const c = Object.assign({}, save.c);
     ids.forEach((id) => { c[id] = (c[id] || 0) + 1; });
-    return { d: today, c, l: ids.slice(), w: save.w ? 1 : 0 };
+    return { d: bonus ? save.d : today, c, l: ids.slice(), w: save.w ? 1 : 0 };
+  }
+  // karta na výmenu: hráč ju má aspoň 6× (najviac kusov, pri zhode najbežnejšia); cards = známe karty (zmazané sa nerátajú)
+  function tradeCard(cards, save) {
+    const ok = cards.filter((c) => (save.c[c.id] || 0) > TRADE);
+    return ok.sort((x, y) => save.c[y.id] - save.c[x.id] || rank(x.rarity) - rank(y.rarity))[0] || null;
+  }
+  // výmena: 5 kusov karty preč (jeden ostane), balík sa potom otvorí cez addPack(…, bonus)
+  function spend(save, id) {
+    if (!((save.c[id] || 0) > TRADE)) return save;
+    return Object.assign({}, save, { c: Object.assign({}, save.c, { [id]: save.c[id] - TRADE }) });
   }
   // celá kolekcia: hráč má všetky karty z dát (tajné sa nerátajú, tie v cards nie sú) → veniec „Elite Ball Knowledge“
   const complete = (cards, save) => cards.length > 0 && cards.every((c) => (save.c[c.id] || 0) > 0);
@@ -177,9 +195,9 @@
   }
 
   const Cards = {
-    RARITY, RARITY_NAME, ODDS, TIERS, PACK, MYTH_ODDS, MYTHICAL, MYTHICALS,
+    RARITY, RARITY_NAME, ODDS, TIERS, PACK, MYTH_ODDS, MISSING_BOOST, TRADE, PRAYER_NAMES, MYTHICAL, MYTHICALS,
     hash, cardId, rarityOf, buildCards, sortCards, rollRarity, openPack,
-    readSave, canOpen, addPack, complete, dayNumber, nextDay, playerOfDay, latestCard, prayerOfDay,
+    readSave, canOpen, addPack, tradeCard, spend, complete, dayNumber, nextDay, playerOfDay, latestCard, prayerOfDay,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Cards;
   else window.Cards = Cards;

@@ -20,20 +20,20 @@
   const ODDS_URL = ({ kratko: "short", nie: "none", popis: "full" })[new URLSearchParams(location.search).get("sance")] || "";
   const oddsView = () => ODDS_URL || L.settingsOf(S.data.settings).gameOdds;
 
-  /* ---------- Modlitby ---------- */
+  /* ---------- Modlitby (názvy v cards.js – potrebuje ich aj hlavný web) ---------- */
   const PRAYERS = [
-    { id: "otce", name: "Otče náš", text: [
+    { id: "otce", name: C.PRAYER_NAMES[0], text: [
       "Otče náš, ktorý si na nebesiach,", "posväť sa meno tvoje,", "príď kráľovstvo tvoje,", "buď vôľa tvoja ako v nebi, tak i na zemi.",
       "Chlieb náš každodenný daj nám dnes", "a odpusť nám naše viny,", "ako i my odpúšťame svojim vinníkom,", "a neuveď nás do pokušenia,", "ale zbav nás zlého.", "Amen."] },
-    { id: "zdravas", name: "Zdravas’ Mária", text: [
+    { id: "zdravas", name: C.PRAYER_NAMES[1], text: [
       "Zdravas’, Mária, milosti plná, Pán s tebou.", "Požehnaná si medzi ženami", "a požehnaný je plod života tvojho, Ježiš.",
       "Svätá Mária, Matka Božia,", "pros za nás hriešnych", "teraz i v hodinu smrti našej.", "Amen."] },
-    { id: "slava", name: "Sláva Otcu", text: [
+    { id: "slava", name: C.PRAYER_NAMES[2], text: [
       "Sláva Otcu i Synu i Duchu Svätému,", "ako bolo na počiatku, tak nech je i teraz i vždycky", "i na veky vekov.", "Amen."] },
-    { id: "ochrana", name: "Pod tvoju ochranu", text: [
+    { id: "ochrana", name: C.PRAYER_NAMES[3], text: [
       "Pod tvoju ochranu sa utiekame, svätá Božia Rodička,", "neodvracaj zrak od našich prosieb,", "pomôž nám v núdzi",
       "a z každého nebezpečenstva nás vysloboď,", "ty Panna slávna a požehnaná.", "Amen."] },
-    { id: "verim", name: "Verím v Boha", text: [
+    { id: "verim", name: C.PRAYER_NAMES[4], text: [
       "Verím v Boha, Otca všemohúceho, Stvoriteľa neba i zeme.", "I v Ježiša Krista, jeho jediného Syna, nášho Pána,",
       "ktorý sa počal z Ducha Svätého, narodil sa z Márie Panny,", "trpel za Poncia Piláta, bol ukrižovaný, umrel a bol pochovaný.",
       "Zostúpil k zosnulým, tretieho dňa vstal z mŕtvych,", "vystúpil na nebesia, sedí po pravici Boha Otca všemohúceho.",
@@ -57,13 +57,9 @@
   const RNAME = Object.assign({ mythical: "Mythical" }, C.RARITY_NAME);
   // tajné karty (mythical): nikde sa nespomínajú, v kolekcii sú iba keď padli (hore ako prvé), nemenia počty
   const MYTHS = C.MYTHICALS; // FULka, UFLka, VERBISTI
-  /* ?debug=veniec = ladenie venca: kolekcia so všetkými kartami okrem Kuchynka Ants (iba v pamäti), balík = common + Ants + všetky 3 tajné
-     → kolekcia je celá, oslava a veniec. Do localStorage sa nič neukladá; veniec si zapamätá sessionStorage (iba táto karta prehliadača),
-     aby bol vidieť aj na hlavnom webe ako pri bežnom používaní. */
-  const DEBUG_VENIEC = new URLSearchParams(location.search).get("debug") === "veniec";
-  const TRY_KEY = "fulka-hra-skuska"; // sessionStorage: { w: 1 } po ladení venca (číta ho aj render.js)
-  const tryWreath = () => { try { return (JSON.parse(sessionStorage.getItem(TRY_KEY)) || {}).w === 1; } catch (e) { return false; } };
-  if (!DEBUG_VENIEC) { try { sessionStorage.removeItem(TRY_KEY); } catch (e) {} } // hra bez ladenia → skúšobný veniec preč
+  /* ?debug=vymena = ladenie výmeny: kolekcia = jedna common karta 5× (iba v pamäti, do localStorage nič), denný balík ju obsahuje → 6×
+     → ponuka „vymeň 5 za balík“ → balík → ostane 1× a ponuka zmizne. Obnovenie stránky = znova od začiatku. */
+  const DEBUG_VYMENA = new URLSearchParams(location.search).get("debug") === "vymena";
   const RLONG = { legendary: "Top 5 hráčov sezóny + trblietavé tímy s animovaným logom", epic: "6. – 10. hráč v kanadskom bodovaní",
     rare: "11. – 20. hráč v kanadskom bodovaní", common: "Ostatní hráči zo súpisky" };
 
@@ -77,7 +73,8 @@
   }
   const teamOf = (c) => S.T[c.team_id] || FUL;
   const owned = (id) => S.save.c[id] || 0;
-  const store = () => { if (!DEBUG_VENIEC) ls.set(KEY, S.save); };
+  const store = () => { if (!DEBUG_VYMENA) ls.set(KEY, S.save); };
+  const tradeable = () => C.tradeCard(S.cards.concat(MYTHS), S.save); // karta, ktorú má hráč aspoň 6× (alebo null)
 
   /* ---------- Karta ---------- */
   // trblietky na legendary (pozície sú v CSS cez --x/--y/--t)
@@ -139,7 +136,7 @@
   /* ---------- Hlavička a päta ---------- */
   function header() {
     return `<header class="top"><div class="wrap top-in">
-      <a class="brand${S.save.w || tryWreath() ? " wreath" : ""}" href="../" aria-label="FULka – späť na web"><img src="../assets/logos/ful-mark-white.png" alt="">
+      <a class="brand${S.save.w ? " wreath" : ""}" href="../" aria-label="FULka – späť na web"><img src="../assets/logos/ful-mark-white.png" alt="">
         <span class="brand-name"><b>FULka</b><small>Hra · karty a modlitba</small></span></a>
       <nav class="nav" aria-label="Hra"><a href="#dnes">Hráč dňa</a><a href="#balik">Balík</a><a href="#kolekcia">Kolekcia</a></nav></div></header>`;
   }
@@ -208,7 +205,15 @@
     return `<section id="balik" class="sec"><div class="wrap">
       <div class="sec-head"><h2>Denný balík</h2>${ZIG}${oddsView() === "full" ? '<span class="sec-hint">Vzácnosť hráča = priečka v kanadskom bodovaní sezóny</span>' : ""}</div>
       <div class="pk-grid"><button type="button" class="pack${open ? "" : " used"}" data-act="open" ${open ? "" : "disabled"} aria-label="Otvoriť balík">${PACK_ART}</button>
-        <div class="pk-side">${side}${odds()}</div></div></div></section>`;
+        <div class="pk-side">${side}${tradeBox()}${odds()}</div></div></div></section>`;
+  }
+  // výmena: 6 rovnakých kariet → 5 za nový balík (jedna ostane)
+  function tradeBox() {
+    const t = tradeable();
+    if (!t) return "";
+    return `<div class="trade"><span class="trade-card">${cardHtml(t, "front")}<span class="cnt">×${owned(t.id)}</span></span>
+      <div class="trade-txt"><p class="trade-kick">Výmena</p><p>Máš <b>${owned(t.id)}×</b> kartu <b>${esc(t.name)}</b>. Vymeň ${C.TRADE} z nich za nový balík – jedna ti ostane.</p>
+        <button type="button" class="btn-white" data-act="trade">Vymeniť ${C.TRADE} za balík</button></div></div>`;
   }
 
   /* ---------- Kolekcia ---------- */
@@ -249,9 +254,10 @@
     S.P = Object.fromEntries(d.players.map((p) => [p.id, p]));
     S.cards = C.buildCards(d);
     S.byId = Object.fromEntries(S.cards.concat(MYTHS).map((c) => [c.id, c]));
-    if (DEBUG_VENIEC && !S.missing && S.cards.length) { // chýba iba Kuchynka Ants (inak náhodná karta), ostatné „mám“ (iba v pamäti)
-      S.missing = S.cards.find((c) => c.kind === "team" && c.team_id === "ant") || S.cards[Math.floor(Math.random() * S.cards.length)];
-      S.save = { d: "", c: Object.fromEntries(S.cards.filter((c) => c !== S.missing).map((c) => [c.id, 1])), l: [], w: 0 };
+    if (DEBUG_VYMENA && !S.extra && S.cards.length) { // jedna common karta 5× (iba v pamäti)
+      const commons = S.cards.filter((c) => c.rarity === "common");
+      S.extra = commons[Math.floor(Math.random() * commons.length)] || S.cards[0];
+      S.save = { d: "", c: { [S.extra.id]: 5 }, l: [], w: 0 };
     }
     if (!S.busy) render();
   }
@@ -351,20 +357,20 @@
   }
 
   const RAYS = '<div class="rays" aria-hidden="true"></div>';
-  async function openPack() {
-    if (S.busy || !C.canOpen(S.save, today()) || !S.cards.length) return;
+  // bonus = balík za výmenu 5 rovnakých kariet (denný balík ostáva)
+  async function openPack(bonus) {
+    if (S.busy || !S.cards.length) return;
+    const t = bonus ? tradeable() : null;
+    if (bonus ? !t : !C.canOpen(S.save, today())) return;
     S.busy = true;
-    const had = Object.assign({}, S.save.c); // počty pred balíkom → „Nová karta“ / „×2“
+    const base = t ? C.spend(S.save, t.id) : S.save;
+    const had = Object.assign({}, base.c); // počty pred balíkom → „Nová karta“ / „×2“
     const seen = Object.assign({}, had);
-    let pack = C.openPack(S.cards, Math.random, MYTHS);
-    if (DEBUG_VENIEC) { // ladenie: jedna common + chýbajúca Ants + všetky tri tajné karty
-      const commons = S.cards.filter((c) => c.rarity === "common" && c !== S.missing);
-      pack = [commons[Math.floor(Math.random() * commons.length)], S.missing].filter(Boolean).concat(MYTHS);
-    }
-    const next = C.addPack(S.save, pack.map((c) => c.id), today());
+    let pack = C.openPack(S.cards, Math.random, MYTHS, base.c);
+    if (DEBUG_VYMENA && !bonus && S.extra) pack = [S.extra].concat(pack.filter((c) => c !== S.extra).slice(1)); // ladenie: 6. kus karty
+    const next = C.addPack(base, pack.map((c) => c.id), today(), !!t);
     const won = !next.w && C.complete(S.cards, next); // posledná chýbajúca karta → veniec (natrvalo)
     if (won) next.w = 1;
-    if (won && DEBUG_VENIEC) { try { sessionStorage.setItem(TRY_KEY, JSON.stringify({ w: 1 })); } catch (e) {} }
     S.save = next; // uložené hneď: obnovenie stránky balík neotvorí znova
     store();
     let skip = false;
@@ -412,7 +418,7 @@
       await el.animate([{ transform: "none", opacity: 1 }, { transform: "translate(-40%, 50%) scale(.3) rotate(-8deg)", opacity: 0 }], { duration: REDUCED ? 60 : 320, easing: "ease-in", fill: "forwards" }).finished;
     }
     if (won) await achievement();
-    summary(pack, next.c, had);
+    summary(pack, next.c, had, !!t);
   }
 
   // veniec za celú kolekciu: oslava po odkrytí posledného balíka, potom zhrnutie
@@ -427,14 +433,16 @@
     });
   }
 
-  function summary(pack, counts, had) {
+  function summary(pack, counts, had, bonus) {
     const top = ["mythical", "legendary"].find((r) => pack.some((c) => c.rarity === r)) || "";
+    const t = tradeable();
     showLayer(`<div class="op done" data-rarity="${top}">
-      <h2 class="op-h">Dnešný balík</h2>
+      <h2 class="op-h">${bonus ? "Balík za výmenu" : "Dnešný balík"}</h2>
       <div class="op-sum">${pack.map((c, i) => `<button type="button" class="sum-card" data-act="show" data-id="${esc(c.id)}" style="--i:${i}">${cardHtml(c, "front")}
         <span class="sum-tags"><span class="op-tag r-${c.rarity}">${RNAME[c.rarity]}</span>${had[c.id] ? `<span class="op-dup">×${counts[c.id]}</span>` : '<span class="op-new">Nová</span>'}</span></button>`).join("")}</div>
-      <div class="op-btns"><button type="button" class="btn-white big" data-op="close">Do kolekcie</button></div></div>`);
-    layer.querySelector("[data-op=close]").addEventListener("click", () => { hideLayer(); document.getElementById("kolekcia").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth" }); });
+      ${t ? `<p class="op-trade">Máš ${owned(t.id)}× ${esc(t.name)} – ${C.TRADE} môžeš vymeniť za nový balík.</p>` : ""}
+      <div class="op-btns"><button type="button" class="btn-white big" data-op="close">Do kolekcie</button>${t ? `<button type="button" class="btn-white big alt" data-op="trade">Vymeniť ${C.TRADE} za balík</button>` : ""}</div></div>`);
+    bindSummary();
   }
 
   /* ---------- Detail karty ---------- */
@@ -461,6 +469,8 @@
   function bindSummary() {
     const btn = layer.querySelector("[data-op=close]");
     if (btn) btn.addEventListener("click", () => { hideLayer(); document.getElementById("kolekcia").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth" }); });
+    const tr = layer.querySelector("[data-op=trade]");
+    if (tr) tr.addEventListener("click", () => { hideLayer(); openPack(true); });
   }
 
   /* ---------- Udalosti ---------- */
@@ -469,6 +479,7 @@
     if (!el) return;
     const act = el.dataset.act;
     if (act === "open") openPack();
+    else if (act === "trade") openPack(true);
     else if (act === "show") showCard(el.dataset.id);
     else if (act === "filter") { S.filter = el.dataset.id; rerenderCollection(); }
     else if (act === "season") { S.season = el.dataset.id; rerenderCollection(); }

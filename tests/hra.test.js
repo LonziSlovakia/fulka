@@ -166,3 +166,30 @@ test("veniec: celá kolekcia = všetky karty z dát (tajné sa nerátajú)", () 
   assert.equal(C.complete(cards, { c: Object.assign({ [C.MYTHICAL.id]: 1 }, one) }), false); // tajná karta nenahradí chýbajúcu
   assert.equal(C.complete([], { c: {} }), false);
 });
+
+test("tajná pomoc: v triede častejšie príde chýbajúca karta, šance tried sa nemenia", () => {
+  const cards = C.RARITY.flatMap((r) => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => ({ id: `${r}${i}`, rarity: r })));
+  const have = Object.fromEntries(cards.filter((c) => c.id !== "legendary1").map((c) => [c.id, 1])); // chýba jediná legendary
+  let s = 7, miss = 0, leg = 0;
+  const rng = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  for (let i = 0; i < 20000; i++) {
+    const p = C.openPack(cards, rng, null, have);
+    p.forEach((c) => { if (c.rarity === "legendary") { leg++; if (c.id === "legendary1") miss++; } });
+  }
+  assert.ok(miss / leg > 0.5, `chýbajúca ${miss / leg}`); // bez pomoci 10 %, s pomocou 50 % + 5 %
+  assert.ok(leg / 100000 > 0.035 && leg / 100000 < 0.055, `legendary ${leg / 100000}`); // trieda stále okolo 4 %
+});
+
+test("výmena: 6 rovnakých kariet → 5 preč za balík, jedna ostane; balík za výmenu nemení deň denného balíka", () => {
+  const cards = [{ id: "a", rarity: "common" }, { id: "b", rarity: "rare" }, { id: "x", rarity: "legendary" }];
+  assert.equal(C.tradeCard(cards, { c: { a: 5, b: 2 } }), null);
+  assert.equal(C.tradeCard(cards, { c: { a: 6, b: 6, zmazana: 9 } }).id, "a"); // zhoda → najbežnejšia; neznáma karta sa nepočíta
+  assert.equal(C.tradeCard(cards, { c: { a: 6, b: 7 } }).id, "b"); // viac kusov vyhráva
+  const save = C.readSave({ d: "2026-11-25", c: { a: 6 }, l: [] });
+  const after = C.spend(save, "a");
+  assert.equal(after.c.a, 1);
+  assert.equal(C.tradeCard(cards, after), null); // možnosť zmizne
+  assert.equal(C.spend(after, "a"), after); // s jednou kartou sa vymeniť nedá
+  assert.equal(C.addPack(after, ["b"], "2026-11-26", true).d, "2026-11-25");
+  assert.equal(C.addPack(after, ["b"], "2026-11-26").d, "2026-11-26");
+});
