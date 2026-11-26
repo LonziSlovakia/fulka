@@ -113,6 +113,9 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Riešenie čaká na web tím upcba.sk: buď **CORS hlavička** `Access-Control-Allow-Origin: https://ful.upcba.sk` na odkaz exportu (Cloudflare → Rules → Transform Rules → Response Header)
     → web by čítal kalendár priamo a Action netreba (parser presunúť z `tools/kalendar.js` do `upece.js`), alebo **WAF výnimka** pre ten odkaz → stačí odkomentovať `schedule`.
     Dovtedy ručne z Lonziho počítača: **`bash tools/kalendar.sh`** (stiahne, prerobí, ak sa zmenil → commit + push).
+    Výnimka u web tímu (26. 11., kolega z upcba.sk ju ponúkol): Action sa predstaví User-Agentom `FULka-kalendar/1.0 (+https://ful.upcba.sk; GitHub Actions)` (verejný)
+    a voliteľne tajnou hlavičkou `X-FULka-Token` z GitHub Secret `UPECE_KALENDAR_TOKEN` (posiela sa iba keď je nastavený). Pri chybe log vypíše `cf-ray` a `cf-mitigated`
+    (podľa nich web tím nájde požiadavku v Cloudflare → Security → Events). Keď výnimka funguje: odkomentovať `schedule`.
   - **Výnimočná akcia** (zvýraznená tyrkysovou) = má v tom týždni vlastný oznam s dátumom (`notice-title` „Názov D. M.“). Oznam s dátumom a časom,
     ktorý nie je v tabuľke, sa doplní ako riadok. „… do D. M.“ je uzávierka, nie akcia.
   - Novinky: 2 posledné príspevky z **Aktuality (165)** bez Oznamov. Odkazy iba na `https://www.upcba.sk/…`, texty sa escapujú.

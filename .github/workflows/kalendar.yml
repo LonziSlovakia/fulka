@@ -26,11 +26,24 @@ jobs:
     env:
       # odkaz z tlačidla „Odoberať → Pridať do iného kalendára“ na upcba.sk/kalendar
       ICAL: "https://www.upcba.sk/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events&no_html=true"
+      # Ako sa požiadavka predstaví – podľa toho ju web tím upcba.sk pustí cez Cloudflare (výnimka vo WAF):
+      #  - User-Agent je verejný (repozitár je verejný), takže sám o sebe sa dá napodobniť – pre kalendár (verejné dáta) to nevadí,
+      #  - X-FULka-Token = tajný kľúč dohodnutý s web tímom, uložený v GitHub → Settings → Secrets and variables → Actions
+      #    pod menom UPECE_KALENDAR_TOKEN (v kóde ani v logu nie je). Kým tajomstvo nie je nastavené, hlavička sa neposiela.
+      UA: "FULka-kalendar/1.0 (+https://ful.upcba.sk; GitHub Actions)"
     steps:
       - uses: actions/checkout@v4
 
       - name: Stiahnuť iCal z upcba.sk
-        run: curl -fsSL --retry 3 --max-time 60 "$ICAL" -o "$RUNNER_TEMP/upece.ics"
+        env:
+          TOKEN: ${{ secrets.UPECE_KALENDAR_TOKEN }}
+        run: |
+          args=(-sS -L --retry 3 --max-time 60 -A "$UA" -D "$RUNNER_TEMP/hlavicky.txt" -o "$RUNNER_TEMP/upece.ics" -w "%{http_code}")
+          if [ -n "$TOKEN" ]; then args+=(-H "X-FULka-Token: $TOKEN"); echo "Posielam aj X-FULka-Token."; fi
+          code=$(curl "${args[@]}" "$ICAL")
+          echo "upcba.sk odpovedal: HTTP $code"
+          # pri chybe vypísať, čo treba web tímu (cf-ray = číslo požiadavky, podľa neho ju nájdu v Cloudflare → Security → Events)
+          if [ "$code" != "200" ]; then grep -iE "^(cf-ray|cf-mitigated|server|date):" "$RUNNER_TEMP/hlavicky.txt" || true; exit 1; fi
 
       - name: iCal → JSON
         run: node tools/kalendar.js "$RUNNER_TEMP/upece.ics" data/upece-kalendar.json

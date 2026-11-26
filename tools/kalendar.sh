@@ -5,9 +5,10 @@
 set -e
 cd "$(dirname "$0")/.."
 URL=$(grep -oP 'ICAL: "\K[^"]+' .github/workflows/kalendar.yml)
+UA=$(grep -oP 'UA: "\K[^"]+' .github/workflows/kalendar.yml) # rovnaký User-Agent ako GitHub Action
 TMP=$(mktemp)
 trap 'rm -f "$TMP"' EXIT
-curl -fsSL --retry 2 --max-time 60 "$URL" -o "$TMP"
+curl -fsSL --retry 2 --max-time 60 -A "$UA" "$URL" -o "$TMP"
 node tools/kalendar.js "$TMP" data/upece-kalendar.json
 if git diff --quiet -- data/upece-kalendar.json; then echo "Kalendár sa nezmenil – nič na commit."; exit 0; fi
 git diff --stat -- data/upece-kalendar.json
