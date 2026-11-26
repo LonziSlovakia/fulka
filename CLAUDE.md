@@ -47,7 +47,7 @@ Stav k 21. 11. 2026.
 | `tabula.html` | druhá obrazovka (bez prihlásenia a bez databázy, číta iba `localStorage`; `F` / dvojklik = celá obrazovka) |
 | `styles.css` | vzhľad webu, tokeny ako CSS premenné, tímové farby cez `--c --d --ink`, layout cez container queries |
 | `hra/` | **Hra** `ful.upcba.sk/hra/` (v menu webu „Hráč dňa“): `index.html`, `cards.js` (čisté funkcie kariet, testované), `hra.js` (vykreslenie, balík, modlitby), `hra.css` |
-| `tests/*.test.js` | `node --test tests/*.test.js` (102 testov: `logic` 52, `upece` 10, `board` 25, `hra` 15; `node --test tests/` na Node 22 nejde) |
+| `tests/*.test.js` | `node --test tests/*.test.js` (103 testov: `logic` 53, `upece` 10, `board` 25, `hra` 15; `node --test tests/` na Node 22 nejde) |
 | `tools/` | lokálne testovanie v prehliadači (nižšie) |
 | `design/` | pôvodné návrhy webu a admina (predloha) |
 | `assets/logos` | SVG logá tímov, FUL, `upece.png`, `supabase.svg`, `ufl.svg` + `ufl-lesk.svg` (logo UFL obkreslené pre tajnú kartu, lesk = maska lesklých častí), `verbisti.svg` (zlaté logo verbistov pre tajnú kartu), `veniec.svg` (veniec za celú kolekciu) · `assets/anim` animované logá (WebP, bezstratovo z GIF) · `assets/gif` pôvodné GIF (zdroj pre `tools/webp-smooth.py`) |
@@ -59,7 +59,8 @@ Stav k 21. 11. 2026.
 `layout` "wide"/"narrow" (Lonzi má úzke) · `tableOrder` (predvolene `h2hPoints, h2hDiff, diff, gf`) ·
 `scorerOrder` (predvolene `goals`) · `scorerTies` "shared"/"alpha"/"team" (predvolene shared) ·
 `upece` true/false (sekcia Z UPeCe) · `upeceHours` text pod názvom UPeCe · `upeceOffer` zoznam `{t, d}` pre „Viac než florbal“ ·
-`gameOdds` "short"/"full"/"none" (hra: šance pri balíku, admin → Hra).
+`gameOdds` "short"/"full"/"none" (hra: šance pri balíku, admin → Hra) ·
+`peekViews` 0–99 (pásik Hráč dňa zmizne po N otvoreniach webu za deň; **0 = nezmizne nikdy, predvolené**; admin → Nastavenia).
 
 Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|siroke`, `?upece=ano|nie`; v hre `hra/?sance=kratko|popis|nie`.
 
@@ -84,7 +85,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   Jedna fotka → výrez hlavy a avatar sa vyrobia samé. Fotky kapitánov sú nahraté. Ukazujú sa pri kapitánoch v Tímoch a v bodovaní.
 - Nové tímy: logo do bucketu `timy/<id>/logo.*` (bucket berie iba PNG/JPG/WebP, nie SVG).
 - Admin: zápas, sezóna a nastavenia sa ukladajú tlačidlom; súpiska hneď. Po uložení sa všetko znova načíta z DB. Mazanie (zápas, hráč, tím zo sezóny)
-  potvrdí vlastný dialóg s rozmazaným pozadím. Poradie v Nastaveniach: banner → náhľad banneru → fotky → rozloženie → Z UPeCe → kritériá → Uložiť dole.
+  potvrdí vlastný dialóg s rozmazaným pozadím. Poradie v Nastaveniach: banner → náhľad banneru → fotky → rozloženie → Z UPeCe → pásik Hráč dňa → kritériá → Uložiť dole.
 - Časy v admine: rýchle voľby 19:00 / 20:15 / 21:00 / 21:15 a ±15 min.
 - **Skončená sezóna** má na konci aj sekciu **Tímy** (súpisky s kapitánmi a fotkami ako prebiehajúca, `teams(c, hint)`), v menu „Tímy“ (Lonzi 25. 11.).
 - **Sezóna v adrese:** `?sezona=z26` pri inej než predvolenej sezóne (predvolená = prebiehajúca, inak najnovšia → adresa bez parametra). Obnovenie a poslaný odkaz
@@ -209,7 +210,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
   tlačidlo „Vrátiť späť“ (`fulka_undo`) vymení aktuálny stav s poistkou. Stiahnutie do počítača (JSON `format: fulka-zaloha-1`) a návrat zo súboru.
 - **Pásik „Hráč dňa“ na hlavnej stránke (26. 11.):** nízky pásik na celú šírku hneď pod hlavičkou (`peek()` v `render.js`, štýl `.peek` v `styles.css`): malá karta (farba rámika = vzácnosť,
   fotka alebo logo tímu, podklad vo farbe tímu končí za kartou), „Hráč dňa“ + meno, „Dnešná modlitba“ + názov, „Pomodli sa →“; celý je odkaz na `hra/#dnes`. Na mobile: karta | meno a pod ním modlitba | šípka.
-  Iba pri **prvých 2 otvoreniach webu za deň** (localStorage `fulka-hra-pasik` = `{ d, n }`). Hráč, karta a modlitba sa rátajú z `hra/cards.js` (načíta ho `index.html`) → rovnaké ako v hre.
+  Zmizne po **`peekViews`** otvoreniach webu za deň (admin → Nastavenia, za „Z UPeCe“; **0 = nikdy, predvolené** – Lonzi 26. 11.; počítadlo localStorage `fulka-hra-pasik` = `{ d, n }`, `L.peekVisible`). Hráč, karta a modlitba sa rátajú z `hra/cards.js` (načíta ho `index.html`) → rovnaké ako v hre.
 - Menu: všetky odkazy sivé, biele iba pri prejdení myšou – aj „Hráč dňa“ (predtým bol stále biely; Lonzi 26. 11. chcel ako ostatné).
 - Päta: odkaz na UPeCe Bratislava (upcba.sk, biele logo) a Supabase (supabase.com, „Dáta, fotky a prihlásenie bežia na Supabase“).
 

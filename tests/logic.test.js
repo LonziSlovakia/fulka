@@ -574,3 +574,12 @@ test("pripravovaná sezóna: pulzuje najbližší termín od dnes", () => {
   assert.equal(L.nextStep(steps, "2027-02-16"), ""); // všetko prešlo, prvý zápas bez dátumu
   assert.equal(L.nextStep(L.seasonSteps({ signup_date: "2027-03-01", draft_date: "2027-02-20" }), "2027-01-01"), "draft_date"); // podľa dátumu, nie poradia
 });
+
+test("pásik Hráč dňa: 0 = stále, inak zmizne po N otvoreniach za deň; nezmysel = 0", () => {
+  assert.equal(L.DEFAULTS.peekViews, 0);
+  assert.equal(L.peekVisible(0, 50), true);
+  assert.equal(L.peekVisible(2, 1), true);
+  assert.equal(L.peekVisible(2, 2), true);
+  assert.equal(L.peekVisible(2, 3), false);
+  assert.deepEqual(["3", -1, "abc", null, 2.7, 500].map(L.peekLimit), [3, 0, 0, 0, 2, 99]);
+});

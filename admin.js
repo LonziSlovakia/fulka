@@ -1037,7 +1037,7 @@
     tableOrder: L.validOrder(c.settings.tableOrder, L.TABLE_CRITERIA, L.DEFAULTS.tableOrder),
     scorerOrder: L.validOrder(c.settings.scorerOrder, L.SCORER_CRITERIA, L.DEFAULTS.scorerOrder),
     scorerTies: L.SCORER_TIES[c.settings.scorerTies] ? c.settings.scorerTies : "shared",
-    upece: c.settings.upece !== false, upeceHours: String(c.settings.upeceHours ?? ""),
+    upece: c.settings.upece !== false, upeceHours: String(c.settings.upeceHours ?? ""), peekViews: L.peekLimit(c.settings.peekViews),
     upeceOffer: (Array.isArray(c.settings.upeceOffer) ? c.settings.upeceOffer : L.DEFAULTS.upeceOffer).map((o) => ({ t: String(o.t || ""), d: String(o.d || "") })) });
 
   /* zoznam „Čo ponúka UPeCe“: názov + popis, šípky na poradie, × odoberie, dole pridať riadok */
@@ -1127,6 +1127,11 @@
           <span class="lbl">Čo ponúka UPeCe („Viac než florbal“)</span>
           ${offerList(sd.upeceOffer)}
           <div class="a-actions">${look("upece=ano", "Pozrieť na webe")}</div></fieldset>
+        <fieldset class="a-fs" style="gap:12px"><legend>Pásik „Hráč dňa“ pod hlavičkou</legend>
+          <span class="muted" style="font-size:14px">Nízky pásik s kartou hráča dňa a dnešnou modlitbou, vedie do hry. Po koľkých otvoreniach webu za deň zmizne (každý návštevník sa počíta zvlášť, od polnoci znova). 0 = nezmizne nikdy.</span>
+          <label class="a-field" style="max-width:320px"><span class="lbl">Zmizne po otvoreniach za deň</span>
+            <input type="number" class="a-input" data-in="peekViews" min="0" max="99" step="1" inputmode="numeric" value="${sd.peekViews}"></label>
+          <span class="small">${sd.peekViews ? `Teraz: ukáže sa pri prvých ${sd.peekViews} ${sd.peekViews === 1 ? "otvorení" : "otvoreniach"} za deň.` : "Teraz: pásik je na webe vždy."}</span></fieldset>
         <fieldset class="a-fs" style="gap:12px"><legend>Poradie v tabuľke tímov</legend>
           <span class="muted" style="font-size:14px">Pri rovnosti bodov rozhodujú kritériá v tomto poradí. Ťahaj ich myšou alebo použi šípky. Vzájomné zápasy sa rátajú iba medzi tímami, ktoré sú dovtedy úplne rovnaké.</span>
           ${critList("tableOrder", sd.tableOrder, L.TABLE_CRITERIA, "Keď je všetko rovnaké: abecedne podľa názvu tímu")}</fieldset>
@@ -1431,7 +1436,7 @@
       const data = Object.assign({}, S.data.settings, sd);
       delete data.headFont; // staré nastavenie písma (Monument je zrušený) – pri uložení zmizne z DB
       run(() => DB.saveSettings(data),
-        `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, rozloženie ${sd.layout === "narrow" ? "úzke" : "široké"}, sekcia Z UPeCe ${sd.upece ? "zapnutá" : "skrytá"}, poradie tabuľky aj bodovania.`,
+        `Uložené. Banner ukazuje ${sd.bannerCount} ${sd.bannerCount === 1 ? "zápas" : "zápasy"}, ${sd.photos ? "fotky sú zapnuté" : "fotky sú vypnuté"}, rozloženie ${sd.layout === "narrow" ? "úzke" : "široké"}, sekcia Z UPeCe ${sd.upece ? "zapnutá" : "skrytá"}, pásik Hráč dňa ${sd.peekViews ? `zmizne po ${sd.peekViews}. otvorení za deň` : "stále"}, poradie tabuľky aj bodovania.`,
         () => { S.setDraft = null; });
     },
   };
@@ -1449,6 +1454,7 @@
     if (k === "newName") S.newName = e.target.value;
     if (k === "bkLabel") S.bkLabel = e.target.value;
     if (k === "upHours") editSet((sd) => { sd.upeceHours = e.target.value; });
+    if (k === "peekViews") editSet((sd) => { sd.peekViews = L.peekLimit(e.target.value); });
     if (k === "upT" || k === "upD") editSet((sd) => { sd.upeceOffer[Number(e.target.dataset.i)][k === "upT" ? "t" : "d"] = e.target.value; });
     if (k === "seasonName" && S.seasonDraft) S.seasonDraft.name = e.target.value;
     if (k === "sdate" && S.seasonDraft) S.seasonDraft[e.target.dataset.key] = e.target.value || null;

@@ -671,22 +671,22 @@
   }
 
   /* ---------- Hráč dňa: nízky pásik pod hlavičkou → hra/ ----------
-     Ukáže sa iba pri prvých 2 otvoreniach webu za deň (počítadlo v localStorage fulka-hra-pasik = { d: deň, n: počet otvorení }).
+     Zmizne po N otvoreniach webu za deň (admin → Nastavenia, settings.peekViews; 0 = nezmizne nikdy);
+     počítadlo v localStorage fulka-hra-pasik = { d: deň, n: počet otvorení }.
      Hráč, karta a modlitba sa rátajú rovnako ako v hre (hra/cards.js) → vždy to isté, čo hra ukáže. */
   const PEEK_KEY = "fulka-hra-pasik";
-  const PEEK_MAX = 2;
   const PEEK_RARITY = { common: "#9a9a9a", rare: "#00a8b5", epic: "#B36BFF", legendary: "#F0C146" };
-  let peekOn = null; // rozhodne sa raz pri prvom vykreslení (jedno otvorenie stránky = +1)
-  function peekAllowed() {
-    if (peekOn !== null) return peekOn;
-    const date = today();
-    try {
-      const v = JSON.parse(localStorage.getItem(PEEK_KEY)) || {};
-      const n = v.d === date ? (v.n || 0) + 1 : 1;
-      localStorage.setItem(PEEK_KEY, JSON.stringify({ d: date, n }));
-      peekOn = n <= PEEK_MAX;
-    } catch (e) { peekOn = true; }
-    return peekOn;
+  let peekCount = null; // koľkýkrát dnes je web otvorený – zráta sa raz pri prvom vykreslení (jedno otvorenie stránky = +1)
+  function peekAllowed(settings) {
+    if (peekCount === null) {
+      const date = today();
+      try {
+        const v = JSON.parse(localStorage.getItem(PEEK_KEY)) || {};
+        peekCount = v.d === date ? (v.n || 0) + 1 : 1;
+        localStorage.setItem(PEEK_KEY, JSON.stringify({ d: date, n: peekCount }));
+      } catch (e) { peekCount = 1; }
+    }
+    return L.peekVisible(settings.peekViews, peekCount);
   }
   function peekOf(d) {
     const C = window.Cards;
@@ -696,7 +696,7 @@
     return { p, card: C.latestCard(C.buildCards(d), p.id), prayer: C.PRAYER_NAMES[C.prayerOfDay(C.PRAYER_NAMES.length, date)] };
   }
   function peek(c) {
-    if (!window.Cards || !peekAllowed()) return "";
+    if (!window.Cards || !peekAllowed(c.v.settings)) return "";
     if (state.peekFor !== c.d) { state.peekFor = c.d; state.peek = peekOf(c.d); }
     const k = state.peek;
     if (!k) return "";

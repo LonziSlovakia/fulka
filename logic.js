@@ -15,6 +15,8 @@
     upece: true, upeceHours: "Otvorené denne 13:00 – 24:00",
     // hra (/hra/): šance pri balíku – "short" triedy so šancami, "full" aj s popismi, "none" skryté
     gameOdds: "short",
+    // pásik „Hráč dňa“ pod hlavičkou: po koľkých otvoreniach webu za deň zmizne (0 = nezmizne nikdy)
+    peekViews: 0,
     upeceOffer: [
       { t: "Sv. omše a spoveď", d: "Denne v kaplnke, spoveď cez online rezerváciu" },
       { t: "Florbal a športy", d: "Utorok a piatok po omši, telocvičňa na Šturáku" },
@@ -448,6 +450,9 @@
   /* ---------- Drobnosti ---------- */
   const initials = (name) => name.split(" ").filter(Boolean).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
   const settingsOf = (data) => Object.assign({}, DEFAULTS, data || {});
+  // pásik „Hráč dňa“: limit z nastavení → celé číslo 0–99 (nezmysel = 0 = stále); viditeľný pri n-tom otvorení dňa, kým n ≤ limit
+  const peekLimit = (v) => { const n = Math.floor(Number(v)); return Number.isFinite(n) && n > 0 ? Math.min(99, n) : 0; };
+  const peekVisible = (limit, count) => peekLimit(limit) === 0 || count <= peekLimit(limit);
 
   const Logic = {
     TZ, UNKNOWN, STAGES, DEFAULTS, TABLE_CRITERIA, SCORER_CRITERIA, SCORER_TIES, validOrder,
@@ -456,7 +461,7 @@
     standings, scorers,
     playoff, resolveMatches, champion, places, regularDone,
     rounds, byTime, nextMatches, matchState,
-    validateMatch, compareData, initials, settingsOf,
+    validateMatch, compareData, initials, settingsOf, peekLimit, peekVisible,
     draftOf, rowOf, goalRowsOf, slug, playerId, shortName, shiftTime, longDate, monthDays,
     SEASON_STEPS, seasonSteps, nextStep, stepDate, seasonTeamsError,
   };
