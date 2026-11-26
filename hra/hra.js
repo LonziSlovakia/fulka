@@ -255,22 +255,42 @@
   }
 
   /* ---------- Otočenie a náklon karty ---------- */
+  // náklon podľa polohy kurzora/prsta; mimo karty (v páse TILT_REACH okolo nej) náklon postupne slabne do nuly
+  const TILT_REACH = 0.15; // myš nakláňa kartu už 15 % (šírky/výšky karty) pred jej okrajom (Lonzi 26. 11.)
+  function tiltTo(el, e) {
+    const r = el.getBoundingClientRect();
+    const rx = (e.clientX - r.left) / r.width;
+    const ry = (e.clientY - r.top) / r.height;
+    const out = Math.max(0, -rx, rx - 1, -ry, ry - 1); // ako ďaleko za okrajom (0 = na karte)
+    if (out > TILT_REACH) return false;
+    const k = 1 - out / TILT_REACH; // na karte 1, na vonkajšom kraji pásu 0
+    const x = Math.min(1, Math.max(0, rx));
+    const y = Math.min(1, Math.max(0, ry));
+    el.style.setProperty("--ry", `${((x - 0.5) * 22 * k).toFixed(2)}deg`);
+    el.style.setProperty("--rx", `${((0.5 - y) * 18 * k).toFixed(2)}deg`);
+    el.style.setProperty("--hx", ((0.5 - x) * 60 * k).toFixed(1)); // posun zlatého lesku pri náklone
+    el.classList.add("tilting");
+    return true;
+  }
+  function untilt(el) { el.classList.remove("tilting"); ["--rx", "--ry", "--hx"].forEach((k) => el.style.removeProperty(k)); }
+  const tilted = new Set(); // karty s náklonom (hráč dňa, karta vo vrstve) – myš ich sleduje cez celý dokument
   function tilt(el) {
-    const move = (e) => {
-      if (gyro.on && e.pointerType !== "mouse") return; // mobil s gyroskopom: nakláňa sa telefónom, nie prstom
-      const r = el.getBoundingClientRect();
-      const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-      const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-      el.style.setProperty("--ry", `${(x - 0.5) * 22}deg`);
-      el.style.setProperty("--rx", `${(0.5 - y) * 18}deg`);
-      el.style.setProperty("--hx", ((0.5 - x) * 60).toFixed(1)); // posun zlatého lesku pri náklone
-      el.classList.add("tilting");
-    };
-    const leave = () => { if (gyro.on) return; el.classList.remove("tilting"); ["--rx", "--ry", "--hx"].forEach((k) => el.style.removeProperty(k)); };
+    tilted.add(el);
+    // dotyk bez gyroskopu: nakláňa sa prstom priamo na karte (mobil s gyroskopom: telefónom, nie prstom)
+    const move = (e) => { if (e.pointerType !== "mouse" && !gyro.on) tiltTo(el, e); };
+    const leave = (e) => { if (e.pointerType !== "mouse" && !gyro.on) untilt(el); };
     el.addEventListener("pointermove", move);
     el.addEventListener("pointerleave", leave);
     el.addEventListener("pointercancel", leave);
   }
+  document.addEventListener("pointermove", (e) => {
+    if (e.pointerType !== "mouse") return;
+    tilted.forEach((el) => {
+      if (!el.isConnected) { tilted.delete(el); return; }
+      if (!tiltTo(el, e) && el.classList.contains("tilting")) untilt(el);
+    });
+  }, { passive: true });
+  document.documentElement.addEventListener("mouseleave", () => tilted.forEach(untilt)); // kurzor odišiel z okna
 
   /* ---------- Náklon telefónu (gyroskop) ---------- */
   // na mobile sa podľa náklonu telefónu hýbe lesk na kartách (karta sama stojí, nenakláňa sa). „Rovno“ = poloha, v ktorej telefón držíš:

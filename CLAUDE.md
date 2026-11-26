@@ -110,7 +110,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     JSON je stiahnutý ručne 26. 11. (opakované omše/športy platia ďalej, nové jednorazové akcie chýbajú). Neobchádzať (iný User-Agent a pod.).
     Riešenie čaká na web tím upcba.sk: buď **CORS hlavička** `Access-Control-Allow-Origin: https://ful.upcba.sk` na odkaz exportu (Cloudflare → Rules → Transform Rules → Response Header)
     → web by čítal kalendár priamo a Action netreba (parser presunúť z `tools/kalendar.js` do `upece.js`), alebo **WAF výnimka** pre ten odkaz → stačí odkomentovať `schedule`.
-    Dovtedy ručne: `curl -fsSL "<ICAL z yml>" -o /tmp/u.ics && node tools/kalendar.js /tmp/u.ics data/upece-kalendar.json` a commit.
+    Dovtedy ručne z Lonziho počítača: **`bash tools/kalendar.sh`** (stiahne, prerobí, ak sa zmenil → commit + push).
   - **Výnimočná akcia** (zvýraznená tyrkysovou) = má v tom týždni vlastný oznam s dátumom (`notice-title` „Názov D. M.“). Oznam s dátumom a časom,
     ktorý nie je v tabuľke, sa doplní ako riadok. „… do D. M.“ je uzávierka, nie akcia.
   - Novinky: 2 posledné príspevky z **Aktuality (165)** bez Oznamov. Odkazy iba na `https://www.upcba.sk/…`, texty sa escapujú.
@@ -156,6 +156,7 @@ Prepnutie iba na pozretie, bez ukladania: `?fotky=ano|nie`, `?rozlozenie=uzke|si
     Farby tried: common sivá, rare tyrkys UPeCe `--teal`, epic fialová `#B36BFF`, legendary zlatá FULky `#F0C146`.
   - **Balík raz denne** (deň v Bratislave): 5 kariet, šance 56/28/12/4 % (`C.ODDS`), aspoň 1 rare+, v balíku bez opakovania, odkrýva sa od najbežnejšej. Uloží sa **hneď pri otvorení** (obnovenie stránky balík neotvorí znova).
     **Šance pri balíku:** admin → záložka **Hra** (`settings.gameOdds`): triedy so šancami (predvolené) / aj s popismi / skryté. Adresa `?sance=kratko|popis|nie` iba na pozretie.
+    Náklon myšou: karta sa nakláňa už v páse 15 % (`TILT_REACH`) okolo nej, náklon tam slabne k nule (myš sa sleduje cez `document`, nie iba na karte; Lonzi 26. 11.).
     Otvorenie: ťuk → roztrhnutie → karty rubom (žiara podľa vzácnosti) → ťuk = otočenie (2 polovičky cez WAAPI, nie backface-visibility – spoľahlivé na Safari) → zhrnutie. „Odkryť všetky“ preskočí.
   - **localStorage iba `fulka-hra-v1`** = `{ d: deň posledného balíka, c: { idKarty: počet }, l: [ID posledného balíka] }` (Lonzi chcel ukladať čo najmenej). ID karty = FNV-1a hash textu
     `p:<sezóna>:<hráč>` / `t:…` (epic tím) / `T:…` (legendary tím) v sústave 36 → stále rovnaké, aj keď pribudnú hráči. Kolekcia ~0,5 kB. Zmazanie dát prehliadača = kolekcia preč (iné zariadenie = iná kolekcia).
